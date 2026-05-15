@@ -2,102 +2,65 @@
 
 import { motion } from "framer-motion";
 import Link from "next/link";
-import { ArrowRight, Bot, ShieldCheck, Zap } from "lucide-react";
+import { Sparkles } from "lucide-react";
+import { useEffect, useState } from "react";
 
 export default function LandingPage() {
+  const [meteors, setMeteors] = useState<{ id: number; top: number; left: number; delay: number; duration: number }[]>([]);
+
+  useEffect(() => {
+    // Generate random meteors
+    const generatedMeteors = Array.from({ length: 25 }).map((_, i) => ({
+      id: i,
+      top: Math.random() * 100 - 20, 
+      left: Math.random() * 150 - 50, 
+      delay: Math.random() * 5,
+      duration: Math.random() * 2 + 2, 
+    }));
+    setMeteors(generatedMeteors);
+  }, []);
+
   return (
-    <div className="relative min-h-screen bg-[#09090b] overflow-hidden flex flex-col items-center justify-center text-white">
+    <main className="min-h-screen bg-[#09090b] flex flex-col items-center justify-center relative overflow-hidden font-sans">
       
-      {/* --- PULSATING BACKGROUND EFFECTS --- */}
-      <motion.div 
-        animate={{ scale: [1, 1.1, 1], opacity: [0.3, 0.5, 0.3] }}
-        transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
-        className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-violet-600/20 rounded-full blur-[120px] -z-10"
-      />
-      <motion.div 
-        animate={{ scale: [1, 1.2, 1], opacity: [0.2, 0.4, 0.2] }}
-        transition={{ duration: 10, repeat: Infinity, ease: "easeInOut", delay: 2 }}
-        className="absolute bottom-1/4 right-1/4 w-[600px] h-[600px] bg-indigo-600/10 rounded-full blur-[150px] -z-10"
-      />
+      {/* Background Glows */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-violet-600/20 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute bottom-0 right-0 w-[600px] h-[400px] bg-fuchsia-600/10 rounded-full blur-[120px] pointer-events-none" />
 
-      {/* --- TOP NAVBAR --- */}
-      <nav className="absolute top-0 w-full p-6 flex justify-between items-center z-10 max-w-7xl">
-        <div className="flex items-center gap-2 font-bold text-xl tracking-tight">
-          <div className="w-8 h-8 bg-violet-600 rounded-lg flex items-center justify-center">
-            <Bot className="w-5 h-5 text-white" />
-          </div>
-          IBPS SO AI
-        </div>
-        <div className="flex gap-4 items-center">
-          <Link href="/login" className="text-sm font-medium hover:text-white text-zinc-400 transition-colors">
-            Log in
-          </Link>
-          <Link href="/signup" className="text-sm font-medium bg-white text-black px-4 py-2 rounded-full hover:bg-zinc-200 transition-all">
-            Sign up
-          </Link>
-        </div>
-      </nav>
-
-      {/* --- HERO SECTION --- */}
-      <div className="max-w-4xl text-center z-10 px-4 mt-20">
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, ease: "easeOut" }}
+      {/* The Shooting Stars */}
+      {meteors.map((m) => (
+        <span
+          key={m.id}
+          className="animate-shooting-star absolute h-0.5 w-0 bg-gradient-to-r from-transparent via-amber-200 to-white rounded-full shadow-[0_0_10px_rgba(255,255,255,0.8)] pointer-events-none"
+          style={{ top: `${m.top}%`, left: `${m.left}%`, animationDelay: `${m.delay}s`, animationDuration: `${m.duration}s` }}
         >
-          <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight mb-6 bg-clip-text text-transparent bg-gradient-to-b from-white to-white/60">
-            Master Your Exam with <br /> Intelligent AI Tutoring.
-          </h1>
-        </motion.div>
+          <div className="absolute right-0 top-1/2 -translate-y-1/2 w-1.5 h-1.5 bg-white rounded-full blur-[2px]" />
+        </span>
+      ))}
 
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, ease: "easeOut", delay: 0.2 }}
-        >
-          <p className="text-lg md:text-xl text-zinc-400 mb-10 max-w-2xl mx-auto font-light">
-            Stop guessing what to study. Our AI analyzes your weak points, generates custom mock tests, and provides real-time evaluations to guarantee your success.
-          </p>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.5, ease: "easeOut", delay: 0.4 }}
-          className="flex flex-col sm:flex-row justify-center gap-4"
-        >
-          <Link href="/signup" className="flex items-center justify-center gap-2 bg-violet-600 text-white px-8 py-4 rounded-full font-medium text-lg hover:bg-violet-700 transition-colors">
-            Start Learning Free <ArrowRight className="w-5 h-5" />
-          </Link>
-          <Link href="/dashboard" className="flex items-center justify-center px-8 py-4 rounded-full font-medium text-lg border border-zinc-800 bg-zinc-900/50 hover:bg-zinc-800 transition-colors">
-            View Dashboard
-          </Link>
-        </motion.div>
-      </div>
-
-      {/* --- FEATURES GRID --- */}
-      <motion.div 
-        initial={{ opacity: 0, y: 40 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 1, delay: 0.6 }}
-        className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mt-24 px-4 z-10"
-      >
-        <div className="flex flex-col items-center text-center p-6 rounded-2xl bg-white/[0.02] border border-white/10 backdrop-blur-sm">
-          <Bot className="w-10 h-10 mb-4 text-violet-400" />
-          <h3 className="text-lg font-semibold mb-2">Adaptive RAG Tutor</h3>
-          <p className="text-zinc-400 text-sm">Real-time answers strictly based on previous year questions.</p>
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }} className="relative z-10 flex flex-col items-center text-center px-6 max-w-4xl">
+        <div className="px-4 py-1.5 rounded-full border border-white/10 bg-white/5 backdrop-blur-md text-zinc-300 text-sm font-medium mb-8 flex items-center gap-2">
+          <Sparkles className="w-4 h-4 text-violet-400" /> Powered by Llama-3 Advanced RAG
         </div>
-        <div className="flex flex-col items-center text-center p-6 rounded-2xl bg-white/[0.02] border border-white/10 backdrop-blur-sm">
-          <Zap className="w-10 h-10 mb-4 text-amber-400" />
-          <h3 className="text-lg font-semibold mb-2">Dynamic Practice</h3>
-          <p className="text-zinc-400 text-sm">Infinite test generation targeting your specific weak areas.</p>
-        </div>
-        <div className="flex flex-col items-center text-center p-6 rounded-2xl bg-white/[0.02] border border-white/10 backdrop-blur-sm">
-          <ShieldCheck className="w-10 h-10 mb-4 text-emerald-400" />
-          <h3 className="text-lg font-semibold mb-2">Smart Evaluation</h3>
-          <p className="text-zinc-400 text-sm">Detailed grading pointing out common mistakes and faster methods.</p>
+
+        <h1 className="text-5xl md:text-7xl font-extrabold text-white tracking-tight mb-6">
+          Master Your Exam with <br />
+          <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-fuchsia-400">Intelligent AI Tutoring.</span>
+        </h1>
+
+        <p className="text-lg md:text-xl text-zinc-400 mb-10 max-w-2xl leading-relaxed">
+          Stop guessing what to study. Our AI analyzes your weak points, generates custom mock tests, and provides real-time evaluations to guarantee your success.
+        </p>
+
+        <div className="flex flex-col sm:flex-row items-center gap-4">
+          <Link href="/signup">
+            <button className="px-8 py-4 rounded-full bg-white text-black font-bold text-lg hover:bg-zinc-200 transition-all">Start Learning Free</button>
+          </Link>
+          <Link href="/dashboard">
+            <button className="px-8 py-4 rounded-full bg-white/5 border border-white/10 text-white font-bold text-lg hover:bg-white/10 transition-all">View Dashboard</button>
+          </Link>
         </div>
       </motion.div>
-    </div>
+    </main>
   );
 }

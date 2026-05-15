@@ -1,77 +1,43 @@
 @import "tailwindcss";
 
-/* Shadcn Dark Mode Base Variables */
 :root {
   --background: 240 10% 3.9%;
   --foreground: 0 0% 98%;
   --card: 240 10% 3.9%;
   --card-foreground: 0 0% 98%;
+  --popover: 240 10% 3.9%;
+  --popover-foreground: 0 0% 98%;
+  --primary: 263.4 70% 50.4%;
+  --primary-foreground: 210 40% 98%;
+  --secondary: 240 3.7% 15.9%;
+  --secondary-foreground: 0 0% 98%;
+  --muted: 240 3.7% 15.9%;
+  --muted-foreground: 240 5% 64.9%;
+  --accent: 240 3.7% 15.9%;
+  --accent-foreground: 0 0% 98%;
+  --destructive: 0 62.8% 30.6%;
+  --destructive-foreground: 0 0% 98%;
   --border: 240 3.7% 15.9%;
+  --input: 240 3.7% 15.9%;
+  --ring: 240 4.9% 83.9%;
+  --radius: 0.5rem;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-card: var(--card);
-  --color-card-foreground: var(--card-foreground);
-  --color-border: var(--border);
+body {
+  background-color: hsl(var(--background));
+  color: hsl(var(--foreground));
 }
 
-/* Force Global Dark Mode to prevent white flashes */
-@layer base {
-  * {
-    border-color: var(--border);
-  }
-  body {
-    background-color: #09090b; /* Pure Zinc-950 */
-    color: #f4f4f5; /* Zinc-100 */
-  }
+*, ::before, ::after {
+  border-color: hsl(var(--border));
 }
 
-/* =========================================
-   CUSTOM UI EFFECTS
-========================================= */
-
-/* Safe Light Streak Effect */
-.light-streak {
-  position: relative;
-  border: 2px solid transparent;
-  transition: all 0.4s ease;
+/* --- THE METEOR SHOWER ANIMATION --- */
+@keyframes shooting-star {
+  0% { transform: translateX(0) translateY(0) rotate(45deg); opacity: 1; width: 0; }
+  20% { width: 150px; }
+  100% { transform: translateX(1500px) translateY(1500px) rotate(45deg); opacity: 0; width: 0; }
 }
-
-.light-streak:hover {
-  animation: lightSweep 3s linear infinite;
-  box-shadow: 0 0 20px rgba(139, 92, 246, 0.5);
-}
-
-@keyframes lightSweep {
-  0%   { border-color: transparent; }
-  30%  { border-color: #a78bfa; }
-  60%  { border-color: #c084fc; }
-  100% { border-color: transparent; }
-}
-
-/* Metajive Rainbow Effect */
-.rainbow-keyword {
-  background: linear-gradient(
-    to right,
-    #ff6b6b,
-    #feca57,
-    #48dbfb,
-    #ff9ff3,
-    #ff6b6b
-  );
-  background-size: 200% auto;
-  color: transparent;
-  -webkit-background-clip: text;
-  background-clip: text;
-  animation: shine 3s linear infinite;
-  font-weight: 800;
-  padding: 0 2px;
-}
-
-@keyframes shine {
-  to {
-    background-position: 200% center;
-  }
+.animate-shooting-star {
+  animation: shooting-star linear infinite;
 }

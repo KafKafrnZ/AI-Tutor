@@ -1,114 +1,133 @@
 "use client";
 
-import { useState, useEffect } from 'react';
-import { useRouter, usePathname } from 'next/navigation';
-import Link from 'next/link';
-import { Menu, X, Home, Bot, BookOpen, TestTube, BarChart3, LogOut, Trophy } from 'lucide-react';
-import { Button } from "@/components/ui/button";
+import { useState, useEffect } from "react";
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
+import { motion } from "framer-motion";
+import { 
+  LayoutDashboard, Bot, Target, FileText, TrendingUp, LogOut, User, Sparkles, MoreVertical, ChevronRight, AlertTriangle
+} from "lucide-react";
+
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger, 
+} from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 const navItems = [
-  { href: '/dashboard', label: 'Dashboard', icon: Home },
-  { href: '/tutor', label: 'AI Tutor', icon: Bot },
-  { href: '/practice', label: 'Practice', icon: BookOpen },
-  { href: '/mock-tests', label: 'Mock Tests', icon: TestTube },
-  { href: '/progress', label: 'Progress', icon: BarChart3 },
+  { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+  { name: "AI Tutor", href: "/tutor", icon: Bot },
+  { name: "Practice", href: "/practice", icon: Target },
+  { name: "Mock Tests", href: "/mock-tests", icon: FileText },
+  { name: "Progress", href: "/progress", icon: TrendingUp },
+  { name: "Mistake Locker", href: "/error-log", icon: AlertTriangle },
 ];
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
-  const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [user, setUser] = useState<{ name: string } | null>(null);
-  const [isMounted, setIsMounted] = useState(false);
-  const router = useRouter();
   const pathname = usePathname();
-
-  // Hide sidebar on public pages including the Landing Page ('/')
-  const isPublicPage = pathname === '/' || pathname === '/login' || pathname === '/signup';
+  const router = useRouter();
+  const [userName, setUserName] = useState("Student");
 
   useEffect(() => {
-    setIsMounted(true);
-    const token = localStorage.getItem('token');
-    const name = localStorage.getItem('userName');
-    
-    if (!token && !isPublicPage) {
-      router.replace('/login');
-    } else {
-      setUser({ name: name || 'Student' });
-    }
-  }, [pathname, isPublicPage, router]);
+    const storedName = localStorage.getItem("userName");
+    if (storedName) setUserName(storedName);
+  }, []);
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('userName');
-    router.replace('/login');
+    localStorage.removeItem("token");
+    localStorage.removeItem("userName");
+    router.push("/login");
   };
 
-  if (!isMounted) return <div className="h-screen bg-zinc-950 flex items-center justify-center text-zinc-400">Loading...</div>;
-
-  if (isPublicPage) return <>{children}</>;
-
   return (
-    <div className="flex h-screen bg-zinc-950 overflow-hidden">
+    <div className="flex h-screen bg-[#09090b] text-zinc-200 font-sans overflow-hidden">
       
-      {/* --- SIDEBAR (Fixed with 'relative flex flex-col') --- */}
-      <div className={`relative flex flex-col border-r border-zinc-800 bg-zinc-950 transition-all duration-300 flex-shrink-0 ${sidebarOpen ? 'w-72' : 'w-20'}`}>
+      <aside className="w-64 border-r border-white/5 bg-zinc-950/80 backdrop-blur-xl flex flex-col shrink-0 z-20">
         
-        <div className="p-6 flex items-center gap-3 border-b border-zinc-800">
-          <div className="w-9 h-9 bg-gradient-to-br from-violet-500 to-indigo-600 rounded-2xl flex items-center justify-center shrink-0">
-            <Trophy className="w-5 h-5 text-white" />
-          </div>
-          {sidebarOpen && <span className="font-bold text-2xl tracking-tighter text-white">IBPS SO AI</span>}
+        <div className="h-16 flex items-center px-6 border-b border-white/5 shrink-0">
+          <Link href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity cursor-pointer group">
+            <div className="w-8 h-8 bg-gradient-to-br from-violet-600 to-fuchsia-600 rounded-lg flex items-center justify-center shadow-[0_0_15px_rgba(124,58,237,0.5)]">
+              <Sparkles className="w-4 h-4 text-white" />
+            </div>
+            <span className="text-xl font-bold text-white tracking-tight uppercase">IBPS SO AI</span>
+          </Link>
         </div>
 
-        <nav className="p-3 space-y-1 overflow-y-auto">
+        <nav className="flex-1 p-4 space-y-2 overflow-y-auto scrollbar-none">
           {navItems.map((item) => {
+            const isActive = pathname.startsWith(item.href);
             const Icon = item.icon;
-            const isActive = pathname === item.href;
+
             return (
-              <Link key={item.href} href={item.href}>
-                <div className={`group flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all duration-300 light-streak
-                  ${isActive ? 'bg-zinc-900 text-white shadow-lg' : 'text-zinc-400 hover:bg-zinc-900 hover:text-white'}`}>
-                  <Icon className="w-5 h-5 transition-transform group-hover:scale-110 shrink-0" />
-                  {sidebarOpen && <span className="font-medium truncate">{item.label}</span>}
+              <Link key={item.name} href={item.href}>
+                <div className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 group relative overflow-hidden ${
+                  isActive ? "bg-violet-600/10 text-white font-medium" : "text-zinc-400 hover:text-zinc-200"
+                }`}>
+                  <div className="absolute inset-0 bg-gradient-to-r from-violet-600/0 via-violet-600/5 to-violet-600/0 opacity-0 group-hover:opacity-100 -translate-x-full group-hover:translate-x-full transition-all duration-1000 pointer-events-none" />
+                  {isActive && (
+                    <>
+                      <motion.div layoutId="activeNav" className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-violet-500 rounded-r-full shadow-[0_0_15px_rgba(139,92,246,0.8)]" />
+                      <div className="absolute left-3 w-5 h-5 bg-violet-500/20 blur-lg rounded-full" />
+                    </>
+                  )}
+                  <Icon className={`w-5 h-5 transition-all duration-300 ${isActive ? "text-violet-400" : "group-hover:text-violet-400 group-hover:scale-110"}`} />
+                  <span className="text-[15px] relative z-10">{item.name}</span>
+                  {isActive && (
+                    <motion.div initial={{ opacity: 0, x: -5 }} animate={{ opacity: 1, x: 0 }} className="ml-auto">
+                      <ChevronRight className="w-4 h-4 text-violet-500/50" />
+                    </motion.div>
+                  )}
                 </div>
               </Link>
             );
           })}
         </nav>
 
-        {/* --- PROFILE BAR (Fixed with 'mt-auto') --- */}
-        <div className="mt-auto p-4 mb-4">
-          <div className="flex items-center gap-3 p-4 rounded-3xl bg-zinc-900 border border-zinc-800 overflow-hidden">
-            <Avatar className="h-9 w-9 shrink-0">
-              <AvatarFallback className="bg-violet-600 text-white font-semibold">
-                {user?.name?.[0] || 'S'}
-              </AvatarFallback>
-            </Avatar>
-            {sidebarOpen && (
-              <div className="flex-1 overflow-hidden">
-                <p className="font-semibold text-sm text-white truncate">{user?.name}</p>
-                <p className="text-xs text-zinc-500 truncate">Level 12 • 89% Accuracy</p>
+        <div className="p-4 border-t border-white/5 shrink-0">
+          <DropdownMenu>
+            <DropdownMenuTrigger className="w-full text-left bg-transparent border-none p-0 outline-none focus:outline-none">
+              <div className="flex items-center gap-3 p-2 rounded-xl hover:bg-white/5 cursor-pointer transition-colors group outline-none">
+                <Avatar className="w-10 h-10 border border-white/10 ring-2 ring-transparent group-hover:ring-violet-500/50 transition-all">
+                  <AvatarFallback className="bg-zinc-800 text-zinc-300 text-sm font-bold">
+                    {userName.substring(0, 2).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-bold text-white truncate">{userName}</p>
+                  <p className="text-[10px] text-zinc-500 uppercase tracking-widest font-semibold">Pro Member</p>
+                </div>
+                <MoreVertical className="w-4 h-4 text-zinc-500 group-hover:text-zinc-300 transition-colors" />
               </div>
-            )}
-            <Button variant="ghost" size="icon" onClick={handleLogout} className="shrink-0 text-zinc-400 hover:text-white">
-              <LogOut className="h-5 w-5" />
-            </Button>
-          </div>
+            </DropdownMenuTrigger>
+            
+            <DropdownMenuContent align="start" side="right" className="w-56 bg-zinc-950 border border-white/10 shadow-2xl rounded-2xl p-1.5 backdrop-blur-xl">
+              
+              {/* REPLACED DropdownMenuLabel with a standard div to bypass the crash */}
+              <div className="px-3 py-2 text-xs font-semibold tracking-wider text-muted-foreground uppercase">
+                Settings
+              </div>
+
+              <DropdownMenuSeparator className="bg-white/5" />
+              <DropdownMenuItem className="text-zinc-200 hover:bg-white/10 hover:text-white cursor-pointer rounded-xl py-3 transition-colors focus:bg-white/10 focus:text-white outline-none">
+                <User className="w-4 h-4 mr-3 text-zinc-400" />
+                Profile Details
+              </DropdownMenuItem>
+              <DropdownMenuSeparator className="bg-white/5" />
+              <DropdownMenuItem onClick={handleLogout} className="text-rose-400 hover:bg-rose-500/10 hover:text-rose-400 cursor-pointer rounded-xl py-3 transition-colors focus:bg-rose-500/10 focus:text-rose-400 outline-none">
+                <LogOut className="w-4 h-4 mr-3" />
+                Sign Out
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
+      </aside>
 
-      </div>
-
-      {/* --- MAIN CONTENT AREA --- */}
-      <div className="flex-1 flex flex-col min-w-0">
-        <header className="h-16 border-b border-zinc-800 bg-zinc-950/80 backdrop-blur-lg px-8 flex items-center justify-between">
-          <Button onClick={() => setSidebarOpen(!sidebarOpen)} variant="ghost" size="icon" className="text-zinc-400 hover:text-white">
-            {sidebarOpen ? <X /> : <Menu />}
-          </Button>
-        </header>
-        <main className="flex-1 overflow-auto bg-zinc-950">
+      <main className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
+        <div className="absolute top-0 left-0 w-[600px] h-[600px] bg-violet-600/5 rounded-full blur-[140px] pointer-events-none" />
+        <div className="absolute bottom-0 right-0 w-[400px] h-[400px] bg-fuchsia-600/5 rounded-full blur-[140px] pointer-events-none" />
+        <div className="flex-1 overflow-auto relative z-10 scrollbar-thin scrollbar-thumb-zinc-800">
           {children}
-        </main>
-      </div>
+        </div>
+      </main>
     </div>
   );
 }

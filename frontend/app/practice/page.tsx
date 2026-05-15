@@ -5,13 +5,22 @@ import { motion } from "framer-motion";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { Loader2, BookOpen, CheckCircle2, XCircle, ArrowLeft, Target, Sparkles } from 'lucide-react';
+import { Loader2, CheckCircle2, XCircle, ArrowLeft, Target, Sparkles } from 'lucide-react';
+import { useAppStore } from "@/store/useAppStore";
 
 export default function PracticePage() {
-  const [topic, setTopic] = useState('');
-  const [questions, setQuestions] = useState<any[]>([]);
+  // GLOBAL STATE
+  const { 
+    practiceTopic: topic, 
+    setPracticeTopic: setTopic,
+    practiceQuestions: questions, 
+    setPracticeQuestions: setQuestions,
+    practiceAnswers: selectedAnswers, 
+    setPracticeAnswers: setSelectedAnswers 
+  } = useAppStore();
+
+  // LOCAL STATE
   const [loading, setLoading] = useState(false);
-  const [selectedAnswers, setSelectedAnswers] = useState<Record<number, string>>({});
 
   const generateQuestions = async () => {
     if (!topic.trim()) {
@@ -26,7 +35,6 @@ export default function PracticePage() {
     try {
       const token = localStorage.getItem('token');
       
-      // We append a strict instruction to the topic so the backend LLM knows to generate 30 questions
       const enhancedTopic = `${topic}. Generate exactly 30 questions for this topic.`;
 
       const res = await fetch('http://127.0.0.1:8000/practice', {
@@ -70,11 +78,13 @@ export default function PracticePage() {
   };
 
   const handleOptionSelect = (questionIndex: number, option: string) => {
-    if (selectedAnswers[questionIndex]) return; 
-    setSelectedAnswers(prev => ({ ...prev, [questionIndex]: option }));
+    const currentAnswers = useAppStore.getState().practiceAnswers;
+    if (currentAnswers[questionIndex]) return; 
+    
+    // Safely append to the global state dict
+    setSelectedAnswers({ ...currentAnswers, [questionIndex]: option });
   };
 
-  // Helper functions for dynamic difficulty styling
   const getDifficultyHue = (difficulty: string) => {
     const diff = difficulty?.toLowerCase() || 'medium';
     if (diff === 'easy') return "border-emerald-500/40 shadow-[0_0_30px_rgba(16,185,129,0.1)]";
@@ -139,7 +149,7 @@ export default function PracticePage() {
 
               return (
                 <motion.div 
-                  initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}
+                  initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: Math.min(i * 0.1, 1) }}
                   key={i} 
                   className={`p-8 bg-zinc-900/50 backdrop-blur-sm border rounded-3xl transition-all duration-500 relative overflow-hidden ${getDifficultyHue(q.difficulty)}`}
                 >

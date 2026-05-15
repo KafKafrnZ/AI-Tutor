@@ -34,6 +34,33 @@ class MockTest(Base):
 
     user = relationship("User", back_populates="mock_tests")
 
+class MasterQuestion(Base):
+    __tablename__ = "master_questions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    test_id = Column(Integer, index=True) # E.g., 1 for "Mock Set 1"
+    section = Column(String) # Reasoning, Quant, English, IT
+    topic = Column(String) # Sub-topic
+    question_text = Column(String, nullable=False)
+    option_a = Column(String)
+    option_b = Column(String)
+    option_c = Column(String)
+    option_d = Column(String)
+    correct_answer = Column(String)
+    explanation = Column(String)
+
+# --- NEW: Error Log Schema ---
+class ErrorLog(Base):
+    __tablename__ = "error_logs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"))
+    question_text = Column(String)
+    user_answer = Column(String)
+    correct_answer = Column(String)
+    explanation = Column(String)
+    date_added = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
 def init_db():
     Base.metadata.create_all(bind=engine)
 
@@ -70,8 +97,8 @@ def save_mock_test(db: Session, user_id: int, data: dict):
             date=data.get("date"),
             test_name=data.get("test_name"),
             section=data.get("section"),
-            attempted=int(data.get("attempted", 0)), # Force integer
-            correct=int(data.get("correct", 0)),     # Force integer
+            attempted=int(data.get("attempted", 0)), 
+            correct=int(data.get("correct", 0)),     
             time_taken=float(data.get("time_taken", 0.0))
         )
         db.add(mock_test)
@@ -82,3 +109,18 @@ def save_mock_test(db: Session, user_id: int, data: dict):
         db.rollback()
         print(f"Save mock test error: {e}")
         return None
+
+def get_questions_for_test(db: Session, test_id: int):
+    return db.query(MasterQuestion).filter(MasterQuestion.test_id == test_id).all()
+
+# --- NEW: Retrieve & Save Errors Helper ---
+def save_error_log(db: Session, user_id: int, error_data: dict):
+    error_entry = ErrorLog(
+        user_id=user_id,
+        question_text=error_data.get("question_text"),
+        user_answer=error_data.get("user_answer"),
+        correct_answer=error_data.get("correct_answer"),
+        explanation=error_data.get("explanation")
+    )
+    db.add(error_entry)
+    db.commit()
