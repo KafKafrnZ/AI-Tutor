@@ -18,6 +18,12 @@ import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from app.core.config import settings
 from app.core.error_handler import validation_exception_handler, sqlalchemy_exception_handler, general_exception_handler
+
+from sse_starlette.sse import EventSourceResponse
+from langchain_core.messages import HumanMessage
+import json
+from app.agent import tutor_graph # Imports the graph we just made
+from pydantic import BaseModel
 # Updated import to include ErrorLog and save_error_log
 from app.models.database import create_user, get_user_by_email, get_db, save_mock_test, get_questions_for_test, save_error_log, ErrorLog, init_db
 from app.core.auth import hash_password, verify_password, create_token, verify_token
@@ -88,6 +94,34 @@ class LoginRequest(BaseModel):
 class AskRequest(BaseModel):
     question: str
     context: str = ""
+
+@app.post("/ask/stream")
+async def ask_tutor_stream(request: AskRequest):
+    async def event_generator():
+        initial_state = {"messages": [HumanMessage(content=request.question)]}
+        
+        async for event in tutor_graph.astream(initial_state):
+            for agent_name, agent_output in event.items():
+                
+                # If it's a thinking agent, broadcast their actual conversation
+                if agent_name in ["supervisor", "expert"]:
+                    display_name = "Supervisor (Router)" if agent_name == "supervisor" else "Domain Expert"
+                    thought_data = {
+                        "type": "thought",
+                        "agent": display_name,
+                        "message": agent_output.get("thought_log", "Processing...")
+                    }
+                    yield json.dumps(thought_data)
+
+                # If it's the final compiler, broadcast the answer
+                if agent_name == "compiler":
+                    final_data = {
+                        "type": "result",
+                        "answer": agent_output["final_answer"]
+                    }
+                    yield json.dumps(final_data)
+                    
+    return EventSourceResponse(event_generator())
 
 class PracticeRequest(BaseModel):
     topic: str

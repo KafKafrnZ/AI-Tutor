@@ -39,9 +39,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <div className="flex h-screen bg-[#09090b] text-zinc-200 font-sans overflow-hidden">
+    <div className="flex h-screen bg-[#09090b] text-zinc-200 font-sans overflow-hidden relative">
       
-      <aside className="w-64 border-r border-white/5 bg-zinc-950/80 backdrop-blur-xl flex flex-col shrink-0 z-20">
+      {/* SIDEBAR: Now an absolute, ultra-glassy floating panel */}
+      <aside className="absolute inset-y-0 left-0 w-64 border-r border-white/5 bg-black/20 backdrop-blur-2xl flex flex-col shrink-0 z-50">
         
         <div className="h-16 flex items-center px-6 border-b border-white/5 shrink-0">
           <Link href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity cursor-pointer group">
@@ -60,13 +61,13 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             return (
               <Link key={item.name} href={item.href}>
                 <div className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 group relative overflow-hidden ${
-                  isActive ? "bg-violet-600/10 text-white font-medium" : "text-zinc-400 hover:text-zinc-200"
+                  isActive ? "bg-violet-600/20 border border-violet-500/20 text-white font-medium" : "text-zinc-400 hover:text-zinc-200 hover:bg-white/5"
                 }`}>
-                  <div className="absolute inset-0 bg-gradient-to-r from-violet-600/0 via-violet-600/5 to-violet-600/0 opacity-0 group-hover:opacity-100 -translate-x-full group-hover:translate-x-full transition-all duration-1000 pointer-events-none" />
+                  <div className="absolute inset-0 bg-gradient-to-r from-violet-600/0 via-violet-600/10 to-violet-600/0 opacity-0 group-hover:opacity-100 -translate-x-full group-hover:translate-x-full transition-all duration-1000 pointer-events-none" />
                   {isActive && (
                     <>
                       <motion.div layoutId="activeNav" className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-violet-500 rounded-r-full shadow-[0_0_15px_rgba(139,92,246,0.8)]" />
-                      <div className="absolute left-3 w-5 h-5 bg-violet-500/20 blur-lg rounded-full" />
+                      <div className="absolute left-3 w-5 h-5 bg-violet-500/30 blur-lg rounded-full" />
                     </>
                   )}
                   <Icon className={`w-5 h-5 transition-all duration-300 ${isActive ? "text-violet-400" : "group-hover:text-violet-400 group-hover:scale-110"}`} />
@@ -85,7 +86,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <div className="p-4 border-t border-white/5 shrink-0">
           <DropdownMenu>
             <DropdownMenuTrigger className="w-full text-left bg-transparent border-none p-0 outline-none focus:outline-none">
-              <div className="flex items-center gap-3 p-2 rounded-xl hover:bg-white/5 cursor-pointer transition-colors group outline-none">
+              <div className="flex items-center gap-3 p-2 rounded-xl hover:bg-white/10 cursor-pointer transition-colors group outline-none">
                 <Avatar className="w-10 h-10 border border-white/10 ring-2 ring-transparent group-hover:ring-violet-500/50 transition-all">
                   <AvatarFallback className="bg-zinc-800 text-zinc-300 text-sm font-bold">
                     {userName.substring(0, 2).toUpperCase()}
@@ -93,26 +94,23 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 </Avatar>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-bold text-white truncate">{userName}</p>
-                  <p className="text-[10px] text-zinc-500 uppercase tracking-widest font-semibold">Pro Member</p>
+                  <p className="text-[10px] text-zinc-400 uppercase tracking-widest font-semibold">Pro Member</p>
                 </div>
-                <MoreVertical className="w-4 h-4 text-zinc-500 group-hover:text-zinc-300 transition-colors" />
+                <MoreVertical className="w-4 h-4 text-zinc-400 group-hover:text-white transition-colors" />
               </div>
             </DropdownMenuTrigger>
             
-            <DropdownMenuContent align="start" side="right" className="w-56 bg-zinc-950 border border-white/10 shadow-2xl rounded-2xl p-1.5 backdrop-blur-xl">
-              
-              {/* REPLACED DropdownMenuLabel with a standard div to bypass the crash */}
+            <DropdownMenuContent align="start" side="right" className="w-56 bg-zinc-950/90 border border-white/10 shadow-2xl rounded-2xl p-1.5 backdrop-blur-xl">
               <div className="px-3 py-2 text-xs font-semibold tracking-wider text-muted-foreground uppercase">
                 Settings
               </div>
-
               <DropdownMenuSeparator className="bg-white/5" />
-              <DropdownMenuItem className="text-zinc-200 hover:bg-white/10 hover:text-white cursor-pointer rounded-xl py-3 transition-colors focus:bg-white/10 focus:text-white outline-none">
+              <DropdownMenuItem className="text-zinc-200 hover:bg-white/10 hover:text-white cursor-pointer rounded-xl py-3 transition-colors outline-none">
                 <User className="w-4 h-4 mr-3 text-zinc-400" />
                 Profile Details
               </DropdownMenuItem>
               <DropdownMenuSeparator className="bg-white/5" />
-              <DropdownMenuItem onClick={handleLogout} className="text-rose-400 hover:bg-rose-500/10 hover:text-rose-400 cursor-pointer rounded-xl py-3 transition-colors focus:bg-rose-500/10 focus:text-rose-400 outline-none">
+              <DropdownMenuItem onClick={handleLogout} className="text-rose-400 hover:bg-rose-500/10 hover:text-rose-400 cursor-pointer rounded-xl py-3 transition-colors outline-none">
                 <LogOut className="w-4 h-4 mr-3" />
                 Sign Out
               </DropdownMenuItem>
@@ -121,9 +119,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         </div>
       </aside>
 
-      <main className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
-        <div className="absolute top-0 left-0 w-[600px] h-[600px] bg-violet-600/5 rounded-full blur-[140px] pointer-events-none" />
-        <div className="absolute bottom-0 right-0 w-[400px] h-[400px] bg-fuchsia-600/5 rounded-full blur-[140px] pointer-events-none" />
+      {/* MAIN CONTENT: Full width, padded left to stay out from under the sidebar text */}
+      <main className="flex-1 flex flex-col min-w-0 overflow-hidden relative w-full h-full pl-64">
+        {/* Ambient Noise Layer */}
+        <div className="absolute inset-0 z-0 bg-noise opacity-50 pointer-events-none" />
+
+        {/* The Content */}
         <div className="flex-1 overflow-auto relative z-10 scrollbar-thin scrollbar-thumb-zinc-800">
           {children}
         </div>

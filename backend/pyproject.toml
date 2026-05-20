@@ -21,6 +21,10 @@ dependencies = [
     "numpy>=1.26.0",
     "requests>=2.32.0",
     "structlog>=24.4.0",                 # better logging
+    "sse-starlette>=3.4.4",
+    "langchain-core>=1.4.0",
+    "langgraph>=1.2.0",
+    "langchain-groq>=1.1.2",
 ]
 
 [project.optional-dependencies]
@@ -33,7 +37,7 @@ dev = [
     "pip-audit>=2.7.0",
 ]
 
-[tool.uv]
+[dependency-groups]
 dev-dependencies = ["ibps-so-ai[dev]"]
 
 [tool.black]

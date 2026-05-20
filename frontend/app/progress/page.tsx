@@ -2,115 +2,111 @@
 
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
+import { ArrowLeft, TrendingUp, BarChart3, Target, AlertCircle } from "lucide-react";
 import Link from "next/link";
-import { ArrowLeft, BarChart3, Target, TrendingUp, Clock, AlertCircle, BrainCircuit } from "lucide-react";
-import { Radar, RadarChart, PolarGrid, PolarAngleAxis, ResponsiveContainer, Tooltip } from "recharts";
-
-const radarData = [
-  { subject: 'IT Knowledge', score: 85, fullMark: 100 },
-  { subject: 'Reasoning', score: 65, fullMark: 100 },
-  { subject: 'Quant', score: 45, fullMark: 100 },
-  { subject: 'English', score: 90, fullMark: 100 },
-  { subject: 'Gen. Awareness', score: 70, fullMark: 100 },
-];
 
 export default function ProgressPage() {
   const [stats, setStats] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
+  const [authError, setAuthError] = useState(false);
 
   useEffect(() => {
     const fetchStats = async () => {
+      const token = localStorage.getItem("token");
+      
+      if (!token) {
+        console.warn("No token found. User needs to log in.");
+        setAuthError(true);
+        setIsLoading(false);
+        return;
+      }
+
       try {
-        const token = localStorage.getItem("token");
-        const res = await fetch("http://127.0.0.1:8000/stats", { headers: { "Authorization": `Bearer ${token}` } });
-        if (res.ok) setStats(await res.json());
+        const response = await fetch("http://127.0.0.1:8000/stats", {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}` // The VIP Pass
+          }
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          setStats(data);
+          setAuthError(false);
+        } else {
+          console.error("Failed to authenticate with backend. Status:", response.status);
+          setAuthError(true);
+        }
       } catch (error) {
-        console.error(error);
+        console.error("Error fetching stats:", error);
       } finally {
-        setLoading(false);
+        setIsLoading(false);
       }
     };
+
     fetchStats();
   }, []);
 
   return (
-    <div className="min-h-[calc(100vh-4rem)] flex flex-col bg-[#09090b]">
-      <div className="h-16 flex items-center px-6 border-b border-white/5 shrink-0 bg-zinc-950/50 backdrop-blur-md sticky top-0 z-10">
-        <Link href="/dashboard" className="flex items-center gap-2 text-zinc-400 hover:text-white transition-colors group">
-          <div className="p-2 rounded-full group-hover:bg-zinc-800 transition-colors"><ArrowLeft className="w-4 h-4" /></div>
-          <span className="font-medium text-sm">Dashboard</span>
-        </Link>
-      </div>
-
-      <div className="flex-1 overflow-y-auto p-8">
-        <div className="max-w-6xl mx-auto">
-          <div className="flex items-center gap-4 mb-12">
-            <div className="w-12 h-12 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-cyan-900/20"><BarChart3 className="w-6 h-6 text-white" /></div>
-            <div>
-              <h1 className="text-3xl font-bold text-white tracking-tight">Your Progress</h1>
-              <p className="text-zinc-400 mt-1">Real-time performance analytics across all subjects.</p>
-            </div>
-          </div>
-
-          {loading ? (
-            <div className="animate-pulse space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="h-40 bg-zinc-900/80 rounded-3xl border border-white/5"></div>
-                <div className="h-40 bg-zinc-900/80 rounded-3xl border border-white/5"></div>
-                <div className="h-40 bg-zinc-900/80 rounded-3xl border border-white/5"></div>
-              </div>
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div className="h-96 bg-zinc-900/80 rounded-3xl border border-white/5"></div>
-                <div className="h-96 bg-zinc-900/80 rounded-3xl border border-white/5"></div>
-              </div>
-            </div>
-          ) : (
-            <>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-zinc-900/50 border border-white/5 rounded-3xl p-6">
-                  <div className="flex justify-between items-start mb-4"><span className="text-zinc-400 font-medium">Overall Accuracy</span><Target className="w-5 h-5 text-emerald-400" /></div>
-                  <div className="text-5xl font-bold text-white tracking-tight">{stats?.stats?.avg_accuracy || 0}<span className="text-3xl text-emerald-400">%</span></div>
-                </motion.div>
-                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="bg-zinc-900/50 border border-white/5 rounded-3xl p-6">
-                  <div className="flex justify-between items-start mb-4"><span className="text-zinc-400 font-medium">Total Tests Taken</span><TrendingUp className="w-5 h-5 text-violet-400" /></div>
-                  <div className="text-5xl font-bold text-white tracking-tight">{stats?.stats?.total_tests || 0}</div>
-                </motion.div>
-                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="bg-zinc-900/50 border border-white/5 rounded-3xl p-6">
-                  <div className="flex justify-between items-start mb-4"><span className="text-zinc-400 font-medium">Data Status</span><Clock className="w-5 h-5 text-cyan-400" /></div>
-                  <div className="text-2xl font-bold text-white tracking-tight pt-2">{stats?.stats?.total_tests > 0 ? "Active" : "No Tests Yet"}</div>
-                </motion.div>
-              </div>
-
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="bg-zinc-900/50 border border-white/5 rounded-3xl p-8 flex flex-col">
-                  <div className="flex items-center gap-3 mb-6"><BrainCircuit className="w-5 h-5 text-fuchsia-400" /><h2 className="text-xl font-bold text-white">Skill Heatmap</h2></div>
-                  <p className="text-sm text-zinc-400 mb-4">Visual representation of your strong and weak domains.</p>
-                  <div className="flex-1 w-full">
-                    <ResponsiveContainer width="100%" height={300}>
-                      <RadarChart cx="50%" cy="50%" outerRadius="75%" data={radarData}>
-                        <PolarGrid stroke="#3f3f46" />
-                        <PolarAngleAxis dataKey="subject" tick={{ fill: '#a1a1aa', fontSize: 12, fontWeight: 500 }} />
-                        <Tooltip contentStyle={{ backgroundColor: '#18181b', border: '1px solid #3f3f46', borderRadius: '12px', color: '#fff' }} itemStyle={{ color: '#c084fc', fontWeight: 'bold' }} />
-                        <Radar name="Accuracy %" dataKey="score" stroke="#c084fc" strokeWidth={2} fill="#c084fc" fillOpacity={0.3} />
-                      </RadarChart>
-                    </ResponsiveContainer>
-                  </div>
-                </motion.div>
-
-                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} className="bg-zinc-900/50 border border-white/5 rounded-3xl p-8">
-                  <div className="flex items-center gap-3 mb-8"><AlertCircle className="w-5 h-5 text-rose-400" /><h2 className="text-xl font-bold text-white">Priority Focus Areas</h2></div>
-                  <div className="space-y-6">
-                    {typeof stats?.weak_areas === 'string' ? (
-                       <p className="text-zinc-400">{stats.weak_areas}</p>
-                    ) : (
-                       <p className="text-zinc-400">Analytics engine active. Based on your recent mocks, you should focus your practice sessions on <strong className="text-rose-400">Quant</strong> to improve your overall percentile.</p>
-                    )}
-                  </div>
-                </motion.div>
-              </div>
-            </>
-          )}
+    <div className="min-h-screen bg-[#09090b] text-zinc-200 p-6 md:p-12 relative z-10">
+      <div className="max-w-5xl mx-auto">
+        
+        {/* Header */}
+        <div className="flex items-center gap-4 mb-8">
+          <Link href="/dashboard" className="p-2 rounded-full hover:bg-zinc-800 transition-colors text-zinc-400 hover:text-white">
+            <ArrowLeft className="w-5 h-5" />
+          </Link>
+          <h1 className="text-3xl font-bold text-white flex items-center gap-3">
+            Your Progress
+          </h1>
         </div>
+
+        {/* Content */}
+        {isLoading ? (
+          <div className="flex justify-center py-20">
+            <div className="w-8 h-8 border-4 border-violet-500 border-t-transparent rounded-full animate-spin"></div>
+          </div>
+        ) : authError ? (
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-zinc-900/50 border border-white/5 rounded-2xl p-12 shadow-xl backdrop-blur-sm flex flex-col items-center text-center">
+              <div className="w-16 h-16 bg-red-500/10 text-red-400 rounded-full flex items-center justify-center mb-4">
+                <AlertCircle className="w-8 h-8" />
+              </div>
+              <h2 className="text-xl font-bold text-white mb-2">Authentication Failed</h2>
+              <p className="text-zinc-500 mb-6">Your session has expired or is invalid.</p>
+              <Link href="/login" className="px-6 py-2 bg-white text-black rounded-full font-medium hover:bg-zinc-200 transition-colors">
+                 Log In Again
+              </Link>
+            </motion.div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-zinc-900/50 border border-white/5 rounded-2xl p-6 shadow-lg backdrop-blur-sm">
+              <div className="flex items-center gap-3 mb-4 text-emerald-400">
+                <Target className="w-5 h-5" />
+                <h2 className="font-bold">Overall Accuracy</h2>
+              </div>
+              <p className="text-4xl font-extrabold text-white">{stats?.accuracy || "0"}%</p>
+            </motion.div>
+
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="bg-zinc-900/50 border border-white/5 rounded-2xl p-6 shadow-lg backdrop-blur-sm">
+              <div className="flex items-center gap-3 mb-4 text-fuchsia-400">
+                <BarChart3 className="w-5 h-5" />
+                <h2 className="font-bold">Tests Taken</h2>
+              </div>
+              <p className="text-4xl font-extrabold text-white">{stats?.testsTaken || "0"}</p>
+            </motion.div>
+
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="bg-zinc-900/50 border border-white/5 rounded-2xl p-6 shadow-lg backdrop-blur-sm">
+              <div className="flex items-center gap-3 mb-4 text-blue-400">
+                <TrendingUp className="w-5 h-5" />
+                <h2 className="font-bold">Data Status</h2>
+              </div>
+              <p className="text-xl font-bold text-white">Active & Syncing</p>
+            </motion.div>
+
+          </div>
+        )}
       </div>
     </div>
   );

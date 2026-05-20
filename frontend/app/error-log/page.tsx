@@ -2,104 +2,106 @@
 
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
+import { ArrowLeft, AlertCircle, RefreshCcw } from "lucide-react";
 import Link from "next/link";
-import { ArrowLeft, AlertTriangle, CheckCircle2, XCircle, Brain } from "lucide-react";
 
 export default function ErrorLogPage() {
   const [errors, setErrors] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
+  const [authError, setAuthError] = useState(false); // Track auth issues
 
   useEffect(() => {
-    const fetchErrors = async () => {
+    const fetchErrorLog = async () => {
+      const token = localStorage.getItem("token");
+      
+      if (!token) {
+        console.warn("No token found. User needs to log in.");
+        setAuthError(true);
+        setIsLoading(false);
+        return;
+      }
+
       try {
-        const token = localStorage.getItem("token");
-        const res = await fetch("http://127.0.0.1:8000/error-log", {
-          headers: { "Authorization": `Bearer ${token}` }
+        const response = await fetch("http://127.0.0.1:8000/error-log", {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}` // The VIP Pass
+          }
         });
-        if (res.ok) {
-          const data = await res.json();
+
+        if (response.ok) {
+          const data = await response.json();
           setErrors(data);
+          setAuthError(false);
+        } else {
+          console.error("Failed to authenticate with backend. Status:", response.status);
+          setAuthError(true);
         }
-      } catch (err) {
-        console.error(err);
+      } catch (error) {
+        console.error("Error fetching error log:", error);
       } finally {
-        setLoading(false);
+        setIsLoading(false);
       }
     };
-    fetchErrors();
+
+    fetchErrorLog();
   }, []);
 
   return (
-    <div className="min-h-[calc(100vh-4rem)] flex flex-col bg-[#09090b]">
-      {/* Header */}
-      <div className="h-16 flex items-center px-6 border-b border-white/5 shrink-0 bg-zinc-950/50 backdrop-blur-md sticky top-0 z-10">
-        <Link href="/progress" className="flex items-center gap-2 text-zinc-400 hover:text-white transition-colors group">
-          <div className="p-2 rounded-full group-hover:bg-zinc-800 transition-colors">
-            <ArrowLeft className="w-4 h-4" />
-          </div>
-          <span className="font-medium text-sm">Back to Progress</span>
-        </Link>
-      </div>
+    <div className="min-h-screen bg-[#09090b] text-zinc-200 p-6 md:p-12 relative z-10">
+      <div className="max-w-4xl mx-auto">
+        
+        {/* Header */}
+        <div className="flex items-center gap-4 mb-8">
+          <Link href="/dashboard" className="p-2 rounded-full hover:bg-zinc-800 transition-colors text-zinc-400 hover:text-white">
+            <ArrowLeft className="w-5 h-5" />
+          </Link>
+          <h1 className="text-3xl font-bold text-white flex items-center gap-3">
+            Mistake Locker
+          </h1>
+        </div>
 
-      <div className="flex-1 overflow-y-auto p-8">
-        <div className="max-w-4xl mx-auto">
-          
-          <div className="flex items-center gap-4 mb-10">
-            <div className="w-14 h-14 bg-rose-500/10 rounded-2xl flex items-center justify-center border border-rose-500/20 shadow-[0_0_20px_rgba(244,63,113,0.15)]">
-              <AlertTriangle className="w-7 h-7 text-rose-500" />
+        {/* Content */}
+        <motion.div 
+          initial={{ opacity: 0, y: 10 }} 
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-zinc-900/50 border border-white/5 rounded-2xl p-8 shadow-xl backdrop-blur-sm"
+        >
+          {isLoading ? (
+            <div className="flex flex-col items-center justify-center py-12 text-zinc-500">
+              <RefreshCcw className="w-8 h-8 animate-spin mb-4 text-violet-500" />
+              <p>Decrypting your logs...</p>
             </div>
-            <div>
-              <h1 className="text-3xl font-bold text-white tracking-tight">Mistake Locker</h1>
-              <p className="text-zinc-400 mt-1">Review your incorrect answers and learn from them.</p>
+          ) : authError ? (
+            <div className="flex flex-col items-center justify-center py-16 text-center">
+              <div className="w-16 h-16 bg-red-500/10 text-red-400 rounded-full flex items-center justify-center mb-4">
+                <AlertCircle className="w-8 h-8" />
+              </div>
+              <h2 className="text-xl font-bold text-white mb-2">Authentication Failed</h2>
+              <p className="text-zinc-500 mb-6">Your session has expired or is invalid.</p>
+              <Link href="/login" className="px-6 py-2 bg-white text-black rounded-full font-medium hover:bg-zinc-200 transition-colors">
+                 Log In Again
+              </Link>
             </div>
-          </div>
-
-          {loading ? (
-            <div className="text-center text-zinc-500 mt-20 animate-pulse">Loading your history...</div>
-          ) : errors.length === 0 ? (
-            <div className="text-center mt-20 bg-zinc-900/50 border border-white/5 p-10 rounded-3xl">
-              <CheckCircle2 className="w-12 h-12 text-emerald-500 mx-auto mb-4" />
-              <h2 className="text-xl font-bold text-white mb-2">No mistakes found!</h2>
-              <p className="text-zinc-400">Take a mock test. Any questions you get wrong will appear here.</p>
-            </div>
-          ) : (
-            <div className="space-y-6">
-              {errors.map((err, i) => (
-                <motion.div 
-                  initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
-                  key={err.id} 
-                  className="p-6 bg-zinc-900/50 border border-white/5 rounded-3xl"
-                >
-                  <p className="text-lg text-white font-medium leading-relaxed mb-6">{err.question_text}</p>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                    <div className="p-4 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-start gap-3">
-                      <XCircle className="w-5 h-5 text-rose-500 shrink-0 mt-0.5" />
-                      <div>
-                        <span className="text-[11px] font-bold text-rose-500/70 uppercase tracking-wider block mb-1">You Answered</span>
-                        <span className="text-rose-200 font-medium">{err.user_answer || "Skipped"}</span>
-                      </div>
-                    </div>
-                    
-                    <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-start gap-3">
-                      <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0 mt-0.5" />
-                      <div>
-                        <span className="text-[11px] font-bold text-emerald-500/70 uppercase tracking-wider block mb-1">Correct Answer</span>
-                        <span className="text-emerald-200 font-medium">{err.correct_answer}</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="pt-5 border-t border-white/5 flex gap-3 items-start">
-                    <Brain className="w-5 h-5 text-violet-400 shrink-0 mt-0.5" />
-                    <p className="text-sm text-zinc-300 leading-relaxed"><span className="font-bold text-violet-400">Explanation:</span> {err.explanation}</p>
-                  </div>
-                </motion.div>
+          ) : errors.length > 0 ? (
+            <div className="space-y-4">
+              {errors.map((err, idx) => (
+                <div key={idx} className="p-4 bg-zinc-950/50 border border-white/5 rounded-xl">
+                  <p className="text-sm text-zinc-400">{err.message || "Unknown error logged."}</p>
+                </div>
               ))}
             </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center py-16 text-center">
+              <div className="w-16 h-16 bg-emerald-500/10 text-emerald-400 rounded-full flex items-center justify-center mb-4">
+                <AlertCircle className="w-8 h-8" />
+              </div>
+              <h2 className="text-xl font-bold text-white mb-2">No mistakes found!</h2>
+              <p className="text-zinc-500">Take a mock test. Any questions you get wrong will appear here so the AI can tutor you on them.</p>
+            </div>
           )}
-
-        </div>
+        </motion.div>
       </div>
     </div>
   );
