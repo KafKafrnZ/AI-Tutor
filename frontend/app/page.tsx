@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import BlackholeBackground from "@/components/Blackhole";
+import BlackholeBackground from "@/components/ui/Blackhole";
 import Link from "next/link";
 import { Sparkles } from "lucide-react";
 import { useEffect, useState } from "react";
