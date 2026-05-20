@@ -24,6 +24,11 @@ export default function LandingPage() {
   return (
     <main className="min-h-screen bg-[#09090b] flex flex-col items-center justify-center relative overflow-hidden font-sans">
       
+      {/* RENDER THE BLACKHOLE BACKGROUND HERE */}
+      <div className="absolute inset-0 z-0">
+        <BlackholeBackground />
+      </div>
+
       {/* Background Glows */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-violet-600/20 rounded-full blur-[120px] pointer-events-none" />
       <div className="absolute bottom-0 right-0 w-[600px] h-[400px] bg-fuchsia-600/10 rounded-full blur-[120px] pointer-events-none" />
