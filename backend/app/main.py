@@ -27,7 +27,8 @@ from app.models.database import create_user, get_user_by_email, get_db, save_moc
 from app.core.auth import hash_password, verify_password, create_token, verify_token
 from app.schemas.mock_test import MockTestCreate
 
-from modules.data_analyzer import load_data, calculate_accuracy, get_overall_stats, get_weak_areas
+# --- UPDATED IMPORT ---
+from modules.data_analyzer import load_data, calculate_accuracy, get_overall_stats, get_weak_areas, get_ai_revision_plan
 from modules.tutor import ask_tutor, generate_questions, evaluate_answer
 
 # --- MODERN ASYNC LIFESPAN MANAGER ---
@@ -123,7 +124,6 @@ def login(data: LoginRequest, db: Session = Depends(get_db)):
         raise HTTPException(401, "Invalid credentials")
     return {"token": create_token({"sub": user.email}), "name": user.name}
 
-# UPGRADED TO NON-BLOCKING ASYNC HANDLER
 @app.post("/ask")
 async def ask_ai(data: AskRequest, current_user: Any = Depends(get_current_user)):
     answer = await ask_tutor(data.question, data.context)
@@ -136,7 +136,6 @@ async def ask_tutor_stream(request: AskRequest):
         
         async for event in tutor_graph.astream(initial_state):
             for agent_name, agent_output in event.items():
-                # If it's a thinking agent, broadcast their actual conversation
                 if agent_name in ["supervisor", "expert"]:
                     display_name = "Supervisor (Router)" if agent_name == "supervisor" else "Domain Expert"
                     thought_data = {
@@ -146,7 +145,6 @@ async def ask_tutor_stream(request: AskRequest):
                     }
                     yield json.dumps(thought_data)
 
-                # If it's the final compiler, broadcast the answer
                 if agent_name == "compiler":
                     final_data = {
                         "type": "result",
@@ -156,13 +154,11 @@ async def ask_tutor_stream(request: AskRequest):
                     
     return EventSourceResponse(event_generator())
 
-# UPGRADED TO NON-BLOCKING ASYNC HANDLER WITH CLEAN EXTRACTION
 @app.post("/practice")
 async def practice_ai(data: PracticeRequest, current_user: Any = Depends(get_current_user)):
     generated_data = await generate_questions(data.topic)
     raw_result = generated_data.strip()
     
-    # Strip markdown wrappers
     if "```" in raw_result:
         parts = raw_result.split("```")
         raw_result = parts[1] if len(parts) > 1 else raw_result
@@ -205,6 +201,13 @@ def stats(db: Session = Depends(get_db), current_user: Any = Depends(get_current
         "recent_tests": df.tail(5).to_dict(orient="records") if not df.empty else [],
         "weak_areas": get_weak_areas(df).to_dict() if hasattr(get_weak_areas(df), "to_dict") else str(get_weak_areas(df))
     }
+
+# --- NEW ROUTE FOR AI REVISION PLAN ---
+@app.get("/revision-plan")
+async def revision_plan(db: Session = Depends(get_db), current_user: Any = Depends(get_current_user)):
+    """Fetches the AI-generated study plan based on recent mistakes."""
+    plan = await get_ai_revision_plan(db, current_user.id)
+    return plan
 
 @app.post("/save-errors")
 def save_errors(payload: ErrorPayload, db: Session = Depends(get_db), current_user: Any = Depends(get_current_user)):
