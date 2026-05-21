@@ -1,6 +1,8 @@
-import requests
+import httpx
 import os
 import json
+import asyncio
+from typing import AsyncGenerator
 
 # ====================== CONFIG ======================
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
@@ -12,7 +14,7 @@ LOCAL_MODEL = "phi3"
 
 # ====================== CORE PROMPTS ======================
 
-def ask_tutor(question: str, context: str = ""):
+async def ask_tutor(question: str, context: str = "") -> str:
     system_prompt = f"""You are **IBPS SO AI Tutor** — an elite, patient, and highly knowledgeable government exam mentor.
 You teach like the best coaching faculty in India.
 
@@ -37,16 +39,23 @@ Context from Previous Year Questions:
 Student Question: {question}
 """
 
-    # Try Cloud first
-    result = run_cloud_model(system_prompt, temperature=0.3)
+    # Try Cloud first (non-blocking)
+    result = await run_cloud_model(system_prompt, temperature=0.3)
     
     if "Cloud Engine Error" in result or len(result) < 50:
         print("⚠️ Cloud failed → Falling back to Local (Ollama)")
-        result = run_local_model(system_prompt, temperature=0.4)
+        result = await run_local_model(system_prompt, temperature=0.4)
     
     return result
 
-def evaluate_answer(question: str, student_answer: str, context: str = ""):
+async def ask_tutor_stream(question: str, context: str = "") -> AsyncGenerator[str, None]:
+    """Asynchronous generator that yields tokens in real-time for SSE streaming."""
+    system_prompt = f"You are IBPS SO AI Tutor. Context: {context}\nQuestion: {question}"
+    
+    async for token in run_cloud_model_stream(system_prompt, temperature=0.3):
+        yield token
+
+async def evaluate_answer(question: str, student_answer: str, context: str = "") -> str:
     system_prompt = f"""You are a strict but fair IBPS SO Examiner.
 
 **TASK**: Evaluate the student's answer with high precision.
@@ -64,9 +73,9 @@ Reference Context:
 Question: {question}
 Student Answer: {student_answer}
 """
-    return run_cloud_model(system_prompt, temperature=0.2)
+    return await run_cloud_model(system_prompt, temperature=0.2)
 
-def generate_questions(topic: str):
+async def generate_questions(topic: str) -> str:
     system_prompt = f"""You are a top IBPS SO trainer. Generate exactly 30 multiple-choice questions on "{topic}".
 
 Rules:
@@ -78,7 +87,7 @@ Rules:
 
 Output ONLY the raw JSON array. Any other text will crash the system."""
 
-    result = run_cloud_model(system_prompt, temperature=0.2, max_tokens=6000)
+    result = await run_cloud_model(system_prompt, temperature=0.2, max_tokens=6000)
     
     # Bulletproof JSON extraction
     cleaned = result.strip()
@@ -95,37 +104,75 @@ Output ONLY the raw JSON array. Any other text will crash the system."""
     return cleaned
 
 
-# ====================== ENGINE FUNCTIONS ======================
+# ====================== ASYNC ENGINE FUNCTIONS ======================
 
-def run_cloud_model(prompt: str, temperature: float = 0.25, max_tokens: int = 2048):
+async def run_cloud_model(prompt: str, temperature: float = 0.25, max_tokens: int = 2048) -> str:
     if not GROQ_API_KEY:
         return "Cloud Engine Error: GROQ_API_KEY is missing from .env"
     
-    try:
-        response = requests.post(
-            GROQ_URL,
-            headers={"Authorization": f"Bearer {GROQ_API_KEY}", "Content-Type": "application/json"},
-            json={
-                "model": CLOUD_MODEL,
-                "messages": [{"role": "user", "content": prompt}],
-                "temperature": temperature,
-                "max_tokens": max_tokens
-            },
-            timeout=75
-        )
-        response.raise_for_status()
-        return response.json()["choices"][0]["message"]["content"]
-    except Exception as e:
-        return f"Cloud Engine Error: {str(e)}"
+    async with httpx.AsyncClient() as client:
+        try:
+            response = await client.post(
+                GROQ_URL,
+                headers={"Authorization": f"Bearer {GROQ_API_KEY}", "Content-Type": "application/json"},
+                json={
+                    "model": CLOUD_MODEL,
+                    "messages": [{"role": "user", "content": prompt}],
+                    "temperature": temperature,
+                    "max_tokens": max_tokens
+                },
+                timeout=75.0
+            )
+            response.raise_for_status()
+            return response.json()["choices"][0]["message"]["content"]
+        except Exception as e:
+            return f"Cloud Engine Error: {str(e)}"
 
-def run_local_model(prompt: str, temperature=0.4):
-    try:
-        response = requests.post(
-            OLLAMA_URL,
-            json={"model": LOCAL_MODEL, "prompt": prompt, "stream": False, "temperature": temperature},
-            timeout=120
-        )
-        response.raise_for_status()
-        return response.json().get("response", "No response from local model.")
-    except Exception as e:
-        return f"Local Engine Error: {str(e)}"
+async def run_cloud_model_stream(prompt: str, temperature: float = 0.25, max_tokens: int = 2048) -> AsyncGenerator[str, None]:
+    if not GROQ_API_KEY:
+        yield "Cloud Engine Error: GROQ_API_KEY is missing from .env"
+        return
+
+    async with httpx.AsyncClient() as client:
+        try:
+            async with client.stream(
+                "POST",
+                GROQ_URL,
+                headers={"Authorization": f"Bearer {GROQ_API_KEY}", "Content-Type": "application/json"},
+                json={
+                    "model": CLOUD_MODEL,
+                    "messages": [{"role": "user", "content": prompt}],
+                    "temperature": temperature,
+                    "max_tokens": max_tokens,
+                    "stream": True
+                },
+                timeout=75.0
+            ) as response:
+                response.raise_for_status()
+                async for line in response.aiter_lines():
+                    if line.startswith("data: "):
+                        data_str = line[6:].strip()
+                        if data_str == "[DONE]":
+                            break
+                        try:
+                            data_json = json.loads(data_str)
+                            token = data_json["choices"][0]["delta"].get("content", "")
+                            if token:
+                                yield token
+                        except json.JSONDecodeError:
+                            continue
+        except Exception as e:
+            yield f"Streaming Error: {str(e)}"
+
+async def run_local_model(prompt: str, temperature: float = 0.4) -> str:
+    async with httpx.AsyncClient() as client:
+        try:
+            response = await client.post(
+                OLLAMA_URL,
+                json={"model": LOCAL_MODEL, "prompt": prompt, "stream": False, "temperature": temperature},
+                timeout=120.0
+            )
+            response.raise_for_status()
+            return response.json().get("response", "No response from local model.")
+        except Exception as e:
+            return f"Local Engine Error: {str(e)}"
