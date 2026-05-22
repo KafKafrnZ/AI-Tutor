@@ -84,7 +84,8 @@ export default function TutorPage() {
 
     try {
       const token = localStorage.getItem("token");
-      const response = await fetch("https://ai-tutor-production-43fe.up.railway.app/ask/stream", {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://ai-tutor-production-43fe.up.railway.app";
+      const response = await fetch(`${apiUrl}/ask/stream`, { 
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ question: userQuestion, context: "" }),

@@ -38,7 +38,8 @@ export default function PracticePage() {
       
       const enhancedTopic = `${topic}. Generate exactly 30 questions for this topic.`;
 
-      const res = await fetch('https://ai-tutor-production-43fe.up.railway.app/practice', {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://ai-tutor-production-43fe.up.railway.app";
+      const res = await fetch(`${apiUrl}/practice`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
