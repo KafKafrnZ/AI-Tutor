@@ -22,7 +22,7 @@ export default function ErrorLogPage() {
       }
 
       try {
-        const response = await fetch("http://127.0.0.1:8000/error-log", {
+        const response = await fetch("https://ai-tutor-production-43fe.up.railway.app/error-log", {
           method: "GET",
           headers: {
             "Content-Type": "application/json",

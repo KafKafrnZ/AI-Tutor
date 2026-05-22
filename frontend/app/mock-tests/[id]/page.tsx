@@ -27,7 +27,7 @@ export default function ExamEnginePage({ params }: { params: Promise<{ id: strin
     const fetchQuestions = async () => {
       try {
         const token = localStorage.getItem("token");
-        const res = await fetch(`http://127.0.0.1:8000/mock-tests/${testId}/questions`, {
+        const res = await fetch(`https://ai-tutor-production-43fe.up.railway.app/mock-tests/${testId}/questions`, {
           headers: { "Authorization": `Bearer ${token}` }
         });
         
@@ -129,7 +129,7 @@ export default function ExamEnginePage({ params }: { params: Promise<{ id: strin
         time_taken: timeTakenInMins
       };
 
-      await fetch("http://127.0.0.1:8000/save-mock-test", {
+      await fetch("https://ai-tutor-production-43fe.up.railway.app/save-mock-test", {
         method: "POST",
         headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
         body: JSON.stringify(scorePayload)
@@ -137,7 +137,7 @@ export default function ExamEnginePage({ params }: { params: Promise<{ id: strin
 
       // 3. Save the Mistakes to the Error Log
       if (wrongAnswers.length > 0) {
-        await fetch("http://127.0.0.1:8000/save-errors", {
+        await fetch("https://ai-tutor-production-43fe.up.railway.app/save-errors", {
           method: "POST",
           headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
           body: JSON.stringify({ errors: wrongAnswers })
