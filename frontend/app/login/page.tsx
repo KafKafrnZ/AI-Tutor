@@ -20,7 +20,8 @@ export default function LoginPage() {
 
     try {
       // Connect to your FastAPI backend with JSON
-      const response = await fetch("http://127.0.0.1:8000/login", {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://ai-tutor-production-43fe.up.railway.app";
+      const response = await fetch(`${apiUrl}/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: email, password: password }),

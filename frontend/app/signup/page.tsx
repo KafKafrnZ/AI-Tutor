@@ -20,7 +20,8 @@ export default function SignupPage() {
 
     try {
       // Connect to your FastAPI /signup route
-      const response = await fetch("http://127.0.0.1:8000/signup", {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://ai-tutor-production-43fe.up.railway.app";
+      const response = await fetch(`${apiUrl}/signup`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         // We will use the first part of their email as their display 'name' for now
