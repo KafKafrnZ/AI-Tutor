@@ -56,9 +56,8 @@ app.add_exception_handler(Exception, general_exception_handler)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "https://ai-tutor-ten-chi.vercel.app",      # ← Your Vercel frontend
-        "http://localhost:3000",                    # ← For local development
-        "http://127.0.0.1:3000",
+        "https://ai-tutor-chi.vercel.app", 
+        "http://localhost:3000"
     ],
     allow_credentials=True,
     allow_methods=["*"],
