@@ -55,10 +55,7 @@ app.add_exception_handler(Exception, general_exception_handler)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "https://ai-tutor-chi.vercel.app", 
-        "http://localhost:3000"
-    ],
+    allow_origins=settings.BACKEND_CORS_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -112,6 +109,10 @@ class ErrorPayload(BaseModel):
 
 
 # ====================== ENDPOINTS ======================
+
+@app.get("/health")
+def health_check():
+    return {"status": "ok"}
 
 @app.post("/signup")
 def signup(data: SignupRequest, db: Session = Depends(get_db)):
