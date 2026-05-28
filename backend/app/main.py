@@ -34,11 +34,12 @@ from modules.tutor import ask_tutor, generate_questions, evaluate_answer
 # --- MODERN ASYNC LIFESPAN MANAGER ---
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup: Initialize the database tables safely
-    init_db()
-    print("✅ Database tables verified/created successfully!")
+    try:
+        init_db()
+        print("✅ Database tables verified/created successfully!")
+    except Exception as e:
+        print(f"⚠️ Database init failed (check DATABASE_URL env var): {e}")
     yield
-    # Shutdown logic can go here if needed
 
 security = HTTPBearer()
 limiter = Limiter(key_func=get_remote_address, default_limits=["100/minute"])
