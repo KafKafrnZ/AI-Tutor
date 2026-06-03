@@ -1,0 +1,164 @@
+[
+  {
+    "question": "Which of the following topologies provides the highest reliability?",
+    "correct_answer": "Mesh Topology",
+    "subject": "IT Officer - Networking",
+    "year": 2023
+  },
+  {
+    "question": "What is the full form of IBPS?",
+    "correct_answer": "Institute of Banking Personnel Selection",
+    "subject": "General Awareness",
+    "year": 2023
+  },
+  {
+    "question": "In a relational database, what is the primary key used for?",
+    "correct_answer": "To uniquely identify each record in a table",
+    "subject": "IT Officer - DBMS",
+    "year": 2022
+  },
+  {
+    "question": "Which of the following is NOT a valid IPv4 address?",
+    "correct_answer": "192.168.1.256",
+    "subject": "IT Officer - Networking",
+    "year": 2023
+  },
+  {
+    "question": "The process of converting a private IP to a public IP is called?",
+    "correct_answer": "NAT (Network Address Translation)",
+    "subject": "IT Officer - Networking",
+    "year": 2022
+  },
+  {
+    "question": "In banking, NPA stands for?",
+    "correct_answer": "Non Performing Asset",
+    "subject": "General Awareness / Banking",
+    "year": 2023
+  },
+  {
+    "question": "Which SQL command is used to remove a table and all its data permanently?",
+    "correct_answer": "DROP TABLE",
+    "subject": "IT Officer - DBMS",
+    "year": 2021
+  },
+  {
+    "question": "The 'S' in CRUD operations stands for?",
+    "correct_answer": "Select / Read",
+    "subject": "IT Officer - DBMS",
+    "year": 2022
+  },
+  {
+    "question": "Which of the following is a correct example of a strong password policy?",
+    "correct_answer": "Minimum 8 characters with at least one uppercase, one lowercase, one digit and one special character",
+    "subject": "IT Officer - Security / OS",
+    "year": 2023
+  },
+  {
+    "question": "What does RBI stand for?",
+    "correct_answer": "Reserve Bank of India",
+    "subject": "General Awareness",
+    "year": 2023
+  },
+  {
+    "question": "What is the minimum percentage of priority sector lending target for banks in India?",
+    "correct_answer": "40%",
+    "subject": "General Awareness / Banking",
+    "year": 2023
+  },
+  {
+    "question": "Which OSI layer is responsible for end-to-end delivery and error recovery?",
+    "correct_answer": "Transport Layer",
+    "subject": "IT Officer - Networking",
+    "year": 2022
+  },
+  {
+    "question": "In a syllogism: All A are B. Some B are C. Which conclusion necessarily follows?",
+    "correct_answer": "Some A may be C",
+    "subject": "Reasoning",
+    "year": 2023
+  },
+  {
+    "question": "What does SLR stand for in banking?",
+    "correct_answer": "Statutory Liquidity Ratio",
+    "subject": "General Awareness / Banking",
+    "year": 2024
+  },
+  {
+    "question": "Which normal form removes transitive dependency?",
+    "correct_answer": "3NF (Third Normal Form)",
+    "subject": "IT Officer - DBMS",
+    "year": 2022
+  },
+  {
+    "question": "A sum of Rs. 1000 becomes Rs. 1331 in 3 years at compound interest. The rate is?",
+    "correct_answer": "10%",
+    "subject": "Quantitative Aptitude",
+    "year": 2023
+  },
+  {
+    "question": "Which of the following is NOT a valid class of IPv4 address?",
+    "correct_answer": "Class E (240-255) for experimental use only",
+    "subject": "IT Officer - Networking",
+    "year": 2021
+  },
+  {
+    "question": "What is the current CRR (Cash Reserve Ratio) requirement as per recent RBI policy (typical question value)?",
+    "correct_answer": "4.5%",
+    "subject": "General Awareness / Banking",
+    "year": 2023
+  },
+  {
+    "question": "In reasoning, if A is brother of B, B is sister of C, how is A related to C?",
+    "correct_answer": "Cannot be determined",
+    "subject": "Reasoning",
+    "year": 2022
+  },
+  {
+    "question": "Which protocol is used for secure file transfer over SSH?",
+    "correct_answer": "SFTP (SSH File Transfer Protocol)",
+    "subject": "IT Officer - Networking / Security",
+    "year": 2023
+  },
+  {
+    "question": "What does Basel III primarily focus on for banks?",
+    "correct_answer": "Capital adequacy, liquidity and leverage ratios",
+    "subject": "General Awareness / Banking",
+    "year": 2024
+  },
+  {
+    "question": "The time taken for a sum to double itself at 8% simple interest is?",
+    "correct_answer": "12.5 years",
+    "subject": "Quantitative Aptitude",
+    "year": 2022
+  },
+  {
+    "question": "Which of the following is a characteristic of a firewall?",
+    "correct_answer": "Filters network traffic based on predefined rules",
+    "subject": "IT Officer - Security",
+    "year": 2023
+  },
+  {
+    "question": "In DBMS, which command is used to remove all records from a table but keep the structure?",
+    "correct_answer": "TRUNCATE TABLE",
+    "subject": "IT Officer - DBMS",
+    "year": 2021
+  },
+  {
+    "question": "What is the full form of UPI in Indian banking payments?",
+    "correct_answer": "Unified Payments Interface",
+    "subject": "General Awareness / Banking",
+    "year": 2023
+  },
+  {
+    "question": "Which of the following best describes a 'Deadlock' in operating systems?",
+    "correct_answer": "A situation where processes wait indefinitely for resources held by each other",
+    "subject": "IT Officer - OS / Security",
+    "year": 2022
+  },
+  {
+    "question": "If the ratio of speeds of two trains is 3:4 and time taken is 4:3, what is ratio of distances?",
+    "correct_answer": "1:1",
+    "subject": "Quantitative Aptitude",
+    "year": 2023
+  }
+]

@@ -1,10 +1,19 @@
-from datetime import datetime, timezone
-from sqlalchemy import create_engine, Column, Integer, String, DateTime, Float, ForeignKey
+from datetime import datetime, timezone, date as date_type
+from sqlalchemy import create_engine, Column, Integer, String, Date, ForeignKey, Float, Boolean, DateTime
 from sqlalchemy.orm import declarative_base, sessionmaker, Session, relationship
 from app.core.config import settings
+import logging
 
-# Create Engine using centralized settings
-engine = create_engine(settings.DATABASE_URL)
+logger = logging.getLogger(__name__)
+
+# Pool kwargs only valid for PostgreSQL/MySQL — SQLite (used in tests) rejects them
+_pg_pool_kwargs = (
+    {"pool_size": 10, "max_overflow": 20, "pool_timeout": 30,
+     "pool_recycle": 1800, "pool_pre_ping": True}
+    if not settings.DATABASE_URL.startswith("sqlite")
+    else {}
+)
+engine = create_engine(settings.DATABASE_URL, **_pg_pool_kwargs)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
@@ -18,14 +27,29 @@ class User(Base):
     plan = Column(String, default="free")
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
+    is_verified = Column(Boolean, default=False)      
+
     mock_tests = relationship("MockTest", back_populates="user")
+
+    auth_tokens = relationship("AuthToken", back_populates="user", cascade="all, delete-orphan")
+
+class AuthToken(Base):
+    __tablename__ = "auth_tokens"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"))
+    token = Column(String, unique=True, index=True)
+    token_type = Column(String) # Will store "verify_email" or "reset_password"
+    expires_at = Column(DateTime)
+
+    user = relationship("User", back_populates="auth_tokens")
+
 
 class MockTest(Base):
     __tablename__ = "mock_tests"
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"))
-    date = Column(String)
+    date = Column(Date) # FIX-10: Upgraded column type from String to proper Date type
     test_name = Column(String)
     section = Column(String)
     attempted = Column(Integer, default=0)
@@ -38,7 +62,9 @@ class MasterQuestion(Base):
     __tablename__ = "master_questions"
 
     id = Column(Integer, primary_key=True, index=True)
-    test_id = Column(Integer, index=True) # E.g., 1 for "Mock Set 1"
+    # Catalog/set id for reusable mock question banks. This must not point at
+    # user attempt history rows in mock_tests.
+    test_id = Column(Integer, index=True)
     section = Column(String) # Reasoning, Quant, English, IT
     topic = Column(String) # Sub-topic
     question_text = Column(String, nullable=False)
@@ -49,7 +75,6 @@ class MasterQuestion(Base):
     correct_answer = Column(String)
     explanation = Column(String)
 
-# --- NEW: Error Log Schema ---
 class ErrorLog(Base):
     __tablename__ = "error_logs"
 
@@ -60,9 +85,6 @@ class ErrorLog(Base):
     correct_answer = Column(String)
     explanation = Column(String)
     date_added = Column(DateTime, default=lambda: datetime.now(timezone.utc))
-
-def init_db():
-    Base.metadata.create_all(bind=engine)
 
 def get_db():
     db = SessionLocal()
@@ -84,7 +106,7 @@ def create_user(db: Session, name: str, email: str, password_hash: str):
         return db_user
     except Exception as e:
         db.rollback()
-        print("Create user error:", e)
+        logger.error("Failed to create user: %s", e, exc_info=True)
         return None
     
 def get_user_by_email(db: Session, email: str):
@@ -92,9 +114,14 @@ def get_user_by_email(db: Session, email: str):
     
 def save_mock_test(db: Session, user_id: int, data: dict):
     try:
+        date_val = data.get("date")
+        # FIX-10: Safely split and parse incoming text string components into real date instances
+        if isinstance(date_val, str):
+            date_val = date_type.fromisoformat(date_val.split('T')[0])
+
         mock_test = MockTest(
             user_id=user_id,
-            date=data.get("date"),
+            date=date_val,
             test_name=data.get("test_name"),
             section=data.get("section"),
             attempted=int(data.get("attempted", 0)), 
@@ -107,20 +134,26 @@ def save_mock_test(db: Session, user_id: int, data: dict):
         return mock_test
     except Exception as e:
         db.rollback()
-        print(f"Save mock test error: {e}")
+        logger.error("Failed to save mock test: %s", e, exc_info=True)
         return None
 
 def get_questions_for_test(db: Session, test_id: int):
     return db.query(MasterQuestion).filter(MasterQuestion.test_id == test_id).all()
 
-# --- NEW: Retrieve & Save Errors Helper ---
 def save_error_log(db: Session, user_id: int, error_data: dict):
-    error_entry = ErrorLog(
-        user_id=user_id,
-        question_text=error_data.get("question_text"),
-        user_answer=error_data.get("user_answer"),
-        correct_answer=error_data.get("correct_answer"),
-        explanation=error_data.get("explanation")
-    )
-    db.add(error_entry)
-    db.commit()
+    try:
+        error_entry = ErrorLog(
+            user_id=user_id,
+            question_text=error_data.get("question_text"),
+            user_answer=error_data.get("user_answer"),
+            correct_answer=error_data.get("correct_answer"),
+            explanation=error_data.get("explanation")
+        )
+        db.add(error_entry)
+        db.commit()
+        db.refresh(error_entry)
+        return error_entry
+    except Exception as e:
+        db.rollback()
+        logger.error("Failed to save error log: %s", e, exc_info=True)
+        return None

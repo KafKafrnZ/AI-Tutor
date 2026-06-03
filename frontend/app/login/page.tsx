@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Bot, ArrowLeft, Loader2 } from "lucide-react";
 import { toast } from "sonner"; // Using your existing sonner toast for error handling
+import { API_URL } from "@/lib/api";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -20,23 +21,27 @@ export default function LoginPage() {
 
     try {
       // Connect to your FastAPI backend with JSON
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://ai-tutor-production-43fe.up.railway.app";
-      const response = await fetch(`${apiUrl}/login`, {
+      const response = await fetch(`${API_URL}/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include", 
         body: JSON.stringify({ email: email, password: password }),
       });
 
       if (response.ok) {
         const data = await response.json();
-        // Store the token and name returned by your backend
-        localStorage.setItem("token", data.token); 
         localStorage.setItem("userName", data.name);
         toast.success("Login successful!");
         router.push("/dashboard");
+      } else if (response.status === 403) {
+        toast.error("Email not verified. Please check your inbox and click the verification link.", { duration: 6000 });
       } else {
         const errorData = await response.json();
-        toast.error(errorData.detail || "Invalid credentials. Please try again.");
+        let message = errorData.detail || "Invalid credentials. Please try again.";
+        if (Array.isArray(errorData.detail)) {
+          message = errorData.detail[0]?.msg || message;
+        }
+        toast.error(message);
       }
     } catch (error) {
       console.error("Login error:", error);
@@ -99,6 +104,9 @@ export default function LoginPage() {
 
         <p className="text-center text-zinc-500 text-sm mt-6">
           Don't have an account? <Link href="/signup" className="text-violet-400 hover:text-violet-300 transition-colors font-medium">Sign up</Link>
+        </p>
+        <p className="text-center text-zinc-600 text-sm mt-2">
+          <Link href="/forgot-password" className="hover:text-zinc-400 transition-colors">Forgot your password?</Link>
         </p>
       </div>
     </div>
