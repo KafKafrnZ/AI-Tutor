@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import Link from "next/link";
 import { Bot, Target, FileText, ChevronRight, BrainCircuit, CheckCircle2, Loader2, Sparkles } from "lucide-react";
 import { MouseEvent, useEffect, useState } from "react";
+import { API_URL } from "@/lib/api";
 
 interface RevisionPlan {
   primary_weakness: string;
@@ -24,14 +25,11 @@ export default function DashboardPage() {
   useEffect(() => {
     const fetchPlan = async () => {
       try {
-        const token = localStorage.getItem("token");
-        if (!token) return;
-
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://ai-tutor-production-43fe.up.railway.app";
-        const res = await fetch(`${apiUrl}/revision-plan`, {
-          headers: { "Authorization": `Bearer ${token}` }
+        const res = await fetch(`${API_URL}/revision-plan`, {
+          method: "GET",
+          credentials: "include",
         });
-        
+
         const data = await res.json();
         if (res.ok && !data.error) {
           setPlan(data);
@@ -64,7 +62,7 @@ export default function DashboardPage() {
           <h1 className="text-3xl font-bold text-white tracking-tight">Dashboard Overview</h1>
           <div className="px-4 py-1.5 rounded-full border border-white/10 bg-white/5 flex items-center gap-2">
             <Sparkles className="w-4 h-4 text-violet-400" />
-            <span className="text-sm font-medium text-zinc-300">Llama-3 Active</span>
+            <span className="text-sm font-medium text-zinc-300">Llama 3.3 Active</span>
           </div>
         </div>
         

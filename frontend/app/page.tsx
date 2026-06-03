@@ -46,7 +46,7 @@ export default function LandingPage() {
 
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }} className="relative z-10 flex flex-col items-center text-center px-6 max-w-4xl">
         <div className="px-4 py-1.5 rounded-full border border-white/10 bg-white/5 backdrop-blur-md text-zinc-300 text-sm font-medium mb-8 flex items-center gap-2">
-          <Sparkles className="w-4 h-4 text-violet-400" /> Powered by Llama-3 Advanced RAG
+          <Sparkles className="w-4 h-4 text-violet-400" /> Powered by Llama 3.3 + RAG
         </div>
 
         <h1 className="text-5xl md:text-7xl font-extrabold text-white tracking-tight mb-6">

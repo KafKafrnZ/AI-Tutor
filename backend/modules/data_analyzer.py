@@ -1,13 +1,17 @@
 import pandas as pd
 import json
+import logging
 from sqlalchemy.orm import Session
 from app.models.database import MockTest, ErrorLog
-# Import our new async cloud engine
-from modules.tutor import run_cloud_model 
+from modules.tutor import run_cloud_model
 
-def load_data(db: Session, user_id: int):
+logger = logging.getLogger(__name__)
+
+# H-03 FIX: Added limit parameter (default 50) and descending order
+def load_data(db: Session, user_id: int, limit: int = 50):
     try:
-        records = db.query(MockTest).filter(MockTest.user_id == user_id).all()
+        # Sort by date descending and slice the limit to prevent memory bombs
+        records = db.query(MockTest).filter(MockTest.user_id == user_id).order_by(MockTest.date.desc()).limit(limit).all()
 
         if not records:
             return pd.DataFrame(columns=["date", "test_name", "section", "attempted", "correct", "time_taken"])
@@ -24,7 +28,7 @@ def load_data(db: Session, user_id: int):
         return pd.DataFrame(data)
 
     except Exception as e:
-        print(f"Error loading data: {e}")
+        logger.error("Failed to load mock test data for user %s: %s", user_id, e, exc_info=True)
         return pd.DataFrame(columns=["date", "test_name", "section", "attempted", "correct", "time_taken"])
     
 
@@ -64,7 +68,7 @@ async def get_ai_revision_plan(db: Session, user_id: int) -> dict:
     Analyzes the user's recent mistakes using the AI engine to generate 
     a highly personalized, micro-topic revision checklist.
     """
-    # Fetch the last 15 mistakes from the locker
+    # Fetch the last 15 mistakes from the locker (This was already safely limited)
     errors = db.query(ErrorLog).filter(ErrorLog.user_id == user_id).order_by(ErrorLog.date_added.desc()).limit(15).all()
 
     if not errors:

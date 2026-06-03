@@ -5,10 +5,12 @@ __pycache__/
 *.pyd
 .Python
 .venv/
+venv/
 env/
 ENV/
 .env
-.env.example
+.env.*
+!.env.example
 
 data/faiss.index
 data/*.pkl
@@ -16,4 +18,7 @@ data/*.pkl
 
 .vscode/
 __pycache__/
+*.py[cod]
+*$py.class
 uv.lock
+*.db

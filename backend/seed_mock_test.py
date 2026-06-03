@@ -1,14 +1,11 @@
 import os
 import json
-import sys
 import time
 import re
+import asyncio
 from sqlalchemy.orm import Session
 
-# Ensure Python can find your app modules
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-
-from app.models.database import SessionLocal, MasterQuestion, init_db
+from app.models.database import SessionLocal, MasterQuestion
 from modules.tutor import generate_questions
 
 def clean_llm_json(raw_str):
@@ -26,8 +23,7 @@ def clean_llm_json(raw_str):
     return raw_str.strip()
 
 def seed_database():
-    print("🚀 Initializing Database Connection...")
-    init_db()
+    print("🚀 Initializing Database Connection (Alembic-managed schema)...")
     db = SessionLocal()
 
     topics = [
@@ -41,6 +37,13 @@ def seed_database():
     test_id = 1
     total_inserted = 0
 
+    # Guard: skip heavy LLM generation if questions already exist (idempotent)
+    existing = db.query(MasterQuestion).filter(MasterQuestion.test_id == test_id).count()
+    if existing > 0:
+        print(f"ℹ️ Test ID {test_id} already has {existing} questions. Skipping generation (delete rows or change test_id to re-seed).")
+        db.close()
+        return
+
     print(f"🗑️ Clearing old test data for Test ID {test_id} (if any)...")
     db.query(MasterQuestion).filter(MasterQuestion.test_id == test_id).delete()
     db.commit()
@@ -48,7 +51,7 @@ def seed_database():
     for i, t in enumerate(topics):
         print(f"\n🧠 [{i+1}/5] Generating questions for {t['section']} - {t['topic']}...")
         
-        raw_json = generate_questions(t['topic'])
+        raw_json = asyncio.run(generate_questions(t['topic']))
 
         try:
             cleaned_json = clean_llm_json(raw_json)

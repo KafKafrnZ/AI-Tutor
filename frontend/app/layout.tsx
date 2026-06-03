@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter, Geist } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
+import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
 import AppLayout from "./AppLayout";
 
 const geist = Geist({subsets:['latin'],variable:'--font-sans'});
@@ -20,7 +21,9 @@ export default function RootLayout({
   return (
     <html lang="en" className={cn("dark", "font-sans", geist.variable)}>
       <body className={inter.className}>
-        <AppLayout>{children}</AppLayout>
+        <ErrorBoundary>
+          <AppLayout>{children}</AppLayout>
+        </ErrorBoundary>
       </body>
     </html>
   );

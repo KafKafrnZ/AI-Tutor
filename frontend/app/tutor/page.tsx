@@ -1,12 +1,13 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { Send, Bot, User, ArrowLeft, Sparkles, CheckCircle2, CircleDashed } from "lucide-react";
+import { motion } from "framer-motion";
+import { Send, User, ArrowLeft, Sparkles, CheckCircle2, CircleDashed } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import Link from "next/link";
 import { useAppStore } from "@/store/useAppStore";
 import BlackholeBackground from "@/components/ui/Blackhole";
+import { API_URL } from "@/lib/api";
 
 // Custom Markdown Renderer 
 const AnimatedMarkdown = ({ content, isLatest }: { content: string; isLatest: boolean }) => {
@@ -61,15 +62,25 @@ export default function TutorPage() {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
-  
-  const [agentThoughts, setAgentThoughts] = useState<{agent: string, message: string}[]>([]);
+  const [streamingContent, setStreamingContent] = useState("");
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const justSentRef = useRef(false);
+  const streamingFullRef = useRef(""); // for skip / finalize
+  const streamAbortRef = useRef<AbortController | null>(null);
+  const streamFinalizedRef = useRef(false);
 
-  const isChatStarted = tutorMessages.length > 0;
+  const isChatStarted = tutorMessages.length > 0 || streamingContent.length > 0;
 
-  useEffect(() => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }), [tutorMessages, agentThoughts]);
+  useEffect(() => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }), [tutorMessages, streamingContent]);
+
+  // Reset the "just sent" flag shortly after a response lands so only the fresh assistant animates
+  useEffect(() => {
+    if (justSentRef.current && tutorMessages.length > 0) {
+      const t = setTimeout(() => { justSentRef.current = false; }, 1600);
+      return () => clearTimeout(t);
+    }
+  }, [tutorMessages.length]);
 
   const handleAskQuestion = async () => {
     if (!input.trim()) return;
@@ -77,17 +88,23 @@ export default function TutorPage() {
     setInput("");
     justSentRef.current = true;
     
-    setAgentThoughts([]);
     const currentMessages = useAppStore.getState().tutorMessages;
     setTutorMessages([...currentMessages, { role: "user", content: userQuestion }]);
     setIsLoading(true);
+    setStreamingContent("");
+    streamingFullRef.current = "";
+    streamFinalizedRef.current = false;
+
+    streamAbortRef.current?.abort();
+    const abortController = new AbortController();
+    streamAbortRef.current = abortController;
 
     try {
-      const token = localStorage.getItem("token");
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://ai-tutor-production-43fe.up.railway.app";
-      const response = await fetch(`${apiUrl}/ask/stream`, { 
+      const response = await fetch(`${API_URL}/ask/stream`, {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        signal: abortController.signal,
         body: JSON.stringify({ question: userQuestion, context: "" }),
       });
 
@@ -101,36 +118,52 @@ export default function TutorPage() {
         const { value, done: doneReading } = await reader.read();
         done = doneReading;
         if (!value) continue;
-        
-        const chunkValue = decoder.decode(value, { stream: true });
-        
-        const events = chunkValue.split("data: ");
-        
-        for (const event of events) {
-          const cleanEvent = event.trim(); 
-          if (!cleanEvent) continue;
 
+        const chunkValue = decoder.decode(value, { stream: true });
+        const lines = chunkValue.split("\n");
+
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (!trimmed.startsWith("data: ")) continue;
+
+          let payload = trimmed.slice(6).trim();
+          if (!payload || payload === "[DONE]") continue;
+
+          let token = "";
           try {
-            const data = JSON.parse(cleanEvent);
-            
-            if (data.type === "thought") {
-              setAgentThoughts(prev => [...prev, { agent: data.agent, message: data.message }]);
-            } 
-            else if (data.type === "result") {
-              const updatedMessages = useAppStore.getState().tutorMessages;
-              setTutorMessages([...updatedMessages, { role: "assistant", content: data.answer }]);
-            }
-          } catch (e) {
-            // Silently ignore split-chunk fragments
+            const parsed = JSON.parse(payload);
+            token = parsed.data ?? parsed ?? "";
+          } catch {
+            // If not JSON, treat the payload itself as the token (plain text SSE)
+            token = payload;
+          }
+
+          if (typeof token === "string" && token.length > 0) {
+            streamingFullRef.current += token;
+            setStreamingContent((prev) => prev + token);
           }
         }
       }
+
+      // Finalize the streamed answer into history
+      if (!streamFinalizedRef.current) {
+        streamFinalizedRef.current = true;
+        justSentRef.current = true;
+        const finalAnswer = streamingFullRef.current || "No response received.";
+        const updatedMessages = useAppStore.getState().tutorMessages;
+        setTutorMessages([...updatedMessages, { role: "assistant", content: finalAnswer }]);
+      }
     } catch (error) {
+      if (abortController.signal.aborted || streamFinalizedRef.current) return;
       const updatedMessages = useAppStore.getState().tutorMessages;
       setTutorMessages([...updatedMessages, { role: "assistant", content: "Connection error. Make sure your Python backend is running!" }]);
     } finally {
+      if (streamAbortRef.current === abortController) {
+        streamAbortRef.current = null;
+      }
       setIsLoading(false);
-      setAgentThoughts([]); 
+      setStreamingContent("");
+      streamingFullRef.current = "";
     }
   };
 
@@ -168,46 +201,66 @@ export default function TutorPage() {
                 </motion.div>
               );
             })}
-            
-            {/* --- THE GROK-STYLE MULTI-AGENT THOUGHT BUBBLES --- */}
-            {isLoading && (
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col gap-3">
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="w-8 h-8 rounded-full bg-black/40 backdrop-blur-md border border-violet-500/30 flex items-center justify-center shrink-0">
-                    <Bot className="w-4 h-4 text-violet-400 animate-pulse" />
-                  </div>
-                  <span className="font-bold text-sm text-zinc-300 flex items-center gap-2 drop-shadow-md">
-                    Agents Deliberating...
-                  </span>
+
+            {/* Live streaming assistant reply (plain token accumulation from backend) - instant for live tokens */}
+            {streamingContent && (
+              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex gap-5">
+                <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 mt-0.5 shadow-lg backdrop-blur-md border bg-gradient-to-br from-violet-600/80 to-fuchsia-600/80 border-white/20">
+                  <Sparkles className="w-4 h-4 text-white" />
                 </div>
-                
-                <div className="flex flex-col gap-4 ml-[44px]">
-                  <AnimatePresence>
-                    {agentThoughts.map((thought, i) => (
-                      <motion.div 
-                        key={i}
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="flex flex-col gap-2 max-w-xl"
-                      >
-                        {/* Agent Identity */}
-                        <div className="flex items-center gap-2 text-[13px] font-bold text-zinc-300 drop-shadow-md">
-                          <div className={`w-5 h-5 rounded-full flex items-center justify-center backdrop-blur-sm border ${i === 0 ? 'bg-fuchsia-500/20 border-fuchsia-500/30 text-fuchsia-300' : 'bg-emerald-500/20 border-emerald-500/30 text-emerald-300'}`}>
-                            <Bot className="w-3 h-3" />
-                          </div>
-                          {thought.agent}
-                        </div>
-                        
-                        {/* Highly transparent thought box */}
-                        <div className="bg-black/20 backdrop-blur-md border border-white/10 rounded-2xl px-4 py-3 text-[14px] text-zinc-200 leading-relaxed shadow-xl">
-                          {thought.message}
-                        </div>
-                      </motion.div>
-                    ))}
-                  </AnimatePresence>
+                <div className="flex-1 min-w-0 flex flex-col text-[15px] leading-7 text-zinc-200">
+                  <span className="font-bold text-[12px] text-zinc-400 mb-2 uppercase tracking-widest drop-shadow-md">AI Tutor</span>
+                  <div className="relative">
+                    <div className="text-[15px] leading-7 break-words text-zinc-200">
+                      <ReactMarkdown
+                        components={{
+                          code({ node, inline, className, children, ...props }: any) {
+                            return inline ? <span className="bg-white/10 px-1.5 py-0.5 rounded-md text-[14px] font-mono border border-white/10 text-emerald-300" {...props}>{children}</span>
+                              : <code className="text-emerald-300 font-mono text-[14px] leading-relaxed" {...props}>{children}</code>;
+                          },
+                          pre({ children }: any) {
+                            return <div className="bg-black/30 backdrop-blur-md border border-white/10 rounded-xl my-6 overflow-hidden shadow-lg">
+                                <div className="flex px-4 py-3 bg-white/5 border-b border-white/5 gap-2">
+                                  <div className="w-3 h-3 rounded-full bg-rose-500/80"></div>
+                                  <div className="w-3 h-3 rounded-full bg-amber-500/80"></div>
+                                  <div className="w-3 h-3 rounded-full bg-emerald-500/80"></div>
+                                </div>
+                                <pre className="p-5 overflow-x-auto scrollbar-thin scrollbar-thumb-white/10">{children}</pre>
+                              </div>;
+                          },
+                          strong({ children }) { return <strong className="text-transparent bg-clip-text bg-gradient-to-r from-violet-300 to-fuchsia-300 font-bold tracking-wide">{children}</strong>; },
+                          ul({ children }) { return <ul className="list-disc list-outside space-y-2 ml-5 my-4 text-zinc-200">{children}</ul>; },
+                          ol({ children }) { return <ol className="list-decimal list-outside space-y-2 ml-5 my-4 text-zinc-200">{children}</ol>; },
+                          p({ children }) { return <p className="mb-5 last:mb-0">{children}</p>; },
+                          h1({ children }) { return <h1 className="text-2xl font-bold text-white mt-8 mb-4">{children}</h1>; },
+                          h2({ children }) { return <h2 className="text-xl font-bold text-white mt-8 mb-4">{children}</h2>; },
+                          h3({ children }) { return <h3 className="text-lg font-bold text-white mt-6 mb-3">{children}</h3>; },
+                        }}
+                      >{streamingContent}</ReactMarkdown>
+                    </div>
+                    <button
+                      onClick={() => {
+                        // Skip / finalize early into history (triggers nice Animated on the committed message)
+                        streamFinalizedRef.current = true;
+                        streamAbortRef.current?.abort();
+                        streamAbortRef.current = null;
+                        justSentRef.current = true;
+                        const final = streamingFullRef.current || streamingContent;
+                        const updated = useAppStore.getState().tutorMessages;
+                        setTutorMessages([...updated, { role: "assistant", content: final }]);
+                        setStreamingContent("");
+                        streamingFullRef.current = "";
+                        setIsLoading(false);
+                      }}
+                      className="absolute -top-2 -right-2 text-[10px] px-2 py-0.5 rounded-full bg-white/10 border border-white/20 hover:bg-white/20 text-zinc-300"
+                    >
+                      Skip
+                    </button>
+                  </div>
                 </div>
               </motion.div>
             )}
+
             <div ref={messagesEndRef} className="h-4" />
           </div>
         </div>
@@ -221,7 +274,7 @@ export default function TutorPage() {
               <Sparkles className="w-8 h-8 text-violet-300" />
             </div>
             <h1 className="text-4xl font-bold text-white mb-3 drop-shadow-lg">What do you want to learn?</h1>
-            <p className="text-zinc-300 font-medium drop-shadow-md">Ask complex concepts, watch the agents work.</p>
+            <p className="text-zinc-300 font-medium drop-shadow-md">Ask complex concepts. Grounded answers with previous-year context.</p>
           </div>
         )}
 

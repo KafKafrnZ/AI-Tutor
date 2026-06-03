@@ -5,8 +5,10 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Bot, ArrowLeft, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { API_URL } from "@/lib/api";
 
 export default function SignupPage() {
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -14,18 +16,16 @@ export default function SignupPage() {
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !password) return;
+    if (!name.trim() || !email || !password) return;
     
     setIsLoading(true);
 
     try {
       // Connect to your FastAPI /signup route
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://ai-tutor-production-43fe.up.railway.app";
-      const response = await fetch(`${apiUrl}/signup`, {
+      const response = await fetch(`${API_URL}/signup`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        // We will use the first part of their email as their display 'name' for now
-        body: JSON.stringify({ name: email.split("@")[0], email: email, password: password }),
+        body: JSON.stringify({ name: name.trim(), email: email, password: password }),
       });
 
       if (response.ok) {
@@ -33,7 +33,15 @@ export default function SignupPage() {
         router.push("/login");
       } else {
         const errorData = await response.json();
-        toast.error(errorData.error || errorData.detail || "Signup failed. Try a different email.");
+        let message = errorData.error || "Signup failed. Try a different email.";
+        if (errorData.detail) {
+          if (Array.isArray(errorData.detail)) {
+            message = errorData.detail[0]?.msg || message;
+          } else if (typeof errorData.detail === "string") {
+            message = errorData.detail;
+          }
+        }
+        toast.error(message);
       }
     } catch (error) {
       console.error("Signup error:", error);
@@ -61,6 +69,17 @@ export default function SignupPage() {
 
         <form onSubmit={handleSignup} className="space-y-4">
           <div>
+            <label className="block text-sm font-medium text-zinc-300 mb-1.5">Name</label>
+            <input 
+              type="text" 
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Your name"
+              className="w-full bg-zinc-950 border border-zinc-800 rounded-xl py-3 px-4 text-white focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all"
+              required
+            />
+          </div>
+          <div>
             <label className="block text-sm font-medium text-zinc-300 mb-1.5">Email</label>
             <input 
               type="email" 
@@ -85,7 +104,7 @@ export default function SignupPage() {
           
           <button 
             type="submit"
-            disabled={isLoading || !email || !password}
+            disabled={isLoading || !name.trim() || !email || !password}
             className="w-full bg-white text-black font-semibold rounded-xl py-3 mt-4 hover:bg-zinc-200 transition-colors disabled:opacity-50 flex justify-center items-center gap-2"
           >
             {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : "Sign Up"}

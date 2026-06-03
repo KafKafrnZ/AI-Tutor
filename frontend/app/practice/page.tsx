@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { Loader2, CheckCircle2, XCircle, ArrowLeft, Target, Sparkles } from 'lucide-react';
 import { useAppStore } from "@/store/useAppStore";
 import BlackholeBackground from "@/components/ui/Blackhole";
+import { API_URL } from "@/lib/api";
 
 export default function PracticePage() {
   // GLOBAL STATE
@@ -34,26 +35,24 @@ export default function PracticePage() {
     setSelectedAnswers({});
 
     try {
-      const token = localStorage.getItem('token');
-      
       const enhancedTopic = `${topic}. Generate exactly 30 questions for this topic.`;
 
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://ai-tutor-production-43fe.up.railway.app";
-      const res = await fetch(`${apiUrl}/practice`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({ topic: enhancedTopic }),
-      });
+      const res = await fetch(`${API_URL}/practice`, {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  credentials: "include",
+  body: JSON.stringify({ topic: enhancedTopic }),
+});
 
       if (!res.ok) throw new Error("Backend error");
 
       const data = await res.json();
 
       let parsedQuestions = [];
-      if (Array.isArray(data.answer)) {
+      if (Array.isArray(data.questions)) {
+        parsedQuestions = data.questions;
+      } else if (Array.isArray(data.answer)) {
+        // legacy fallback
         parsedQuestions = data.answer;
       } else if (typeof data.answer === 'string') {
         try {
@@ -61,8 +60,6 @@ export default function PracticePage() {
         } catch {
           parsedQuestions = [{ difficulty: "Medium", question: data.answer, options: [], correct_answer: "", explanation: "" }];
         }
-      } else if (Array.isArray(data.questions)) {
-        parsedQuestions = data.questions;
       }
 
       if (parsedQuestions.length > 0) {

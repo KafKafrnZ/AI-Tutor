@@ -1,8 +1,11 @@
 from sentence_transformers import SentenceTransformer
 import numpy as np
 
-# load model once 
-model = SentenceTransformer("all-MiniLM-L6-v2")
+# Lazy load to avoid duplicate model in memory + startup cost (was conflicting with rag.py)
+_embedding_model = None
 
 def get_embeddings(texts):
-    return model.encode(texts)
+    global _embedding_model
+    if _embedding_model is None:
+        _embedding_model = SentenceTransformer("all-MiniLM-L6-v2")
+    return _embedding_model.encode(texts)
