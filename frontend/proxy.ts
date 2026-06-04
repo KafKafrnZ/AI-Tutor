@@ -5,7 +5,7 @@ import type { NextRequest } from 'next/server'
 const PROTECTED_ROUTES = ['/dashboard', '/tutor', '/practice', '/mock-tests', '/progress', '/error-log']
 const AUTH_ROUTES = ['/login', '/signup', '/']
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   // FIX-1: Corrected cookie name from 'access token' to 'access_token'
   const token = request.cookies.get('access_token')?.value
   
