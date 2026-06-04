@@ -19,6 +19,12 @@ class Settings:
     
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 240  # 4 hours (quick UX improvement per system_flaws_fix_guide FIX-9 Option A; full refresh tokens planned before scale)
     ENVIRONMENT: str = os.getenv("ENVIRONMENT", "development")
+    REQUIRE_EMAIL_VERIFICATION: bool = os.getenv("REQUIRE_EMAIL_VERIFICATION", "false").lower() in {
+        "1",
+        "true",
+        "yes",
+        "on",
+    }
 
     # Parse comma-separated list from env (supports .env.example + docker overrides). Falls back to localhost dev.
     _cors_raw = os.getenv("BACKEND_CORS_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000")

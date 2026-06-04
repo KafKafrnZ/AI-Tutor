@@ -32,16 +32,17 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   // C-04 FIX: Hide full sidebar + mobile chrome + profile on public auth/landing pages
   const PUBLIC_ROUTES = ['/', '/login', '/signup', '/forgot-password', '/reset-password'];
   const isPublic = PUBLIC_ROUTES.includes(pathname);
-  if (isPublic) {
-    return <>{children}</>;
-  }
   
   // Pull store actions (FIX-17 / FIX-18)
   const { setUser, user: storeUser } = useAppStore();
 
-  const [userName, setUserName] = useState("Student");
-  const [userEmail, setUserEmail] = useState("");
-  const [userPlan, setUserPlan] = useState("free");
+  const [userName, setUserName] = useState(() => {
+    if (storeUser?.name) return storeUser.name;
+    if (typeof window === "undefined") return "Student";
+    return localStorage.getItem("userName") || "Student";
+  });
+  const [userEmail, setUserEmail] = useState(() => storeUser?.email || "");
+  const [userPlan, setUserPlan] = useState(() => storeUser?.plan || "free");
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [profileName, setProfileName] = useState("");
   const [profileError, setProfileError] = useState("");
@@ -53,14 +54,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   // FE-2 FIX: Removed 'pathname' from dependency array. This now runs EXACTLY ONCE on mount.
   // FIX-17: Centralize user in store so other components don't re-fetch /me constantly.
   useEffect(() => {
-    // Seed from local + store on mount
-    const storedName = localStorage.getItem("userName");
-    if (storedName) setUserName(storedName);
-    if (storeUser) {
-      setUserName(storeUser.name || "Student");
-      setUserEmail(storeUser.email || "");
-      setUserPlan(storeUser.plan || "free");
-    }
+    if (isPublic) return;
 
     const fetchProfile = async () => {
       try {
@@ -92,12 +86,16 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     };
 
     fetchProfile();
-  }, []);
+  }, [isPublic, setUser]);
 
   // FE-6 FIX: Auto-close mobile menu when route changes
   useEffect(() => {
-    setIsMobileMenuOpen(false);
+    queueMicrotask(() => setIsMobileMenuOpen(false));
   }, [pathname]);
+
+  if (isPublic) {
+    return <>{children}</>;
+  }
 
   const openProfile = () => {
     setProfileName(userName === "Student" ? "" : userName);

@@ -106,7 +106,7 @@ def get_current_user(access_token: str = Cookie(None), db: Session = Depends(get
     user = get_user_by_email(db, payload.get("sub"))
     if not user:
         raise HTTPException(status_code=401, detail="User not found")
-    if not user.is_verified:
+    if settings.REQUIRE_EMAIL_VERIFICATION and not user.is_verified:
         raise HTTPException(status_code=403, detail="Email not verified. Please check your inbox.")
     return user
 
@@ -221,8 +221,14 @@ def health_check(db: Session = Depends(get_db)):
 def signup(request: Request, data: SignupRequest, db: Session = Depends(get_db)):
     if get_user_by_email(db, data.email):
         return JSONResponse(status_code=400, content={"error": "Email already in use"})
-    new_user = create_user(db, data.name, data.email, hash_password(data.password))
-    if new_user:
+    new_user = create_user(
+        db,
+        data.name,
+        data.email,
+        hash_password(data.password),
+        is_verified=not settings.REQUIRE_EMAIL_VERIFICATION,
+    )
+    if new_user and settings.REQUIRE_EMAIL_VERIFICATION:
         token_str = secrets.token_urlsafe(32)
         db_token = AuthToken(
             user_id=new_user.id,
@@ -234,7 +240,8 @@ def signup(request: Request, data: SignupRequest, db: Session = Depends(get_db))
         db.commit()
         # TODO: replace logger.info with real email send (FastAPI-Mail / smtplib)
         logger.info("VERIFY EMAIL TOKEN for %s: /verify-email?token=%s", new_user.email, token_str)
-    return {"message": "Account created. Check your email to verify your account."}
+        return {"message": "Account created. Check your email to verify your account."}
+    return {"message": "Account created. You can sign in now."}
 
 @app.post("/login")
 @limiter.limit("5/minute")
@@ -242,7 +249,7 @@ def login(request: Request, data: LoginRequest, db: Session = Depends(get_db)):
     user = get_user_by_email(db, data.email)
     if not user or not verify_password(data.password, user.password_hash):
         raise HTTPException(401, "Invalid credentials")
-    if not user.is_verified:
+    if settings.REQUIRE_EMAIL_VERIFICATION and not user.is_verified:
         raise HTTPException(status_code=403, detail="Please verify your email before logging in. Check your inbox.")
 
     token = create_token({"sub": user.email})

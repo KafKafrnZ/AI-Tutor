@@ -6,6 +6,7 @@ os.environ.setdefault("JWT_SECRET", "test-only-secret-key-not-for-production-use
 os.environ.setdefault("DATABASE_URL", "sqlite:///:memory:")
 os.environ.setdefault("ENVIRONMENT", "development")
 os.environ.setdefault("GROQ_API_KEY", "test-key-not-real")
+os.environ.setdefault("REQUIRE_EMAIL_VERIFICATION", "true")
 
 import pytest
 from fastapi.testclient import TestClient

@@ -29,7 +29,8 @@ export default function SignupPage() {
       });
 
       if (response.ok) {
-        toast.success("Account created! Please log in.");
+        const data = await response.json();
+        toast.success(data.message || "Account created! You can sign in now.");
         router.push("/login");
       } else {
         const errorData = await response.json();

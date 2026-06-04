@@ -93,11 +93,12 @@ def get_db():
     finally:
         db.close()
 
-def create_user(db: Session, name: str, email: str, password_hash: str):
+def create_user(db: Session, name: str, email: str, password_hash: str, is_verified: bool = False):
     db_user = User(
         name=name,
         email=email.lower().strip(),
-        password_hash=password_hash
+        password_hash=password_hash,
+        is_verified=is_verified,
     )
     try:
         db.add(db_user)

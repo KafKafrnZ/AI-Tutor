@@ -4,6 +4,7 @@ import "./globals.css";
 import { cn } from "@/lib/utils";
 import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
 import AppLayout from "./AppLayout";
+import { Toaster } from "sonner";
 
 const geist = Geist({subsets:['latin'],variable:'--font-sans'});
 const inter = Inter({ subsets: ["latin"] });
@@ -24,6 +25,7 @@ export default function RootLayout({
         <ErrorBoundary>
           <AppLayout>{children}</AppLayout>
         </ErrorBoundary>
+        <Toaster richColors position="top-right" />
       </body>
     </html>
   );
