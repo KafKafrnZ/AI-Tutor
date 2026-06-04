@@ -81,6 +81,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+def cookie_security_options() -> dict[str, Any]:
+    is_prod = settings.ENVIRONMENT.lower() == "production"
+    return {
+        "secure": is_prod,
+        "samesite": "none" if is_prod else "lax",
+    }
+
+
 @app.middleware("http")
 async def log_requests_and_add_headers(request: Request, call_next):
     start_time = time.time()
@@ -255,13 +263,11 @@ def login(request: Request, data: LoginRequest, db: Session = Depends(get_db)):
     token = create_token({"sub": user.email})
 
     response = JSONResponse(content={"message": "Login successful", "name": user.name})
-    is_prod = settings.ENVIRONMENT.lower() == "production"
     response.set_cookie(
         key="access_token",
         value=token,
         httponly=True,
-        secure=is_prod,
-        samesite="lax",
+        **cookie_security_options(),
         max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60  # keep in sync with config
     )
     return response
@@ -338,12 +344,10 @@ def verify_email(token: str, db: Session = Depends(get_db)):
 @app.post("/logout")
 def logout(current_user: Any = Depends(get_current_user)):
     response = JSONResponse(content={"message": "Logged out successfully"})
-    is_prod = settings.ENVIRONMENT.lower() == "production"
     response.delete_cookie(
         key="access_token",
         httponly=True,
-        secure=is_prod,
-        samesite="lax"
+        **cookie_security_options(),
     )
     return response
 

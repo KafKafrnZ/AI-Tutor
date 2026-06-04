@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Bot, ArrowLeft, Loader2 } from "lucide-react";
 import { toast } from "sonner"; // Using your existing sonner toast for error handling
-import { API_URL } from "@/lib/api";
+import { API_URL, apiConnectionErrorMessage, readApiError } from "@/lib/api";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -36,16 +36,12 @@ export default function LoginPage() {
       } else if (response.status === 403) {
         toast.error("Email not verified. Please check your inbox and click the verification link.", { duration: 6000 });
       } else {
-        const errorData = await response.json();
-        let message = errorData.detail || "Invalid credentials. Please try again.";
-        if (Array.isArray(errorData.detail)) {
-          message = errorData.detail[0]?.msg || message;
-        }
+        const message = await readApiError(response, "Invalid credentials. Please try again.");
         toast.error(message);
       }
     } catch (error) {
       console.error("Login error:", error);
-      toast.error("Cannot connect to server. Ensure FastAPI is running on port 8000.");
+      toast.error(apiConnectionErrorMessage());
     } finally {
       setIsLoading(false);
     }
@@ -103,7 +99,7 @@ export default function LoginPage() {
         </form>
 
         <p className="text-center text-zinc-500 text-sm mt-6">
-          Don't have an account? <Link href="/signup" className="text-violet-400 hover:text-violet-300 transition-colors font-medium">Sign up</Link>
+          Don&apos;t have an account? <Link href="/signup" className="text-violet-400 hover:text-violet-300 transition-colors font-medium">Sign up</Link>
         </p>
         <p className="text-center text-zinc-600 text-sm mt-2">
           <Link href="/forgot-password" className="hover:text-zinc-400 transition-colors">Forgot your password?</Link>

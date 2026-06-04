@@ -4,8 +4,6 @@ import json
 import logging
 from typing import AsyncGenerator
 
-from modules.rag import load_pyqs, initialize_rag, search_pyqs
-
 logger = logging.getLogger(__name__)
 
 # ====================== CONFIG ======================
@@ -61,6 +59,9 @@ def _build_rag_context(question: str) -> str:
     Returns formatted previous-year citations with subject/year for prompt + auditability.
     """
     try:
+        # Keep the heavyweight sentence-transformers/torch stack out of app startup.
+        from modules.rag import load_pyqs, initialize_rag, search_pyqs
+
         pyqs = load_pyqs()
         index, pyqs = initialize_rag(pyqs)
         results = search_pyqs(question, pyqs, index, top_k=3)

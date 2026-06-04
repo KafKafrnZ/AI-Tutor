@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Bot, ArrowLeft, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { API_URL } from "@/lib/api";
+import { API_URL, apiConnectionErrorMessage, readApiError } from "@/lib/api";
 
 export default function SignupPage() {
   const [name, setName] = useState("");
@@ -33,20 +33,12 @@ export default function SignupPage() {
         toast.success(data.message || "Account created! You can sign in now.");
         router.push("/login");
       } else {
-        const errorData = await response.json();
-        let message = errorData.error || "Signup failed. Try a different email.";
-        if (errorData.detail) {
-          if (Array.isArray(errorData.detail)) {
-            message = errorData.detail[0]?.msg || message;
-          } else if (typeof errorData.detail === "string") {
-            message = errorData.detail;
-          }
-        }
+        const message = await readApiError(response, "Signup failed. Try a different email.");
         toast.error(message);
       }
     } catch (error) {
       console.error("Signup error:", error);
-      toast.error("Cannot connect to server. Ensure FastAPI is running on port 8000.");
+      toast.error(apiConnectionErrorMessage());
     } finally {
       setIsLoading(false);
     }
