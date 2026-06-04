@@ -8,6 +8,7 @@ Create Date: 2026-06-03 00:00:00.000000
 from typing import Sequence, Union
 
 from alembic import op
+import sqlalchemy as sa
 
 
 revision: str = "7c9d2f1a4b6e"
@@ -17,11 +18,16 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    op.drop_constraint(
-        "fk_master_questions_test_id_mock_tests",
-        "master_questions",
-        type_="foreignkey",
-    )
+    bind = op.get_bind()
+    inspector = sa.inspect(bind)
+    foreign_keys = inspector.get_foreign_keys("master_questions")
+
+    if any(fk.get("name") == "fk_master_questions_test_id_mock_tests" for fk in foreign_keys):
+        op.drop_constraint(
+            "fk_master_questions_test_id_mock_tests",
+            "master_questions",
+            type_="foreignkey",
+        )
 
 
 def downgrade() -> None:
