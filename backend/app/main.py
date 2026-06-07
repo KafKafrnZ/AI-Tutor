@@ -80,15 +80,15 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.BACKEND_CORS_ORIGINS,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["Content-Type", "Authorization", "X-Requested-With"],
 )
 
 def cookie_security_options() -> dict[str, Any]:
     is_prod = settings.ENVIRONMENT.lower() == "production"
     return {
         "secure": is_prod,
-        "samesite": "none" if is_prod else "lax",
+        "samesite": "strict" if is_prod else "lax",
     }
 
 

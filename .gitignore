@@ -1,4 +1,19 @@
-﻿*.docx
+*.docx
 .claude/
 *.log
 Roadmap.md.txt
+
+# Dev artifacts
+YOUR_FIXES.txt
+memory.md
+*.code-workspace
+SAVE_POINT_*.txt
+
+# Node in wrong places
+backend/node_modules/
+backend/package.json
+backend/package-lock.json
+
+# Orphaned alembic scaffold at repo root (canonical: backend/alembic/)
+/alembic/
+/alembic.ini
