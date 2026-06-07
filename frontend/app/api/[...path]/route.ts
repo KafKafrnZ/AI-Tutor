@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 60;
+export const runtime = "nodejs";
+export const preferredRegion = "auto";
 
 // BACKEND_API_URL must be set in Vercel → Settings → Environment Variables.
 // Value: your Railway service URL (no trailing slash).
@@ -70,6 +73,16 @@ async function proxyRequest(request: NextRequest, context: RouteContext): Promis
     }
 
     const upstream = await fetch(targetUrl, init);
+    if (upstream.headers.get("content-type")?.includes("text/event-stream")) {
+      const headers = copyResponseHeaders(upstream);
+      headers.set("content-type", "text/event-stream");
+      headers.set("cache-control", "no-cache, no-transform");
+      headers.set("x-accel-buffering", "no");
+      return new NextResponse(upstream.body, {
+        status: upstream.status,
+        headers,
+      });
+    }
     const body =
       request.method === "HEAD" || upstream.status === 204 || upstream.status === 304
         ? null
