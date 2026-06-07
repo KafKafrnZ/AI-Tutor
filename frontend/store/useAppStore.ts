@@ -8,6 +8,14 @@ interface User {
   plan: string;
 }
 
+interface PracticeQuestion {
+  difficulty?: string;
+  question: string;
+  options: string[];
+  correct_answer: string;
+  explanation?: string;
+}
+
 interface AppState {
   // User / Auth state (FIX-17)
   user: User | null;
@@ -20,8 +28,8 @@ interface AppState {
   // Practice State
   practiceTopic: string;
   setPracticeTopic: (topic: string) => void;
-  practiceQuestions: any[];
-  setPracticeQuestions: (questions: any[]) => void;
+  practiceQuestions: PracticeQuestion[];
+  setPracticeQuestions: (questions: PracticeQuestion[]) => void;
   practiceAnswers: Record<number, string>;
   setPracticeAnswers: (answers: Record<number, string>) => void;
 }

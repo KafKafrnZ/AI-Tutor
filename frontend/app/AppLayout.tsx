@@ -36,11 +36,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   // Pull store actions (FIX-17 / FIX-18)
   const { setUser, user: storeUser } = useAppStore();
 
-  const [userName, setUserName] = useState(() => {
-    if (storeUser?.name) return storeUser.name;
-    if (typeof window === "undefined") return "Student";
-    return localStorage.getItem("userName") || "Student";
-  });
+  // Must match server render — localStorage is only available client-side.
+  // useEffect updates to real value after hydration to avoid SSR mismatch.
+  const [userName, setUserName] = useState("Student");
   const [userEmail, setUserEmail] = useState(() => storeUser?.email || "");
   const [userPlan, setUserPlan] = useState(() => storeUser?.plan || "free");
   const [isProfileOpen, setIsProfileOpen] = useState(false);
@@ -50,6 +48,14 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   
   // FE-6 FIX: Added mobile menu state
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  // Seed userName from localStorage immediately on mount (client-only, after hydration)
+  useEffect(() => {
+    queueMicrotask(() => {
+      const stored = localStorage.getItem("userName");
+      if (stored) setUserName(stored);
+    });
+  }, []);
 
   // FE-2 FIX: Removed 'pathname' from dependency array. This now runs EXACTLY ONCE on mount.
   // FIX-17: Centralize user in store so other components don't re-fetch /me constantly.
@@ -181,7 +187,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           <div className="w-8 h-8 bg-gradient-to-br from-violet-600 to-fuchsia-600 rounded-lg flex items-center justify-center">
             <Sparkles className="w-4 h-4 text-white" />
           </div>
-          <span className="text-lg font-bold text-white tracking-tight uppercase">IBPS SO AI</span>
+          <span className="text-lg font-bold text-white tracking-tight uppercase">Ascend AI</span>
         </div>
         <button 
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} 
@@ -202,7 +208,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             <div className="w-8 h-8 bg-gradient-to-br from-violet-600 to-fuchsia-600 rounded-lg flex items-center justify-center shadow-[0_0_15px_rgba(124,58,237,0.5)]">
               <Sparkles className="w-4 h-4 text-white" />
             </div>
-            <span className="text-xl font-bold text-white tracking-tight uppercase">IBPS SO AI</span>
+            <span className="text-xl font-bold text-white tracking-tight uppercase">Ascend AI</span>
           </Link>
         </div>
 

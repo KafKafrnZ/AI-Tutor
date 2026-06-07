@@ -3,18 +3,23 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 
+type Meteor = { id: number; top: number; left: number; delay: number; duration: number };
+
+function createMeteors(count: number): Meteor[] {
+  return Array.from({ length: count }).map((_, i) => ({
+    id: i,
+    top: Math.random() * 100 - 20,
+    left: Math.random() * 150 - 50,
+    delay: Math.random() * 5,
+    duration: Math.random() * 2 + 2,
+  }));
+}
+
 export default function CosmicBackground() {
-  const [meteors, setMeteors] = useState<{ id: number; top: number; left: number; delay: number; duration: number }[]>([]);
+  const [meteors, setMeteors] = useState<Meteor[]>([]);
 
   useEffect(() => {
-    const generatedMeteors = Array.from({ length: 30 }).map((_, i) => ({
-      id: i,
-      top: Math.random() * 100 - 20, 
-      left: Math.random() * 150 - 50, 
-      delay: Math.random() * 5,
-      duration: Math.random() * 2 + 2, 
-    }));
-    setMeteors(generatedMeteors);
+    queueMicrotask(() => setMeteors(createMeteors(30)));
   }, []);
 
   return (

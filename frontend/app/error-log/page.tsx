@@ -88,7 +88,7 @@ export default function ErrorLogPage() {
                 <AlertTriangle className="w-8 h-8" />
               </div>
               <h2 className="text-xl font-bold text-white mb-2">Your locker is empty!</h2>
-              <p className="text-zinc-500">You haven't made any mistakes yet. Keep taking mock tests!</p>
+              <p className="text-zinc-500">You haven&apos;t made any mistakes yet. Keep taking mock tests!</p>
             </motion.div>
         ) : (
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-zinc-900/50 border border-white/5 rounded-2xl p-6 shadow-lg backdrop-blur-sm">
