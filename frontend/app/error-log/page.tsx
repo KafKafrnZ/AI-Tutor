@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { ArrowLeft, AlertCircle, AlertTriangle } from "lucide-react";
 import Link from "next/link";
 import { API_URL } from "@/lib/api";
+import { SkeletonRow } from "@/components/ui/Skeleton";
 
 // C-02 FIX: Added strict TypeScript interface
 interface ErrorLogEntry {
@@ -68,8 +69,8 @@ export default function ErrorLogPage() {
 
         {/* Content */}
         {isLoading ? (
-          <div className="flex justify-center py-20">
-            <div className="w-8 h-8 border-4 border-rose-500 border-t-transparent rounded-full animate-spin"></div>
+          <div className="space-y-4">
+            {[1,2,3,4].map(i => <SkeletonRow key={i} />)}
           </div>
         ) : authError ? (
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-zinc-900/50 border border-white/5 rounded-2xl p-12 shadow-xl backdrop-blur-sm flex flex-col items-center text-center">

@@ -1,3 +1,4 @@
+import asyncio
 import json
 import logging
 from typing import Any, AsyncGenerator
@@ -5,6 +6,9 @@ from typing import Any, AsyncGenerator
 import httpx
 
 from app.core.config import settings
+
+_RETRYABLE = (httpx.TransportError, httpx.TimeoutException)
+_MAX_RETRIES = 3
 
 logger = logging.getLogger(__name__)
 
@@ -150,25 +154,33 @@ def _extract_anthropic_text(data: dict[str, Any]) -> str:
 
 
 async def chat_complete(messages: list[dict], **kwargs: Any) -> str:
-    """Return a full response from the configured chat endpoint."""
+    """Return a full response from the configured chat endpoint (3 retries, exponential backoff)."""
     provider = detect_provider(settings.LLM_BASE_URL)
     client = get_http_client()
-    response = await client.post(
-        _completion_url(provider),
-        headers=_headers(provider),
-        json=_payload(provider, messages, stream=False, **kwargs),
-    )
-    response.raise_for_status()
-    data = response.json()
-    if provider == "anthropic":
-        return _extract_anthropic_text(data)
-    return data["choices"][0]["message"].get("content", "")
+    delay = 1.0
+    last_err: Exception = RuntimeError("LLM unreachable")
+    for attempt in range(_MAX_RETRIES):
+        try:
+            response = await client.post(
+                _completion_url(provider),
+                headers=_headers(provider),
+                json=_payload(provider, messages, stream=False, **kwargs),
+            )
+            response.raise_for_status()
+            data = response.json()
+            if provider == "anthropic":
+                return _extract_anthropic_text(data)
+            return data["choices"][0]["message"].get("content", "")
+        except _RETRYABLE as exc:
+            last_err = exc
+            if attempt < _MAX_RETRIES - 1:
+                logger.warning("LLM request failed (attempt %d/%d): %s — retrying in %.1fs", attempt + 1, _MAX_RETRIES, exc, delay)
+                await asyncio.sleep(delay)
+                delay *= 2
+    raise last_err
 
 
-async def chat_stream(messages: list[dict], **kwargs: Any) -> AsyncGenerator[str, None]:
-    """Yield text tokens from the configured streaming chat endpoint."""
-    provider = detect_provider(settings.LLM_BASE_URL)
-    client = get_http_client()
+async def _stream_once(provider: str, client: httpx.AsyncClient, messages: list[dict], **kwargs: Any) -> AsyncGenerator[str, None]:
     async with client.stream(
         "POST",
         _completion_url(provider),
@@ -180,16 +192,13 @@ async def chat_stream(messages: list[dict], **kwargs: Any) -> AsyncGenerator[str
             line = raw_line.strip()
             if not line or not line.startswith("data:"):
                 continue
-
             data_str = line.removeprefix("data:").strip()
             if data_str == "[DONE]":
                 break
-
             try:
                 chunk = json.loads(data_str)
             except json.JSONDecodeError:
                 continue
-
             if provider == "anthropic":
                 event_type = chunk.get("type")
                 if event_type == "content_block_delta":
@@ -199,20 +208,41 @@ async def chat_stream(messages: list[dict], **kwargs: Any) -> AsyncGenerator[str
                         yield token
                 elif event_type == "message_delta":
                     delta = chunk.get("delta") or {}
-                    stop_reason = delta.get("stop_reason")
-                    if stop_reason:
-                        logger.info("LLM stream stop_reason=%s", stop_reason)
+                    if delta.get("stop_reason"):
+                        logger.info("LLM stream stop_reason=%s", delta["stop_reason"])
                 elif event_type == "error":
                     error = chunk.get("error") or {}
                     raise RuntimeError(error.get("message") or "Anthropic stream error")
                 continue
-
             choice = chunk.get("choices", [{}])[0]
-            finish_reason = choice.get("finish_reason")
-            if finish_reason:
-                logger.info("LLM stream finish_reason=%s", finish_reason)
-
+            if choice.get("finish_reason"):
+                logger.info("LLM stream finish_reason=%s", choice["finish_reason"])
             delta = choice.get("delta") or {}
             token = delta.get("content", "")
             if token:
                 yield token
+
+
+async def chat_stream(messages: list[dict], **kwargs: Any) -> AsyncGenerator[str, None]:
+    """Yield text tokens from the configured streaming chat endpoint.
+
+    Retries up to 3 times with exponential backoff, but only if no tokens
+    have been sent yet (mid-stream drops are not retried to avoid duplicates).
+    """
+    provider = detect_provider(settings.LLM_BASE_URL)
+    client = get_http_client()
+    delay = 1.0
+    for attempt in range(_MAX_RETRIES):
+        tokens_sent = 0
+        try:
+            async for token in _stream_once(provider, client, messages, **kwargs):
+                tokens_sent += 1
+                yield token
+            return
+        except _RETRYABLE as exc:
+            if tokens_sent == 0 and attempt < _MAX_RETRIES - 1:
+                logger.warning("LLM stream failed before first token (attempt %d/%d) — retrying in %.1fs", attempt + 1, _MAX_RETRIES, delay)
+                await asyncio.sleep(delay)
+                delay *= 2
+            else:
+                raise

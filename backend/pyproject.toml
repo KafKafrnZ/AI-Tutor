@@ -24,6 +24,7 @@ dependencies = [
     "requests>=2.32.0",
     "structlog>=24.4.0",                 # better logging
     "sse-starlette>=3.4.4",
+    "structlog>=24.4.0",
     "httpx>=0.28.1",
 ]
 

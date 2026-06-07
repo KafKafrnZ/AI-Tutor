@@ -2,9 +2,10 @@
 
 import { motion } from "framer-motion";
 import Link from "next/link";
-import { Bot, Target, FileText, ChevronRight, BrainCircuit, CheckCircle2, Loader2, Sparkles } from "lucide-react";
+import { Bot, Target, FileText, ChevronRight, BrainCircuit, CheckCircle2, Sparkles } from "lucide-react";
 import { MouseEvent, useEffect, useState } from "react";
 import { API_URL } from "@/lib/api";
+import { Skeleton } from "@/components/ui/Skeleton";
 
 interface RevisionPlan {
   primary_weakness: string;
@@ -116,9 +117,16 @@ export default function DashboardPage() {
           </div>
 
           {loading ? (
-            <div className="flex flex-col items-center justify-center py-12">
-              <Loader2 className="w-8 h-8 text-indigo-400 animate-spin mb-4" />
-              <p className="text-zinc-400 font-medium animate-pulse">Analyzing neural patterns...</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-10 relative z-10">
+              <div className="space-y-6">
+                <Skeleton className="h-4 w-32" />
+                <Skeleton className="h-8 w-48" />
+                <Skeleton className="h-4 w-40" />
+                <div className="flex flex-wrap gap-2">
+                  {[1,2,3,4].map(i => <Skeleton key={i} className="h-7 w-24" />)}
+                </div>
+              </div>
+              <Skeleton className="h-48 rounded-2xl" />
             </div>
           ) : plan ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-10 relative z-10">
