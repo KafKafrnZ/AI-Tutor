@@ -156,7 +156,7 @@ export default function TutorPage() {
     } catch (error) {
       if (abortController.signal.aborted || streamFinalizedRef.current) return;
       const updatedMessages = useAppStore.getState().tutorMessages;
-      setTutorMessages([...updatedMessages, { role: "assistant", content: "Connection error. Make sure your Python backend is running!" }]);
+      setTutorMessages([...updatedMessages, { role: "assistant", content: "Something went wrong. Please try again." }]);
     } finally {
       if (streamAbortRef.current === abortController) {
         streamAbortRef.current = null;

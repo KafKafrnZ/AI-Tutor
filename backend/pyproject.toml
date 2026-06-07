@@ -15,7 +15,6 @@ dependencies = [
     "passlib[bcrypt]>=1.7.4",
     "python-multipart>=0.0.9",
     "slowapi>=0.1.9",                    # rate limiting
-    "groq>=0.11.0",
     "sentence-transformers>=3.1.0",
     "faiss-cpu>=1.10.0",                 # or faiss-gpu if you have GPU
     "pandas>=2.2.0",
@@ -23,9 +22,6 @@ dependencies = [
     "requests>=2.32.0",
     "structlog>=24.4.0",                 # better logging
     "sse-starlette>=3.4.4",
-    "langchain-core>=1.4.0",
-    "langgraph>=1.2.0",
-    "langchain-groq>=1.1.2",
     "httpx>=0.28.1",
 ]
 
