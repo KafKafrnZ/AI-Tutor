@@ -90,13 +90,13 @@ sse-starlette==3.4.4
 starlette==1.0.0
 structlog==25.5.0
 tenacity==9.1.4
-tokenizers==0.22.2
+tokenizers==0.20.3
 tomli==2.4.1
 tomli_w==1.2.0
 typer==0.25.1
 typing-inspection==0.4.2
 typing_extensions==4.15.0
-ttzdata==2026.2
+tzdata==2026.2
 urllib3==2.7.0
 uuid_utils==0.16.0
 uvicorn==0.46.0
