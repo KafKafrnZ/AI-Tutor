@@ -1,0 +1,51 @@
+:root {
+  --ascend-bg: 5 8 16;
+  --ascend-surface: 13 17 23;
+  --ascend-primary: 0 212 255;
+  --ascend-secondary: 14 165 233;
+  --ascend-accent: 139 92 246;
+  --ascend-fg: 248 250 252;
+  --ascend-font-sans: "Geist", "Geist Fallback", ui-sans-serif, system-ui, sans-serif;
+  --ascend-font-display: "Geist", "Geist Fallback", ui-sans-serif, system-ui, sans-serif;
+}
+
+@theme inline {
+  --color-bg: rgb(var(--ascend-bg));
+  --color-surface: rgb(var(--ascend-surface));
+  --color-primary: rgb(var(--ascend-primary));
+  --color-primary-foreground: rgb(var(--ascend-bg));
+  --color-secondary: rgb(var(--ascend-secondary));
+  --color-secondary-foreground: rgb(var(--ascend-bg));
+  --color-accent: rgb(var(--ascend-accent));
+  --color-accent-foreground: rgb(var(--ascend-fg));
+  --color-fg: rgb(var(--ascend-fg));
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+  --font-sans: "Geist", "Geist Fallback", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Geist", "Geist Fallback", ui-sans-serif, system-ui, sans-serif;
+  --radius-token: 0.5rem;
+  --animate-fade-up: fade-up 0.45s ease-out both;
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

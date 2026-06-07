@@ -1,25 +1,13 @@
 "use client";
 
 import { motion } from "framer-motion";
-import BlackholeBackground from "@/components/ui/Blackhole";
 import Link from "next/link";
 import {
   Sparkles, Bot, Target, FileText, TrendingUp,
   ShieldCheck, ArrowRight, Server, GraduationCap,
 } from "lucide-react";
-import { useEffect, useState } from "react";
-
-type Meteor = { id: number; top: number; left: number; delay: number; duration: number };
-
-function createMeteors(count: number): Meteor[] {
-  return Array.from({ length: count }).map((_, i) => ({
-    id: i,
-    top: Math.random() * 100 - 20,
-    left: Math.random() * 150 - 50,
-    delay: Math.random() * 5,
-    duration: Math.random() * 2 + 2,
-  }));
-}
+import Logo from "@/components/Logo";
+import VideoBackground from "@/components/VideoBackground";
 
 const capabilities = [
   {
@@ -51,21 +39,13 @@ const enterprisePoints = [
 ];
 
 export default function LandingPage() {
-  const [meteors, setMeteors] = useState<Meteor[]>([]);
-
-  useEffect(() => {
-    queueMicrotask(() => setMeteors(createMeteors(25)));
-  }, []);
-
   return (
-    <main className="relative min-h-screen overflow-x-hidden bg-[#09090b] font-sans text-white">
+    <main className="relative min-h-screen overflow-x-hidden bg-bg font-sans text-white">
       {/* ---------- Top navigation ---------- */}
       <header className="absolute inset-x-0 top-0 z-30">
         <nav className="mx-auto flex max-w-7xl items-center justify-between px-6 py-5">
           <Link href="/" className="flex items-center gap-2.5">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-violet-600 to-fuchsia-600 shadow-[0_0_15px_rgba(124,58,237,0.5)]">
-              <Sparkles className="h-4 w-4 text-white" />
-            </div>
+            <Logo className="size-9 text-primary drop-shadow-[0_0_18px_rgba(0,212,255,0.45)]" />
             <span className="text-lg font-bold tracking-tight">Ascend AI</span>
           </Link>
           <div className="flex items-center gap-2">
@@ -81,26 +61,9 @@ export default function LandingPage() {
         </nav>
       </header>
 
-      {/* ---------- Hero (cosmic) ---------- */}
-      <section className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden px-6">
-        <div className="absolute inset-0 z-0">
-          <BlackholeBackground />
-        </div>
-
-        {/* Background glows */}
-        <div className="pointer-events-none absolute left-1/2 top-0 h-[400px] w-[800px] -translate-x-1/2 rounded-full bg-violet-600/20 blur-[120px]" />
-        <div className="pointer-events-none absolute bottom-0 right-0 h-[400px] w-[600px] rounded-full bg-fuchsia-600/10 blur-[120px]" />
-
-        {/* Shooting stars */}
-        {meteors.map((m) => (
-          <span
-            key={m.id}
-            className="animate-shooting-star pointer-events-none absolute h-0.5 w-0 rounded-full bg-gradient-to-r from-transparent via-amber-200 to-white shadow-[0_0_10px_rgba(255,255,255,0.8)]"
-            style={{ top: `${m.top}%`, left: `${m.left}%`, animationDelay: `${m.delay}s`, animationDuration: `${m.duration}s` }}
-          >
-            <div className="absolute right-0 top-1/2 h-1.5 w-1.5 -translate-y-1/2 rounded-full bg-white blur-[2px]" />
-          </span>
-        ))}
+      {/* ---------- Hero ---------- */}
+      <section className="relative flex min-h-[92dvh] flex-col items-center justify-center overflow-hidden px-6 pb-20 pt-32">
+        <VideoBackground posterSrc="/media/hero-still.jpg" priority />
 
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -109,13 +72,13 @@ export default function LandingPage() {
           className="relative z-10 flex max-w-4xl flex-col items-center px-2 text-center"
         >
           <div className="mb-8 flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-sm font-medium text-zinc-300 backdrop-blur-md">
-            <Sparkles className="h-4 w-4 text-violet-400" />
+            <Sparkles className="h-4 w-4 text-primary" />
             Open-source · Self-hostable · RAG-powered
           </div>
 
           <h1 className="mb-6 text-5xl font-extrabold tracking-tight md:text-7xl">
             Ascend India&apos;s toughest <br />
-            <span className="bg-gradient-to-r from-violet-400 to-fuchsia-400 bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
               government exams.
             </span>
           </h1>

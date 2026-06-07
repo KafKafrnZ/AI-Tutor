@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import "@/styles/tokens.css";
 import "./globals.css";
 import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
 import AppLayout from "./AppLayout";
@@ -7,6 +8,9 @@ import { Toaster } from "sonner";
 export const metadata: Metadata = {
   title: "Ascend AI - AI Tutor for Government Exams",
   description: "Open-source AI tutor for UPSC, State PSC, and India's government exams.",
+  icons: {
+    icon: "/brand/logo.svg",
+  },
 };
 
 export default function RootLayout({
