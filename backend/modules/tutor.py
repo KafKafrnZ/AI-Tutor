@@ -145,7 +145,7 @@ async def _chat_complete_or_error(
     return result
 
 
-async def ask_tutor(question: str, context: str = "") -> str:
+async def ask_tutor(question: str, context: str = "", history: list[dict] | None = None) -> str:
     user_context = (context or "").strip()
     trusted_context = ""
     if not user_context:
@@ -157,12 +157,17 @@ async def ask_tutor(question: str, context: str = "") -> str:
         question=question,
         trusted_context=trusted_context,
         user_context=user_context,
+        conversation_history=history,
     )
     result = await _chat_complete_or_error(messages, temperature=0.3, max_tokens=4096)
     return result
 
 
-async def ask_tutor_stream(question: str, context: str = "") -> AsyncGenerator[str, None]:
+async def ask_tutor_stream(
+    question: str,
+    context: str = "",
+    history: list[dict] | None = None,
+) -> AsyncGenerator[str, None]:
     """Yield tokens in real time for SSE streaming."""
     user_context = (context or "").strip()
     trusted_context = ""
@@ -175,6 +180,7 @@ async def ask_tutor_stream(question: str, context: str = "") -> AsyncGenerator[s
         question=question,
         trusted_context=trusted_context,
         user_context=user_context,
+        conversation_history=history,
     )
 
     yielded = False

@@ -23,6 +23,13 @@ def parse_bool(raw: str | None, default: bool = False) -> bool:
     return raw.lower() in {"1", "true", "yes", "on"}
 
 
+def _safe_int(value: str | None, default: int) -> int:
+    try:
+        return int(value) if value is not None else default
+    except (ValueError, TypeError):
+        return default
+
+
 class Settings:
     PROJECT_NAME: str = "AI Tutor"
     VERSION: str = "1.2"
@@ -56,7 +63,7 @@ class Settings:
     # Email — SMTP adapter (any provider: Postal, Resend SMTP, Gmail, etc.)
     # If EMAIL_HOST / EMAIL_USER / EMAIL_PASSWORD are not set, emails fall back to logger.info (local dev).
     EMAIL_HOST: str = os.getenv("EMAIL_HOST", "")
-    EMAIL_PORT: int = int(os.getenv("EMAIL_PORT", "587"))
+    EMAIL_PORT: int = _safe_int(os.getenv("EMAIL_PORT"), 587)
     EMAIL_USER: str = os.getenv("EMAIL_USER", "")
     EMAIL_PASSWORD: str = os.getenv("EMAIL_PASSWORD", "")
     EMAIL_FROM: str = os.getenv("EMAIL_FROM", "noreply@ascend-ai.in")
