@@ -11,6 +11,10 @@ from modules.faiss_index import (
 
 logger = logging.getLogger(__name__)
 
+# DEPRECATED: Legacy FAISS + sentence-transformers RAG.
+# The active production RAG implementation is in app/core/rag.py (ChromaDB + FastEmbed hybrid search + PYQ ingest).
+# This module is kept only for historical reference and is not imported by tutor/main flows.
+
 # Lazy model load (FIX: avoid blocking import + duplicate loads across modules)
 _model = None
 

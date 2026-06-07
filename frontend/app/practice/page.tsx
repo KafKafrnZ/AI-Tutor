@@ -23,6 +23,7 @@ export default function PracticePage() {
 
   // LOCAL STATE
   const [loading, setLoading] = useState(false);
+  const [currentIdx, setCurrentIdx] = useState(0);
 
   const generateQuestions = async () => {
     if (!topic.trim()) {
@@ -33,6 +34,7 @@ export default function PracticePage() {
     setLoading(true);
     setQuestions([]);
     setSelectedAnswers({});
+    setCurrentIdx(0);
 
     try {
       const enhancedTopic = `${topic}. Generate exactly 30 questions for this topic.`;
@@ -145,83 +147,118 @@ export default function PracticePage() {
             </div>
           </div>
 
-          {/* Questions List */}
-          <div className="space-y-10">
-            {questions.map((q, i) => {
-              const isAnswered = !!selectedAnswers[i];
-              const userSelectedOpt = selectedAnswers[i];
-              const difficulty = q.difficulty || "Medium";
+          {/* Questions List - Stepper View */}
+          {questions.length > 0 && (
+            <div className="max-w-3xl mx-auto">
+              <div className="flex justify-between items-center mb-6">
+                <span className="text-sm font-semibold text-zinc-400 tracking-wider">
+                  QUESTION {currentIdx + 1} OF {questions.length}
+                </span>
+                <div className="flex gap-1">
+                  {questions.map((_, i) => (
+                    <div 
+                      key={i} 
+                      className={`h-1.5 w-6 rounded-full transition-colors ${i === currentIdx ? 'bg-amber-500' : !!selectedAnswers[i] ? 'bg-amber-500/40' : 'bg-white/10'}`} 
+                    />
+                  ))}
+                </div>
+              </div>
 
-              return (
-                <motion.div 
-                  initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: Math.min(i * 0.1, 1) }}
-                  key={i} 
-                  // Made the question card highly transparent (bg-black/20)
-                  className={`p-8 bg-black/20 backdrop-blur-xl border rounded-3xl transition-all duration-500 relative overflow-hidden ${getDifficultyHue(difficulty)}`}
-                >
-                  <div className="flex justify-between items-center mb-8 relative z-10">
-                    <span className={`px-4 py-1.5 text-xs font-bold rounded-full border uppercase tracking-widest ${getBadgeStyle(difficulty)}`}>
-                      {difficulty}
-                    </span>
-                    <span className="text-sm font-semibold text-zinc-400 tracking-wider drop-shadow-md">QUESTION {i + 1} OF {questions.length}</span>
-                  </div>
+              {(() => {
+                const q = questions[currentIdx];
+                const isAnswered = !!selectedAnswers[currentIdx];
+                const userSelectedOpt = selectedAnswers[currentIdx];
+                const difficulty = q.difficulty || "Medium";
 
-                  <p className="text-xl font-medium leading-relaxed mb-8 text-white relative z-10 drop-shadow-md">{q.question}</p>
+                return (
+                  <motion.div 
+                    initial={{ opacity: 0, x: 20 }} 
+                    animate={{ opacity: 1, x: 0 }} 
+                    exit={{ opacity: 0, x: -20 }}
+                    key={currentIdx} 
+                    className={`p-8 bg-black/20 backdrop-blur-xl border rounded-3xl transition-all duration-500 relative overflow-hidden ${getDifficultyHue(difficulty)}`}
+                  >
+                    <div className="flex justify-between items-center mb-8 relative z-10">
+                      <span className={`px-4 py-1.5 text-xs font-bold rounded-full border uppercase tracking-widest ${getBadgeStyle(difficulty)}`}>
+                        {difficulty}
+                      </span>
+                    </div>
 
-                  {/* Options Grid */}
-                  <div className="grid grid-cols-1 gap-3 relative z-10">
-                    {Array.isArray(q.options) ? (
-                      q.options.map((opt: string, idx: number) => {
-                        const isCorrectAnswer = opt === q.correct_answer;
-                        const isThisOptionSelected = userSelectedOpt === opt;
-                        
-                        // Default Glassy Option Style
-                        let style = "bg-black/30 border-white/10 text-zinc-300 hover:border-amber-500/50 hover:bg-amber-500/10 cursor-pointer backdrop-blur-md";
-                        
-                        if (isAnswered) {
-                          if (isCorrectAnswer) {
-                            style = "bg-emerald-500/20 border-emerald-500/50 text-emerald-300 cursor-default shadow-[0_0_15px_rgba(16,185,129,0.2)] backdrop-blur-md";
-                          } else if (isThisOptionSelected && !isCorrectAnswer) {
-                            style = "bg-rose-500/20 border-rose-500/50 text-rose-300 cursor-default backdrop-blur-md";
-                          } else {
-                            style = "bg-black/10 border-white/5 text-zinc-500 cursor-default opacity-50 backdrop-blur-sm";
+                    <p className="text-xl font-medium leading-relaxed mb-8 text-white relative z-10 drop-shadow-md">{q.question}</p>
+
+                    {/* Options Grid */}
+                    <div className="grid grid-cols-1 gap-3 relative z-10">
+                      {Array.isArray(q.options) ? (
+                        q.options.map((opt: string, idx: number) => {
+                          const isCorrectAnswer = opt === q.correct_answer;
+                          const isThisOptionSelected = userSelectedOpt === opt;
+                          
+                          // Default Glassy Option Style
+                          let style = "bg-black/30 border-white/10 text-zinc-300 hover:border-amber-500/50 hover:bg-amber-500/10 cursor-pointer backdrop-blur-md";
+                          
+                          if (isAnswered) {
+                            if (isCorrectAnswer) {
+                              style = "bg-emerald-500/20 border-emerald-500/50 text-emerald-300 cursor-default shadow-[0_0_15px_rgba(16,185,129,0.2)] backdrop-blur-md";
+                            } else if (isThisOptionSelected && !isCorrectAnswer) {
+                              style = "bg-rose-500/20 border-rose-500/50 text-rose-300 cursor-default backdrop-blur-md";
+                            } else {
+                              style = "bg-black/10 border-white/5 text-zinc-500 cursor-default opacity-50 backdrop-blur-sm";
+                            }
                           }
-                        }
 
-                        return (
-                          <div 
-                            key={idx} onClick={() => handleOptionSelect(i, opt)}
-                            className={`p-5 border rounded-2xl transition-all duration-300 flex justify-between items-center ${style}`}
-                          >
-                            <span className="font-medium drop-shadow-sm">{opt}</span>
-                            {isAnswered && isCorrectAnswer && <CheckCircle2 className="w-6 h-6 text-emerald-400 shrink-0 drop-shadow-md" />}
-                            {isAnswered && isThisOptionSelected && !isCorrectAnswer && <XCircle className="w-6 h-6 text-rose-400 shrink-0 drop-shadow-md" />}
-                          </div>
-                        );
-                      })
-                    ) : (
-                      <div className="p-4 rounded-xl bg-rose-500/20 backdrop-blur-md border border-rose-500/30 text-rose-300 text-sm">
-                        ⚠️ The AI failed to format the options properly.
-                      </div>
+                          return (
+                            <div 
+                              key={idx} onClick={() => handleOptionSelect(currentIdx, opt)}
+                              className={`p-5 border rounded-2xl transition-all duration-300 flex justify-between items-center ${style}`}
+                            >
+                              <span className="font-medium drop-shadow-sm">{opt}</span>
+                              {isAnswered && isCorrectAnswer && <CheckCircle2 className="w-6 h-6 text-emerald-400 shrink-0 drop-shadow-md" />}
+                              {isAnswered && isThisOptionSelected && !isCorrectAnswer && <XCircle className="w-6 h-6 text-rose-400 shrink-0 drop-shadow-md" />}
+                            </div>
+                          );
+                        })
+                      ) : (
+                        <div className="p-4 rounded-xl bg-rose-500/20 backdrop-blur-md border border-rose-500/30 text-rose-300 text-sm">
+                          ⚠️ The AI failed to format the options properly.
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Explanation Block */}
+                    {isAnswered && q.explanation && (
+                      <motion.div 
+                        initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }}
+                        className="mt-8 pt-6 border-t border-white/10 relative z-10"
+                      >
+                        <p className="font-semibold text-amber-400 mb-3 text-lg flex items-center gap-2 drop-shadow-md">
+                          💡 Explanation
+                        </p>
+                        <p className="text-zinc-200 leading-relaxed text-[15px] drop-shadow-sm">{q.explanation}</p>
+                      </motion.div>
                     )}
-                  </div>
+                  </motion.div>
+                );
+              })()}
 
-                  {/* Explanation Block (Glassy) */}
-                  {isAnswered && q.explanation && (
-                    <motion.div 
-                      initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }}
-                      className="mt-8 pt-6 border-t border-white/10 relative z-10"
-                    >
-                      <p className="font-semibold text-amber-400 mb-3 text-lg flex items-center gap-2 drop-shadow-md">
-                        💡 Explanation
-                      </p>
-                      <p className="text-zinc-200 leading-relaxed text-[15px] drop-shadow-sm">{q.explanation}</p>
-                    </motion.div>
-                  )}
-                </motion.div>
-              );
-            })}
-          </div>
+              {/* Navigation Controls */}
+              <div className="flex justify-between items-center mt-8">
+                <button
+                  onClick={() => setCurrentIdx(prev => Math.max(0, prev - 1))}
+                  disabled={currentIdx === 0}
+                  className="px-6 py-2.5 rounded-xl bg-zinc-900/50 border border-white/10 text-zinc-300 hover:bg-zinc-800 disabled:opacity-30 transition-colors font-medium backdrop-blur-sm"
+                >
+                  Previous
+                </button>
+                <button
+                  onClick={() => setCurrentIdx(prev => Math.min(questions.length - 1, prev + 1))}
+                  disabled={currentIdx === questions.length - 1}
+                  className="px-6 py-2.5 rounded-xl bg-amber-500/90 text-black hover:bg-amber-400 disabled:opacity-30 disabled:hover:bg-amber-500/90 transition-colors font-bold backdrop-blur-sm shadow-lg shadow-amber-500/20"
+                >
+                  Next Question
+                </button>
+              </div>
+            </div>
+          )}
           
         </div>
       </div>

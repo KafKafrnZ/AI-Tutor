@@ -2,19 +2,17 @@
 
 import { useState, useEffect, useRef, useCallback } from "react"
 import { useParams, useRouter } from "next/navigation"
-import { motion, AnimatePresence } from "framer-motion"
-import { Clock, ChevronLeft, ChevronRight, Send, AlertTriangle } from "lucide-react"
+import { Clock, ChevronLeft, ChevronRight, Send, AlertTriangle, X, Target } from "lucide-react"
+import { AnimatePresence, motion } from "framer-motion"
+import { toast } from "sonner"
 import { API_URL } from "@/lib/api" // H-02 FIX: Import API_URL
 import { buildFallbackMockQuestions, getFallbackMockTest } from "@/lib/mockFallback"
 
 interface Question {
   id: number
   question_text: string
-  option_a: string
-  option_b: string
-  option_c: string
-  option_d: string
-  correct_option: string
+  options: string[]
+  correct_answer: string   // normalized "A" | "B" | "C" | "D"
   correct_answer_text: string
   explanation: string
   subject: string
@@ -98,6 +96,8 @@ export default function MockTestEnginePage() {
   const [answers, setAnswers] = useState<Record<number, string>>({}) // { questionId: "A" }
   const [timeLeft, setTimeLeft] = useState(0) // seconds
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [showSubmitModal, setShowSubmitModal] = useState(false)
+  const [isGridOpen, setIsGridOpen] = useState(false)
 
   // CRITICAL FIX FOR BUG-3: Use a mutable ref to always keep track of the latest user answers.
   const answersRef = useRef(answers)
@@ -136,32 +136,27 @@ export default function MockTestEnginePage() {
       try {
         const meta = data.test || {}
         // H-02 FIX: Construct data schema mapping object transformation layer
-        const mappedQuestions: Question[] = (data.questions || []).map((q) => ({
-          id: q.id,
-          question_text: q.question,
-          option_a: q.options?.[0] || "",
-          option_b: q.options?.[1] || "",
-          option_c: q.options?.[2] || "",
-          option_d: q.options?.[3] || "",
-          correct_option: normalizeCorrectOption(
+        const mappedQuestions: Question[] = (data.questions || []).map((q) => {
+          const apiOptions = (q.options || []).slice(0, 4)
+          while (apiOptions.length < 4) apiOptions.push("")
+          const letter = normalizeCorrectOption(
             q.correct_answer || q.correct_answer_text,
-            [q.options?.[0] || "", q.options?.[1] || "", q.options?.[2] || "", q.options?.[3] || ""],
-          ),
-          correct_answer_text:
-            q.correct_answer_text ||
-            optionTextFor(
-              normalizeCorrectOption(q.correct_answer, [
-                q.options?.[0] || "",
-                q.options?.[1] || "",
-                q.options?.[2] || "",
-                q.options?.[3] || "",
-              ]),
-              [q.options?.[0] || "", q.options?.[1] || "", q.options?.[2] || "", q.options?.[3] || ""],
-            ),
-          explanation: q.explanation || "",
-          subject: q.section || "General",
-          source: q.source,
-        }))
+            apiOptions
+          )
+          return {
+            id: q.id,
+            question_text: q.question,
+            options: apiOptions,
+            correct_answer: letter || "A",
+            correct_answer_text:
+              q.correct_answer_text ||
+              optionTextFor(letter, apiOptions) ||
+              apiOptions[0] || "",
+            explanation: q.explanation || "",
+            subject: q.section || "General",
+            source: q.source,
+          }
+        })
 
         const durMin = meta.duration_minutes || 90
         setTest({
@@ -184,25 +179,9 @@ export default function MockTestEnginePage() {
   }, [id])
 
   // Handle selecting an answer choice
-  const handleSelectOption = (questionId: number, optionLetter: string) => {
-    setAnswers((prev) => ({
-      ...prev,
-      [questionId]: optionLetter
-    }))
-  }
 
-  // Submit Logic
-  const handleFinalSubmit = useCallback(async (isAutoSubmit = false) => {
-    if (isSubmitting || !test) return
-    setIsSubmitting(true)
-
-    if (isAutoSubmit) {
-      alert("Time is up! Your answers are being automatically submitted.")
-    } else if (!confirm("Are you sure you want to submit the exam?")) {
-      setIsSubmitting(false)
-      return
-    }
-
+  // Execute the actual submission
+  const executeSubmit = useCallback(async (isAutoSubmit = false) => {
     const finalAnswers = answersRef.current
     
     const mistakesToLog = []
@@ -218,18 +197,13 @@ export default function MockTestEnginePage() {
         continue
       }
 
-      if (userAnswer === q.correct_option) {
+      if (userAnswer === q.correct_answer) {
         correctCount++
       } else {
         mistakesToLog.push({
           question_text: q.question_text,
           user_answer: userAnswer,
-          correct_answer: q.correct_answer_text || optionTextFor(q.correct_option, [
-            q.option_a,
-            q.option_b,
-            q.option_c,
-            q.option_d,
-          ]),
+          correct_answer: q.correct_answer_text || optionTextFor(q.correct_answer, q.options || []),
           explanation: q.explanation
         })
       }
@@ -267,8 +241,21 @@ export default function MockTestEnginePage() {
       alert("An error occurred while saving your results. Please check your connection.")
     } finally {
       setIsSubmitting(false)
+      setShowSubmitModal(false)
     }
   }, [isSubmitting, router, test, timeLeft])
+
+  // Initial Submit Check
+  const handleFinalSubmit = useCallback((isAutoSubmit = false) => {
+    if (isSubmitting || !test) return
+    
+    if (isAutoSubmit) {
+      toast.error("Time is up! Your answers have been automatically submitted.")
+      executeSubmit(true)
+    } else {
+      setShowSubmitModal(true)
+    }
+  }, [executeSubmit, isSubmitting, test])
 
   // Countdown Timer Hook
   useEffect(() => {
@@ -295,9 +282,16 @@ export default function MockTestEnginePage() {
     return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`
   }
 
+  const handleSelectOption = (questionId: number, optionKey: string) => {
+    setAnswers((prev) => ({
+      ...prev,
+      [questionId]: optionKey,
+    }))
+  }
+
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#09090b] flex items-center justify-center text-zinc-400 font-medium">
+      <div className="min-h-screen bg-bg flex items-center justify-center text-zinc-400 font-medium">
         Loading exam terminal resources...
       </div>
     )
@@ -305,7 +299,7 @@ export default function MockTestEnginePage() {
 
   if (!test || test.questions.length === 0) {
     return (
-      <div className="min-h-screen bg-[#09090b] flex flex-col items-center justify-center gap-4 px-6 text-center font-medium">
+      <div className="min-h-screen bg-bg flex flex-col items-center justify-center gap-4 px-6 text-center font-medium">
         <p className="text-rose-400">Exam layout not found or contains no questions.</p>
         <button
           onClick={() => router.push("/mock-tests")}
@@ -320,8 +314,48 @@ export default function MockTestEnginePage() {
   const currentQuestion = test.questions[currentIdx]
 
   return (
-    <div className="min-h-screen bg-[#09090b] text-white p-6 md:p-12">
-      <div className="max-w-5xl mx-auto flex flex-col gap-6">
+    <div className="min-h-screen bg-bg text-white p-6 md:p-12 relative">
+      
+      {/* Submit Confirmation Modal */}
+      <AnimatePresence>
+        {showSubmitModal && (
+          <motion.div 
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md"
+          >
+            <motion.div 
+              initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-zinc-900 border border-white/10 rounded-3xl p-8 max-w-md w-full shadow-2xl relative"
+            >
+              <button onClick={() => setShowSubmitModal(false)} className="absolute top-4 right-4 text-zinc-400 hover:text-white">
+                <X className="w-5 h-5" />
+              </button>
+              <h2 className="text-2xl font-bold mb-4">Submit Exam?</h2>
+              <p className="text-zinc-400 mb-8">
+                You have answered {Object.keys(answers).length} out of {test.questions.length} questions.
+                Are you sure you want to submit? You cannot undo this action.
+              </p>
+              <div className="flex gap-4 justify-end">
+                <button onClick={() => setShowSubmitModal(false)} className="px-5 py-2.5 rounded-xl text-zinc-300 hover:bg-white/5 transition-colors font-medium">
+                  Review Answers
+                </button>
+                <button 
+                  onClick={() => {
+                    setIsSubmitting(true);
+                    executeSubmit(false);
+                  }} 
+                  disabled={isSubmitting}
+                  className="px-5 py-2.5 rounded-xl bg-pink-600 hover:bg-pink-700 text-white font-bold transition-all shadow-lg flex items-center gap-2"
+                >
+                  {isSubmitting ? "Submitting..." : "Yes, Submit"}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <div className="max-w-5xl mx-auto flex flex-col gap-6 relative z-10">
         
         {/* Header Bar */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-zinc-900/60 border border-white/5 rounded-2xl p-6 gap-4">
@@ -334,7 +368,7 @@ export default function MockTestEnginePage() {
           
           <div className="flex flex-col gap-3 self-stretch sm:self-auto sm:items-end">
             {timeLeft <= 300 && timeLeft > 0 && (
-              <div className="bg-rose-500/20 border border-rose-500/40 text-rose-300 text-sm font-semibold px-4 py-2 rounded-xl animate-pulse text-center">
+              <div aria-live="polite" className="bg-rose-500/20 border border-rose-500/40 text-rose-300 text-sm font-semibold px-4 py-2 rounded-xl animate-pulse text-center">
                 <AlertTriangle className="mr-2 inline h-4 w-4 align-[-2px]" />
                 {Math.ceil(timeLeft / 60)} min remaining - submit soon!
               </div>
@@ -388,17 +422,13 @@ export default function MockTestEnginePage() {
 
                 {/* Answer Options Grid */}
                 <div className="flex flex-col gap-3">
-                  {[
-                    { key: "A", val: currentQuestion.option_a },
-                    { key: "B", val: currentQuestion.option_b },
-                    { key: "C", val: currentQuestion.option_c },
-                    { key: "D", val: currentQuestion.option_d }
-                  ].map((opt) => {
-                    const isSelected = answers[currentQuestion.id] === opt.key
+                  {(currentQuestion.options || []).map((val, idx) => {
+                    const key = OPTION_KEYS[idx] || String.fromCharCode(65 + idx)
+                    const isSelected = answers[currentQuestion.id] === key
                     return (
                       <button
-                        key={opt.key}
-                        onClick={() => handleSelectOption(currentQuestion.id, opt.key)}
+                        key={key}
+                        onClick={() => handleSelectOption(currentQuestion.id, key)}
                         className={`w-full text-left px-5 py-4 rounded-xl border text-sm transition-all flex items-center justify-between group ${
                           isSelected
                             ? "bg-pink-500/10 border-pink-500 text-pink-400 font-medium"
@@ -409,9 +439,9 @@ export default function MockTestEnginePage() {
                           <span className={`w-6 h-6 rounded-md flex items-center justify-center text-xs border font-bold ${
                             isSelected ? "bg-pink-500 border-transparent text-white" : "bg-zinc-900 border-white/10 text-zinc-400"
                           }`}>
-                            {opt.key}
+                            {key}
                           </span>
-                          {opt.val}
+                          {val}
                         </span>
                       </button>
                     )
@@ -451,11 +481,34 @@ export default function MockTestEnginePage() {
             </div>
           </div>
 
-          {/* Quick Question Navigator Grid Sidebar */}
-          <div className="bg-zinc-900/30 border border-white/5 rounded-3xl p-6 flex flex-col gap-4">
-            <h3 className="text-sm font-semibold text-zinc-400 uppercase tracking-wider">
-              Exam Overview
-            </h3>
+          {/* Quick Question Navigator Grid Sidebar - Desktop / Bottom Sheet - Mobile */}
+          
+          {/* Mobile Overlay & Toggle */}
+          <AnimatePresence>
+            {isGridOpen && (
+              <motion.div 
+                initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                onClick={() => setIsGridOpen(false)}
+                className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm lg:hidden"
+              />
+            )}
+          </AnimatePresence>
+
+          <motion.div 
+            className={`
+              bg-zinc-900/95 border border-white/5 rounded-t-3xl lg:rounded-3xl p-6 flex flex-col gap-4 shadow-2xl
+              fixed lg:static inset-x-0 bottom-0 z-50 transition-transform duration-300
+              ${isGridOpen ? 'translate-y-0' : 'translate-y-full lg:translate-y-0'}
+            `}
+          >
+            <div className="flex justify-between items-center lg:mb-0">
+              <h3 className="text-sm font-semibold text-zinc-400 uppercase tracking-wider">
+                Exam Overview
+              </h3>
+              <button onClick={() => setIsGridOpen(false)} className="lg:hidden text-zinc-400 hover:text-white p-2 -mr-2">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
             <div className="grid grid-cols-4 sm:grid-cols-5 lg:grid-cols-4 gap-2">
               {test.questions.map((q, idx) => {
                 const isAnswered = !!answers[q.id]
@@ -490,6 +543,18 @@ export default function MockTestEnginePage() {
             </div>
           </div>
 
+          {/* Mobile Floating Toggle Button */}
+          <button
+            onClick={() => setIsGridOpen(true)}
+            className={`
+              lg:hidden fixed bottom-20 right-6 z-30 p-4 rounded-full shadow-2xl bg-zinc-800 text-white border border-white/10
+              flex items-center gap-2 transition-transform
+              ${isGridOpen ? 'scale-0' : 'scale-100'}
+            `}
+          >
+            <Target className="w-5 h-5" />
+            <span className="text-sm font-bold">{currentIdx + 1} / {test.questions.length}</span>
+          </button>
         </div>
       </div>
     </div>

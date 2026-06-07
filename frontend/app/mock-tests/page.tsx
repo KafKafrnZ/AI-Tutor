@@ -7,6 +7,9 @@ import { FileText, Clock, ChevronRight, Brain, Target, BookOpen, Loader2, AlertT
 import { MouseEvent } from "react";
 import { API_URL } from "@/lib/api";
 import { fallbackMockTests } from "@/lib/mockFallback";
+import { PageShell } from "@/components/layout/PageShell";
+import { PageHeader } from "@/components/layout/PageHeader";
+import { GlassCard } from "@/components/layout/GlassCard";
 
 interface MockTest {
   id: number;
@@ -78,17 +81,12 @@ export default function MockTestsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#09090b] p-8">
-      <div className="max-w-6xl mx-auto">
-        <div className="flex items-center justify-between mb-12">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-pink-600 rounded-xl flex items-center justify-center shadow-lg shadow-pink-900/20 text-white"><FileText className="w-6 h-6" /></div>
-            <div>
-              <h1 className="text-3xl font-bold text-white tracking-tight">Mock Tests</h1>
-              <p className="text-zinc-400 mt-1">Timed government-exam practice with AI grading and analytics.</p>
-            </div>
-          </div>
-        </div>
+    <PageShell maxWidth="max-w-6xl">
+      <div className="mt-2">
+        <PageHeader 
+          title="Mock Tests" 
+          subtitle="Timed government-exam practice with AI grading and analytics."
+        />
 
         {loadNotice && (
           <div className="mb-6 flex items-start gap-3 rounded-2xl border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
@@ -110,8 +108,7 @@ export default function MockTestsPage() {
             const dur = `${test.duration_minutes} min`;
             const qstr = `${test.question_count || "?"} Qs`;
             return (
-              <motion.div key={test.id} whileHover={{ y: -5 }} onMouseMove={handleMouseMove} className="relative bg-zinc-900/40 border border-white/5 rounded-3xl p-6 group transition-all overflow-hidden">
-                <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" style={{ background: `radial-gradient(600px circle at var(--mouse-x, 0) var(--mouse-y, 0), rgba(255,255,255,0.06), transparent 40%)` }} />
+              <GlassCard key={test.id} interactive whileHover={{ y: -5 }} className="p-6 transition-all overflow-hidden group">
                 <div className="relative z-10">
                   <div className="flex justify-between items-start mb-6">
                     <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${iconColor}`}><Icon className="w-6 h-6" /></div>
@@ -129,12 +126,12 @@ export default function MockTestsPage() {
                     </button>
                   </Link>
                 </div>
-              </motion.div>
+              </GlassCard>
             );
           })}
         </div>
         )}
       </div>
-    </div>
+    </PageShell>
   );
 }

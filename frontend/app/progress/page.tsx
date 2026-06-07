@@ -4,6 +4,7 @@ import { useCallback, useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { ArrowLeft, TrendingUp, BarChart3, Target, AlertCircle, Clock, CheckCircle2, XCircle } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   ResponsiveContainer,
   LineChart,
@@ -15,9 +16,11 @@ import {
   BarChart,
   Bar,
   Cell,
-} from "recharts";
 import { API_URL } from "@/lib/api";
 import { SkeletonCard, Skeleton } from "@/components/ui/Skeleton";
+import { PageShell } from "@/components/layout/PageShell";
+import { PageHeader } from "@/components/layout/PageHeader";
+import { GlassCard } from "@/components/layout/GlassCard";
 
 interface RecentTest {
   id: number;
@@ -37,6 +40,7 @@ interface StatsResponse {
 }
 
 export default function ProgressPage() {
+  const router = useRouter();
   const [stats, setStats] = useState<StatsResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [authError, setAuthError] = useState(false);
@@ -93,16 +97,12 @@ export default function ProgressPage() {
       : [];
 
   return (
-    <div className="min-h-screen bg-[#09090b] text-zinc-200 p-6 md:p-12 relative z-10">
-      <div className="max-w-5xl mx-auto">
-
-        {/* Header */}
-        <div className="flex items-center gap-4 mb-8">
-          <Link href="/dashboard" className="p-2 rounded-full hover:bg-zinc-800 transition-colors text-zinc-400 hover:text-white">
-            <ArrowLeft className="w-5 h-5" />
-          </Link>
-          <h1 className="text-3xl font-bold text-white">Your Analytics</h1>
-        </div>
+    <PageShell maxWidth="max-w-5xl">
+      <PageHeader 
+        title="Your Analytics" 
+        backHref="/dashboard" 
+        backLabel="Back to Dashboard" 
+      />
 
         {isLoading ? (
           <div className="flex flex-col gap-8">
@@ -147,22 +147,22 @@ export default function ProgressPage() {
                 { label: "Tests Taken", value: `${stats?.testsTaken || 0}`, icon: BarChart3, color: "text-pink-400", delay: 0.1 },
                 { label: "Data Status", value: dataStatus, icon: TrendingUp, color: "text-blue-400", delay: 0.2, small: true },
               ].map(({ label, value, icon: Icon, color, delay, small }) => (
-                <motion.div key={label} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay }}
-                  className="bg-zinc-900/50 border border-white/5 rounded-3xl p-6 shadow-lg backdrop-blur-sm">
+                <GlassCard key={label} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay }}
+                  className="p-6">
                   <div className={`flex items-center gap-3 mb-4 ${color}`}>
                     <Icon className="w-5 h-5" />
                     <h2 className="font-bold uppercase tracking-wider text-sm">{label}</h2>
                   </div>
                   <p className={`font-black text-white ${small ? "text-2xl" : "text-5xl"}`}>{value}</p>
-                </motion.div>
+                </GlassCard>
               ))}
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
 
               {/* Accuracy Over Time */}
-              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
-                className="bg-zinc-900/30 border border-white/5 rounded-3xl p-6 md:p-8">
+              <GlassCard initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
+                className="p-6 md:p-8">
                 <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
                   <TrendingUp className="w-5 h-5 text-emerald-500" /> Accuracy Trend
                 </h3>
@@ -185,11 +185,11 @@ export default function ProgressPage() {
                     Take mock tests to see your accuracy trend.
                   </div>
                 )}
-              </motion.div>
+              </GlassCard>
 
               {/* Weak Areas Bar Chart */}
-              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}
-                className="bg-zinc-900/30 border border-white/5 rounded-3xl p-6 md:p-8">
+              <GlassCard initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}
+                className="p-6 md:p-8">
                 <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
                   <AlertCircle className="w-5 h-5 text-rose-500" /> Focus Areas
                 </h3>
@@ -204,7 +204,12 @@ export default function ProgressPage() {
                       />
                       <Bar dataKey="accuracy" radius={[0, 6, 6, 0]}>
                         {weakAreasData.map((entry, i) => (
-                          <Cell key={i} fill={entry.accuracy < 40 ? "#f43f5e" : entry.accuracy < 65 ? "#f59e0b" : "#10b981"} />
+                          <Cell 
+                            key={i} 
+                            fill={entry.accuracy < 40 ? "#f43f5e" : entry.accuracy < 65 ? "#f59e0b" : "#10b981"} 
+                            className="cursor-pointer hover:brightness-110 transition-all"
+                            onClick={() => router.push("/error-log")}
+                          />
                         ))}
                       </Bar>
                     </BarChart>
@@ -214,12 +219,12 @@ export default function ProgressPage() {
                     Not enough data to determine weak areas yet.
                   </div>
                 )}
-              </motion.div>
+              </GlassCard>
             </div>
 
             {/* Recent Activity */}
-            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}
-              className="bg-zinc-900/30 border border-white/5 rounded-3xl p-6 md:p-8">
+            <GlassCard initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}
+              className="p-6 md:p-8">
               <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
                 <Clock className="w-5 h-5 text-emerald-500" /> Recent Activity
               </h3>
@@ -251,11 +256,11 @@ export default function ProgressPage() {
                   No recent tests. Take a mock test to see your history.
                 </div>
               )}
-            </motion.div>
+            </GlassCard>
 
           </div>
         )}
       </div>
-    </div>
+    </PageShell>
   );
 }

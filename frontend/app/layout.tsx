@@ -10,7 +10,9 @@ export const metadata: Metadata = {
   description: "Open-source AI tutor for UPSC, State PSC, and India's government exams.",
   icons: {
     icon: "/brand/logo.svg",
+    apple: "/brand/logo.svg",
   },
+  manifest: "/manifest.json",
 };
 
 export default function RootLayout({

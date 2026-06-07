@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { Loader2, X } from "lucide-react";
 
 import Sidebar from "@/components/layout/Sidebar";
+import MobileTabBar from "@/components/layout/MobileTabBar";
 import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
 import { API_URL } from "@/lib/api";
 import { useAppStore } from "@/store/useAppStore";
@@ -160,10 +161,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       <main className="relative flex h-full w-full min-w-0 flex-1 flex-col overflow-hidden pt-16 md:pl-64 md:pt-0">
         <div className="pointer-events-none absolute inset-0 z-0 bg-noise opacity-50" />
 
-        <div className="relative z-10 flex-1 overflow-auto scrollbar-thin scrollbar-thumb-zinc-800">
+        <div className="relative z-10 flex-1 overflow-auto scrollbar-thin scrollbar-thumb-zinc-800 pb-16 md:pb-0">
           <ErrorBoundary>{children}</ErrorBoundary>
         </div>
       </main>
+
+      <MobileTabBar onMenuClick={() => setIsMobileMenuOpen(true)} />
 
       {isProfileOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 px-4 backdrop-blur-sm">

@@ -616,3 +616,109 @@ class TestMockTests:
         assert question["source"] == "database"
         assert question["correct_answer"] == "C"
         assert question["correct_answer_text"] == "President"
+
+
+# ============================================================================
+# 13. Practice + Ask (AI endpoints) — happy paths with heavy mocking
+# ============================================================================
+
+class TestPracticeEndpoint:
+    EMAIL = "practice@test.com"
+
+    @pytest.fixture(autouse=True)
+    def logged_in(self, client):
+        _create_db_user(self.EMAIL, is_verified=True)
+        r = _login(client, self.EMAIL)
+        assert r.status_code == 200
+
+    def test_practice_returns_questions_array(self, client, monkeypatch):
+        async def fake_generate(topic: str) -> str:
+            return '[{"difficulty":"Easy","question":"What is 2+2?","options":["3","4","5","6"],"correct_answer":"B","explanation":"Basic arithmetic."}]'
+
+        monkeypatch.setattr("modules.tutor.generate_questions", fake_generate)
+
+        r = client.post("/practice", json={"topic": "Arithmetic"})
+        assert r.status_code == 200
+        data = r.json()
+        assert "questions" in data
+        assert isinstance(data["questions"], list)
+        assert len(data["questions"]) >= 1
+        q = data["questions"][0]
+        assert "question" in q and "options" in q and "correct_answer" in q
+
+
+class TestAskWithHistory:
+    EMAIL = "askhistory@test.com"
+
+    @pytest.fixture(autouse=True)
+    def logged_in(self, client):
+        _create_db_user(self.EMAIL, is_verified=True)
+        r = _login(client, self.EMAIL)
+        assert r.status_code == 200
+
+    def test_ask_accepts_history_and_returns_answer(self, client, monkeypatch):
+        async def fake_ask_tutor(question: str, context: str = "", history: list | None = None) -> str:
+            hist_len = len(history or [])
+            return f"Answer to: {question} (history items: {hist_len})"
+
+        monkeypatch.setattr("modules.tutor.ask_tutor", fake_ask_tutor)
+
+        payload = {
+            "question": "Explain repo rate",
+            "context": "",
+            "history": [
+                {"role": "user", "content": "What is inflation?"},
+                {"role": "assistant", "content": "Inflation is..."}
+            ]
+        }
+        r = client.post("/ask", json=payload)
+        assert r.status_code == 200
+        assert "Answer to: Explain repo rate" in r.json()["answer"]
+
+
+# ============================================================================
+# 14. Stats with real mock test data
+# ============================================================================
+
+class TestStatsWithData:
+    EMAIL = "statsdata@test.com"
+
+    @pytest.fixture(autouse=True)
+    def logged_in(self, client):
+        _create_db_user(self.EMAIL, is_verified=True)
+        r = _login(client, self.EMAIL)
+        assert r.status_code == 200
+
+    def test_stats_reflects_saved_tests(self, client):
+        # Insert a couple of mock test results directly
+        db = make_db_session()
+        user = db.query(User).filter(User.email == self.EMAIL).first()
+        db.add_all([
+            MockTest(user_id=user.id, date="2025-01-01", test_name="Set 1", section="Polity", attempted=10, correct=7, time_taken=1200),
+            MockTest(user_id=user.id, date="2025-01-02", test_name="Set 2", section="Quant", attempted=8, correct=6, time_taken=900),
+        ])
+        db.commit()
+        db.close()
+
+        r = client.get("/stats")
+        assert r.status_code == 200
+        body = r.json()
+        assert body["testsTaken"] >= 2
+        assert body["accuracy"] > 0
+        assert isinstance(body.get("recent_tests"), list)
+
+
+# ============================================================================
+# 15. RAG retrieve (core) — fallback + basic behavior (no real vector DB required)
+# ============================================================================
+
+class TestRAGRetrieve:
+    def test_retrieve_graceful_when_no_data(self):
+        from app.core.rag import retrieve
+        # In test env the chroma collection is usually empty and PYQS may be minimal.
+        # The function must not crash and should return a list (possibly via keyword json fallback).
+        res = retrieve("What is the full form of IBPS?")
+        assert isinstance(res, list)
+        # If anything came back it should be strings (context chunks)
+        for item in res:
+            assert isinstance(item, str)

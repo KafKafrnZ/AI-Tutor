@@ -1,7 +1,18 @@
 version: '3.8'
 
+# Usage (run from the backend/ directory):
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
+#
+# This override:
+# - Bind-mounts the source for hot-reload (no rebuild on python changes)
+# - Enables --reload on uvicorn
+# - Keeps the db, volumes, env, PYTHONPATH, and healthchecks from the base file
+
 services:
   backend:
     volumes:
-      - .:/app  # Changed from ./backend to . since we are already in the folder
+      - .:/app
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    # Dev typically relaxes the healthcheck start period or disables strict depends
+    healthcheck:
+      start_period: 10s
