@@ -23,6 +23,7 @@ from app.core.config import settings
 from app.core.error_handler import validation_exception_handler, sqlalchemy_exception_handler, general_exception_handler
 from app.core.rag import validate_chroma_persistence_config
 from app.core.guards import guard_input
+from pathlib import Path as _Path
 
 from sse_starlette.sse import EventSourceResponse
 from app.models.database import (
@@ -86,11 +87,40 @@ def invalidate_user_cache(user_id: int):
 
 
 # --- MODERN ASYNC LIFESPAN MANAGER ---
+def _check_migration_drift() -> None:
+    try:
+        from alembic.config import Config as _AlembicConfig
+        from alembic.script import ScriptDirectory as _ScriptDirectory
+        from alembic.runtime.migration import MigrationContext as _MigrationContext
+        from sqlalchemy import create_engine as _create_engine
+
+        ini_path = _Path(__file__).resolve().parents[1] / "alembic.ini"
+        alembic_cfg = _AlembicConfig(str(ini_path))
+        script = _ScriptDirectory.from_config(alembic_cfg)
+        engine = _create_engine(settings.DATABASE_URL)
+        with engine.connect() as conn:
+            ctx = _MigrationContext.configure(conn)
+            db_heads = set(ctx.get_current_heads())
+        engine.dispose()
+        script_heads = set(script.get_heads())
+        if db_heads != script_heads:
+            logger.warning(
+                "MIGRATION DRIFT: DB is at %s but scripts expect %s — "
+                "run: alembic upgrade head",
+                db_heads,
+                script_heads,
+            )
+        else:
+            logger.info("Migration check OK — DB and scripts both at %s", db_heads)
+    except Exception as exc:
+        logger.warning("Migration drift check skipped (%s)", exc)
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # ARCH-2 FIX: Removed init_db() call. Alembic now handles all schema migrations safely.
     chroma_path = validate_chroma_persistence_config()
     logger.info("App starting - schema managed by Alembic. RAG Chroma path: %s", chroma_path)
+    _check_migration_drift()
     yield
 
 limiter = Limiter(key_func=get_remote_address, default_limits=["100/minute"])

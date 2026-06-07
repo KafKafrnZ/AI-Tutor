@@ -56,6 +56,12 @@ jobs:
         run: alembic upgrade head
         working-directory: ${{ github.workspace }}/backend
 
+      - name: Check for migration drift
+        run: alembic check
+        working-directory: backend
+        env:
+          DATABASE_URL: postgresql://test:test@localhost:5432/test_db
+
       - name: Run tests
         run: pytest backend/tests/ -v --tb=short
         working-directory: ${{ github.workspace }}
