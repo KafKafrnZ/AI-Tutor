@@ -6,7 +6,7 @@ import { Send, User, ArrowLeft, Sparkles, CheckCircle2, CircleDashed } from "luc
 import ReactMarkdown, { type Components } from "react-markdown";
 import Link from "next/link";
 import { useAppStore } from "@/store/useAppStore";
-import BlackholeBackground from "@/components/ui/Blackhole";
+import VideoBackground from "@/components/VideoBackground";
 import { API_URL } from "@/lib/api";
 
 const MIN_AGENT_DISPLAY_MS = 1800;
@@ -354,8 +354,7 @@ export default function TutorPage() {
   return (
     <div className="h-screen flex flex-col bg-transparent relative overflow-hidden">
       
-      {/* --- THE 3D BACKGROUND --- */}
-      <BlackholeBackground />
+      <VideoBackground posterSrc="/media/tutor-ambient-poster.jpg" />
       
       {/* Top Header - Now a transparent gradient fade instead of a solid line */}
       <div className="h-24 flex items-start pt-6 px-6 shrink-0 bg-gradient-to-b from-black/80 to-transparent absolute top-0 w-full z-10 pointer-events-none">

@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, Bot, Loader2 } from "lucide-react";
 import { API_URL } from "@/lib/api";
+import VideoBackground from "@/components/VideoBackground";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
@@ -29,16 +30,17 @@ export default function ForgotPasswordPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#09090b] flex flex-col items-center justify-center p-4 relative">
+    <div className="relative flex min-h-dvh flex-col items-center justify-center overflow-hidden bg-bg p-4 text-fg">
+      <VideoBackground posterSrc="/media/auth-bg.jpg" />
       <Link
         href="/login"
-        className="absolute top-8 left-8 flex items-center gap-2 text-zinc-400 hover:text-white transition-colors"
+        className="absolute left-5 top-5 z-20 flex items-center gap-2 rounded-full border border-white/10 bg-black/25 px-4 py-2 text-sm font-medium text-zinc-300 backdrop-blur-xl transition-colors hover:text-white sm:left-8 sm:top-8"
       >
         <ArrowLeft className="w-5 h-5" />
         <span className="font-medium">Back to Login</span>
       </Link>
 
-      <div className="w-full max-w-md bg-zinc-900/50 border border-white/10 rounded-3xl p-8 shadow-2xl backdrop-blur-xl">
+      <div className="relative z-10 w-full max-w-md rounded-3xl border border-primary/20 bg-surface/70 p-8 shadow-2xl shadow-primary/10 backdrop-blur-2xl">
         <div className="flex flex-col items-center mb-8">
           <div className="w-12 h-12 bg-violet-600 rounded-xl flex items-center justify-center mb-4 shadow-lg shadow-violet-900/20">
             <Bot className="w-6 h-6 text-white" />

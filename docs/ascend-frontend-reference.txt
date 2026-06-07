@@ -1,0 +1,25 @@
+ASCEND AI / AI TUTOR - FRONTEND INTEGRATION REFERENCE
+
+This repo has been adapted from the supplied architecture reference with the current application contract preserved.
+
+Stack confirmed:
+- Next.js App Router under frontend/app.
+- Tailwind CSS v4 via @tailwindcss/postcss.
+- TypeScript strict mode.
+- Path alias "@/*" -> "./*".
+- lucide-react is already installed.
+
+Implemented:
+- frontend/styles/tokens.css provides Ascend RGB design tokens and Tailwind v4 theme mappings.
+- frontend/components/VideoBackground.tsx provides poster-first background media with reduced-motion and mobile fallbacks.
+- frontend/components/auth/AuthCard.tsx provides one dark-glass sign-in/sign-up card with tabs, password toggle, loading, and inline error state.
+- frontend/components/layout/Sidebar.tsx provides typed dashboard navigation with active route matching.
+- frontend/components/Logo.tsx and frontend/public/brand/logo.svg provide an inline and external Ascend mark.
+- frontend/public/media contains the still assets available from the current attachments.
+- frontend/app/tests and frontend/app/mistakes redirect to the existing /mock-tests and /error-log routes.
+
+Repo-specific decisions:
+- Auth endpoints remain /login and /signup because backend/app/main.py exposes those routes today. The reference's /auth/login and /auth/register contract was not forced onto the app.
+- Tailwind tokens use --ascend-* raw RGB variables to avoid colliding with existing shadcn HSL variables such as --background and --primary.
+- MP4 assets are not committed because this turn only provided still images. Drop hero.mp4 and tutor-ambient.mp4 into frontend/public/media later and pass those paths into VideoBackground where desired.
+- Brand name is standardized as Ascend AI in the integrated components.
