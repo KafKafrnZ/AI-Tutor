@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useCallback, useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { ArrowLeft, TrendingUp, BarChart3, Target, AlertCircle, Clock, CheckCircle2, XCircle } from "lucide-react";
 import Link from "next/link";
@@ -42,7 +42,7 @@ export default function ProgressPage() {
   const [authError, setAuthError] = useState(false);
   const [fetchError, setFetchError] = useState(false);
 
-  const fetchStats = async () => {
+  const fetchStats = useCallback(async () => {
     setIsLoading(true);
     setFetchError(false);
     try {
@@ -61,11 +61,19 @@ export default function ProgressPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
-  useEffect(() => { fetchStats(); }, []);
+  useEffect(() => {
+    queueMicrotask(() => {
+      void fetchStats();
+    });
+  }, [fetchStats]);
 
   const dataStatus = !stats || stats.testsTaken === 0 ? "No data yet" : "Active & Syncing";
+  const formatPercent = (value: unknown, digits = 0) => {
+    const numeric = Number(value ?? 0);
+    return Number.isFinite(numeric) ? numeric.toFixed(digits) : "0";
+  };
 
   const accuracyChartData = (stats?.recent_tests ?? [])
     .slice()
@@ -166,7 +174,7 @@ export default function ProgressPage() {
                       <YAxis domain={[0, 100]} tick={{ fill: "#71717a", fontSize: 12 }} axisLine={false} tickLine={false} tickFormatter={(v) => `${v}%`} />
                       <Tooltip
                         contentStyle={{ background: "#18181b", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "12px", color: "#fff" }}
-                        formatter={(value: number) => [`${value}%`, "Accuracy"]}
+                        formatter={(value: unknown): [string, string] => [`${formatPercent(value)}%`, "Accuracy"]}
                         labelFormatter={(label, payload) => payload?.[0]?.payload?.section ?? label}
                       />
                       <Line type="monotone" dataKey="accuracy" stroke="#10b981" strokeWidth={2} dot={{ fill: "#10b981", r: 4 }} activeDot={{ r: 6 }} />
@@ -192,7 +200,7 @@ export default function ProgressPage() {
                       <YAxis type="category" dataKey="topic" tick={{ fill: "#a1a1aa", fontSize: 11 }} axisLine={false} tickLine={false} width={90} />
                       <Tooltip
                         contentStyle={{ background: "#18181b", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "12px", color: "#fff" }}
-                        formatter={(value: number) => [`${value.toFixed(1)}%`, "Accuracy"]}
+                        formatter={(value: unknown): [string, string] => [`${formatPercent(value, 1)}%`, "Accuracy"]}
                       />
                       <Bar dataKey="accuracy" radius={[0, 6, 6, 0]}>
                         {weakAreasData.map((entry, i) => (
