@@ -1,0 +1,21 @@
+{
+  "name": "Ascend AI Tutor",
+  "short_name": "Ascend",
+  "description": "AI Tutor for Government Exams with Agentic RAG and 3D Visualization",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#050810",
+  "theme_color": "#00D4FF",
+  "icons": [
+    {
+      "src": "/brand/logo.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml"
+    },
+    {
+      "src": "/brand/logo.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml"
+    }
+  ]
+}

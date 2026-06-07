@@ -7,6 +7,7 @@ import {
   Bot,
   ChevronRight,
   ClipboardCheck,
+  Compass,
   LayoutDashboard,
   LogOut,
   Menu,
@@ -33,6 +34,7 @@ const NAV_ITEMS = [
   { label: "AI Tutor", href: "/tutor", icon: Bot },
   { label: "Practice", href: "/practice", icon: Target },
   { label: "Tests", href: "/mock-tests", icon: ClipboardCheck },
+  { label: "Explore", href: "/explore", icon: Compass },
   { label: "Progress", href: "/progress", icon: TrendingUp },
   { label: "Mistakes", href: "/error-log", icon: AlertTriangle },
 ] as const;

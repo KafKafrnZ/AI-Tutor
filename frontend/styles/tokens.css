@@ -4,6 +4,10 @@
   --ascend-primary: 0 212 255;
   --ascend-secondary: 14 165 233;
   --ascend-accent: 139 92 246;
+  --ascend-accent-tutor: 139 92 246;
+  --ascend-accent-practice: 245 158 11;
+  --ascend-accent-mock: 244 63 113;
+  --ascend-accent-progress: 16 185 129;
   --ascend-fg: 248 250 252;
   --ascend-font-sans: "Geist", "Geist Fallback", ui-sans-serif, system-ui, sans-serif;
   --ascend-font-display: "Geist", "Geist Fallback", ui-sans-serif, system-ui, sans-serif;
@@ -17,6 +21,10 @@
   --color-secondary: rgb(var(--ascend-secondary));
   --color-secondary-foreground: rgb(var(--ascend-bg));
   --color-accent: rgb(var(--ascend-accent));
+  --color-accent-tutor: rgb(var(--ascend-accent-tutor));
+  --color-accent-practice: rgb(var(--ascend-accent-practice));
+  --color-accent-mock: rgb(var(--ascend-accent-mock));
+  --color-accent-progress: rgb(var(--ascend-accent-progress));
   --color-accent-foreground: rgb(var(--ascend-fg));
   --color-fg: rgb(var(--ascend-fg));
   --color-background: hsl(var(--background));

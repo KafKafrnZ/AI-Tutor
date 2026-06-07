@@ -5,9 +5,11 @@ import { motion } from "framer-motion";
 import { Send, User, ArrowLeft, Sparkles, CheckCircle2, CircleDashed } from "lucide-react";
 import ReactMarkdown, { type Components } from "react-markdown";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useAppStore } from "@/store/useAppStore";
 import VideoBackground from "@/components/VideoBackground";
 import { API_URL } from "@/lib/api";
+import VoiceInput from "@/components/VoiceInput";
 
 const MIN_AGENT_DISPLAY_MS = 1800;
 const REVEAL_TICK_MS = 22;
@@ -107,6 +109,7 @@ const MarkdownMessage = ({ content }: { content: string }) => {
 export default function TutorPage() {
   const tutorMessages = useAppStore((state) => state.tutorMessages);
   const setTutorMessages = useAppStore((state) => state.setTutorMessages);
+  const searchParams = useSearchParams();
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
@@ -216,9 +219,16 @@ export default function TutorPage() {
     };
   }, []);
 
-  const handleAskQuestion = async () => {
-    if (!input.trim()) return;
-    const userQuestion = input;
+  useEffect(() => {
+    const q = searchParams.get("q");
+    if (q) {
+      setInput(q);
+    }
+  }, [searchParams]);
+
+  const handleAskQuestion = async (overrideInput?: string | React.MouseEvent | React.KeyboardEvent) => {
+    const userQuestion = typeof overrideInput === "string" ? overrideInput : input;
+    if (!userQuestion.trim()) return;
     setInput("");
     
     const currentMessages = useAppStore.getState().tutorMessages;
@@ -352,14 +362,14 @@ export default function TutorPage() {
   };
 
   return (
-    <div className="h-screen flex flex-col bg-transparent relative overflow-hidden">
+    <div className="h-dvh flex flex-col bg-transparent relative overflow-hidden pb-safe">
       
       <VideoBackground posterSrc="/media/tutor-ambient-poster.jpg" />
       
       {/* Top Header - Now a transparent gradient fade instead of a solid line */}
       <div className="h-24 flex items-start pt-6 px-6 shrink-0 bg-gradient-to-b from-black/80 to-transparent absolute top-0 w-full z-10 pointer-events-none">
-        <Link href="/dashboard" className="flex items-center gap-2 text-zinc-300 hover:text-white transition-colors group pointer-events-auto">
-          <div className="p-2 rounded-full bg-black/20 backdrop-blur-md border border-white/10 group-hover:bg-white/10 transition-colors"><ArrowLeft className="w-4 h-4" /></div>
+        <Link href="/dashboard" className="flex items-center gap-2 text-zinc-300 hover:text-white transition-colors group pointer-events-auto h-11 px-2">
+          <div className="w-11 h-11 flex items-center justify-center rounded-full bg-black/20 backdrop-blur-md border border-white/10 group-hover:bg-white/10 transition-colors"><ArrowLeft className="w-5 h-5" /></div>
           <span className="font-medium text-sm drop-shadow-md">Dashboard</span>
         </Link>
       </div>
@@ -432,7 +442,7 @@ export default function TutorPage() {
                         setStreamingContent(streamingFullRef.current || streamingContent);
                         resolveDrainIfReady();
                       }}
-                      className="absolute -top-2 -right-2 text-[10px] px-2 py-0.5 rounded-full bg-white/10 border border-white/20 hover:bg-white/20 text-zinc-300"
+                      className="absolute -top-2 -right-2 text-[10px] px-3 py-2 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full bg-white/10 border border-white/20 hover:bg-white/20 text-zinc-300"
                     >
                       Show full
                     </button>
@@ -447,14 +457,31 @@ export default function TutorPage() {
       )}
 
       {/* Floating Command Bar Wrapper */}
-      <div className={`absolute w-full px-6 transition-all duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] z-20 ${isChatStarted ? 'bottom-8 left-1/2 -translate-x-1/2 max-w-3xl' : 'top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 max-w-2xl'}`}>
+      <div className={`absolute w-full px-6 transition-all duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] z-20 ${isChatStarted ? 'bottom-6 md:bottom-8 left-1/2 -translate-x-1/2 max-w-3xl pb-[env(safe-area-inset-bottom)]' : 'top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 max-w-2xl'}`}>
         {!isChatStarted && (
           <div className="text-center mb-8 relative z-20">
             <div className="w-16 h-16 bg-black/20 backdrop-blur-xl rounded-2xl flex items-center justify-center mx-auto mb-6 border border-white/10 shadow-[0_0_30px_rgba(139,92,246,0.15)]">
               <Sparkles className="w-8 h-8 text-violet-300" />
             </div>
             <h1 className="text-4xl font-bold text-white mb-3 drop-shadow-lg">What do you want to learn?</h1>
-            <p className="text-zinc-300 font-medium drop-shadow-md">Ask complex concepts. Grounded answers with previous-year context.</p>
+            <p className="text-zinc-300 font-medium drop-shadow-md mb-8">Ask complex concepts. Grounded answers with previous-year context.</p>
+            
+            <div className="flex flex-wrap justify-center gap-3 max-w-2xl mx-auto">
+              {[
+                "Explain monetary policy",
+                "Difference between NEFT and RTGS",
+                "Summarize Indian Constitution Part III",
+                "Basel III norms explained"
+              ].map((prompt) => (
+                <button
+                  key={prompt}
+                  onClick={() => handleAskQuestion(prompt)}
+                  className="px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-full text-sm text-zinc-300 transition-colors backdrop-blur-sm"
+                >
+                  {prompt}
+                </button>
+              ))}
+            </div>
           </div>
         )}
 
@@ -470,13 +497,19 @@ export default function TutorPage() {
             className="w-full bg-transparent max-h-32 min-h-[60px] py-4 pl-6 pr-14 text-white text-[15px] focus:outline-none resize-none placeholder:text-zinc-400 font-medium"
             rows={1}
           />
-          <button
-            onClick={handleAskQuestion}
-            disabled={isLoading || !input.trim()}
-            className="absolute right-2 bottom-2 p-2.5 bg-white/90 text-black rounded-full hover:bg-white transition-all shadow-lg disabled:opacity-30 disabled:bg-white/20 disabled:text-white"
-          >
-            <Send className="w-4 h-4 ml-0.5" />
-          </button>
+            <div className="absolute right-2 bottom-2 flex items-center gap-2">
+              <VoiceInput
+                onTranscript={(text) => setInput((prev) => (prev ? prev + " " + text : text))}
+                isProcessing={isLoading}
+              />
+              <button
+                onClick={handleAskQuestion}
+                disabled={isLoading || !input.trim()}
+                className="w-11 h-11 flex items-center justify-center bg-white/90 text-black rounded-full hover:bg-white transition-all shadow-lg disabled:opacity-30 disabled:bg-white/20 disabled:text-white"
+              >
+                <Send className="w-5 h-5 ml-0.5" />
+              </button>
+            </div>
         </motion.div>
       </div>
 

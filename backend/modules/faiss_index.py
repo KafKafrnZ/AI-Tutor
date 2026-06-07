@@ -2,6 +2,9 @@ import faiss
 import numpy as np
 import pickle
 
+# DEPRECATED: Legacy FAISS helpers.
+# Active RAG lives in app/core/rag.py (Chroma PersistentClient + hybrid vector/keyword).
+
 def create_index(embeddings):
     embeddings = np.array(embeddings).astype("float32")
     dim = embeddings.shape[1]

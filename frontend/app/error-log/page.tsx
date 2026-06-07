@@ -2,10 +2,15 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
-import { ArrowLeft, AlertCircle, AlertTriangle } from "lucide-react";
+import { ArrowLeft, AlertCircle, AlertTriangle, Bot, Target } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useAppStore } from "@/store/useAppStore";
 import { API_URL } from "@/lib/api";
 import { SkeletonRow } from "@/components/ui/Skeleton";
+import { PageShell } from "@/components/layout/PageShell";
+import { PageHeader } from "@/components/layout/PageHeader";
+import { GlassCard } from "@/components/layout/GlassCard";
 
 // C-02 FIX: Added strict TypeScript interface
 interface ErrorLogEntry {
@@ -20,6 +25,9 @@ interface ErrorLogEntry {
 const PAGE_SIZE = 10;
 
 export default function ErrorLogPage() {
+  const router = useRouter();
+  const setPracticeTopic = useAppStore(state => state.setPracticeTopic);
+
   // C-02 FIX: Swapped any[] for ErrorLogEntry[]
   const [errors, setErrors] = useState<ErrorLogEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -67,20 +75,14 @@ export default function ErrorLogPage() {
   }, [fetchErrorLog]);
 
   return (
-    <div className="min-h-screen bg-[#09090b] text-zinc-200 p-6 md:p-12 relative z-10">
-      <div className="max-w-4xl mx-auto">
-        
-        {/* Header */}
-        <div className="flex items-center gap-4 mb-8">
-          <Link href="/dashboard" className="p-2 rounded-full hover:bg-zinc-800 transition-colors text-zinc-400 hover:text-white">
-            <ArrowLeft className="w-5 h-5" />
-          </Link>
-          <h1 className="text-3xl font-bold text-white flex items-center gap-3">
-            Mistake Locker
-          </h1>
-        </div>
+    <PageShell maxWidth="max-w-4xl">
+      <PageHeader 
+        title="Mistake Locker" 
+        backHref="/dashboard" 
+        backLabel="Back to Dashboard" 
+      />
 
-        {/* Content */}
+      {/* Content */}
         {isLoading ? (
           <div className="space-y-4">
             {[1,2,3,4].map(i => <SkeletonRow key={i} />)}
@@ -139,6 +141,23 @@ export default function ErrorLogPage() {
                   {err.explanation && (
                     <p className="text-sm text-zinc-400 border-t border-white/5 pt-3">{err.explanation}</p>
                   )}
+                  <div className="flex gap-3 pt-3 border-t border-white/5 mt-2">
+                    <button 
+                      onClick={() => router.push(`/tutor?q=${encodeURIComponent(`Explain the answer to this question: ${err.question_text}`)}`)}
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-violet-500/10 hover:bg-violet-500/20 text-violet-400 rounded-lg text-xs font-medium transition-colors"
+                    >
+                      <Bot className="w-3.5 h-3.5" /> Ask Tutor
+                    </button>
+                    <button 
+                      onClick={() => {
+                        setPracticeTopic(err.question_text.slice(0, 50) + "...");
+                        router.push("/practice");
+                      }}
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 rounded-lg text-xs font-medium transition-colors"
+                    >
+                      <Target className="w-3.5 h-3.5" /> Practice Topic
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -167,7 +186,6 @@ export default function ErrorLogPage() {
             
           </motion.div>
         )}
-      </div>
-    </div>
+      </PageShell>
   );
 }

@@ -2,10 +2,15 @@
 
 import { motion } from "framer-motion";
 import Link from "next/link";
-import { Bot, Target, FileText, ChevronRight, BrainCircuit, CheckCircle2, Sparkles } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Bot, Target, FileText, ChevronRight, BrainCircuit, CheckCircle2, Sparkles, Compass } from "lucide-react";
 import { MouseEvent, useEffect, useState } from "react";
 import { API_URL } from "@/lib/api";
 import { Skeleton } from "@/components/ui/Skeleton";
+import { PageShell } from "@/components/layout/PageShell";
+import { PageHeader } from "@/components/layout/PageHeader";
+import { GlassCard } from "@/components/layout/GlassCard";
+import { StatBadge } from "@/components/layout/StatBadge";
 
 interface RevisionPlan {
   primary_weakness: string;
@@ -15,6 +20,7 @@ interface RevisionPlan {
 
 const tools = [
   { id: "tutor", title: "AI Tutor", desc: "Instant, accurate answers with RAG", icon: Bot, color: "text-violet-400", bg: "bg-violet-500/10", link: "/tutor" },
+  { id: "explore", title: "3D Universe", desc: "Interactive study knowledge graph", icon: Compass, color: "text-cyan-400", bg: "bg-cyan-500/10", link: "/explore" },
   { id: "practice", title: "Practice Arena", desc: "Adaptive questions by topic", icon: Target, color: "text-amber-400", bg: "bg-amber-500/10", link: "/practice" },
   { id: "mock", title: "Mock Tests", desc: "Full-length IBPS SO mocks", icon: FileText, color: "text-rose-400", bg: "bg-rose-500/10", link: "/mock-tests" }
 ];
@@ -22,6 +28,8 @@ const tools = [
 export default function DashboardPage() {
   const [plan, setPlan] = useState<RevisionPlan | null>(null);
   const [loading, setLoading] = useState(true);
+  const [checkedSteps, setCheckedSteps] = useState<Record<number, boolean>>({});
+  const router = useRouter();
 
   useEffect(() => {
     const fetchPlan = async () => {
@@ -52,37 +60,28 @@ export default function DashboardPage() {
     const y = e.clientY - rect.top;
     target.style.setProperty("--mouse-x", `${x}px`);
     target.style.setProperty("--mouse-y", `${y}px`);
-  };
-
   return (
-    <div className="min-h-screen bg-[#09090b] p-8 font-sans">
-      <div className="max-w-6xl mx-auto mt-10">
-        
-        {/* Header */}
-        <div className="flex items-center justify-between mb-10">
-          <h1 className="text-3xl font-bold text-white tracking-tight">Dashboard Overview</h1>
-          <div className="px-4 py-1.5 rounded-full border border-white/10 bg-white/5 flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-violet-400" />
-            <span className="text-sm font-medium text-zinc-300">Llama 3.3 Active</span>
-          </div>
-        </div>
+    <PageShell maxWidth="max-w-6xl">
+      <div className="mt-2">
+        <PageHeader 
+          title="Dashboard Overview"
+          actions={<StatBadge icon={<Sparkles className="text-violet-400" />} label="Llama 3.3 Active" color="zinc" />}
+        />
         
         {/* Tool Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
           {tools.map((tool, i) => (
             <Link key={tool.id} href={tool.link}>
-              <motion.div 
-                initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}
+              <GlassCard 
+                interactive 
+                initial={{ opacity: 0, y: 20 }} 
+                animate={{ opacity: 1, y: 0 }} 
+                transition={{ delay: i * 0.1 }}
                 whileHover={{ y: -5 }}
-                onMouseMove={handleMouseMove}
-                className="relative bg-zinc-900/40 border border-white/5 rounded-3xl p-6 h-48 flex flex-col justify-between group transition-all overflow-hidden cursor-pointer"
+                className="p-6 h-auto min-h-[140px] md:h-48 flex flex-col justify-between"
               >
-                <div 
-                  className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" 
-                  style={{ background: `radial-gradient(600px circle at var(--mouse-x, 0) var(--mouse-y, 0), rgba(255,255,255,0.06), transparent 40%)` }} 
-                />
-                <div className="relative z-10 flex items-start gap-4">
-                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${tool.bg}`}>
+                <div className="flex items-start gap-4 mb-4">
+                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${tool.bg}`}>
                     <tool.icon className={`w-6 h-6 ${tool.color}`} />
                   </div>
                   <div>
@@ -90,10 +89,10 @@ export default function DashboardPage() {
                     <p className="text-zinc-400 text-sm font-medium">{tool.desc}</p>
                   </div>
                 </div>
-                <div className="relative z-10 flex justify-end">
+                <div className="flex justify-end mt-auto">
                   <ChevronRight className="w-5 h-5 text-zinc-600 group-hover:text-white transition-colors" />
                 </div>
-              </motion.div>
+              </GlassCard>
             </Link>
           ))}
         </div>
@@ -144,9 +143,13 @@ export default function DashboardPage() {
                   <h4 className="text-xs uppercase tracking-wider text-zinc-500 font-bold mb-3">Critical Concepts to Review</h4>
                   <div className="flex flex-wrap gap-2">
                     {plan.critical_concepts.map((concept, idx) => (
-                      <span key={idx} className="px-3 py-1.5 bg-white/5 border border-white/10 rounded-md text-zinc-300 text-sm">
+                      <button 
+                        key={idx} 
+                        onClick={() => router.push(`/tutor?q=${encodeURIComponent(`Explain ${concept}`)}`)}
+                        className="px-3 py-1.5 bg-white/5 hover:bg-violet-500/20 border border-white/10 hover:border-violet-500/30 rounded-md text-zinc-300 hover:text-violet-300 text-sm transition-colors cursor-pointer"
+                      >
                         {concept}
-                      </span>
+                      </button>
                     ))}
                   </div>
                 </div>
@@ -158,24 +161,40 @@ export default function DashboardPage() {
                   <Target className="w-4 h-4 text-indigo-400" /> Target Checklist
                 </h4>
                 <ul className="space-y-3">
-                  {plan.actionable_checklist.map((step, idx) => (
-                    <li key={idx} className="flex items-start gap-3 text-sm text-zinc-300">
-                      <CheckCircle2 className="w-5 h-5 text-emerald-500/70 shrink-0 mt-0.5" />
-                      <span className="leading-relaxed">{step}</span>
-                    </li>
-                  ))}
+                  {plan.actionable_checklist.map((step, idx) => {
+                    const isChecked = !!checkedSteps[idx];
+                    return (
+                      <li 
+                        key={idx} 
+                        onClick={() => setCheckedSteps(prev => ({ ...prev, [idx]: !prev[idx] }))}
+                        className={`flex items-start gap-3 text-sm cursor-pointer p-2 rounded-lg transition-colors border ${isChecked ? 'bg-emerald-500/10 border-emerald-500/20 text-zinc-400 line-through' : 'bg-transparent border-transparent text-zinc-300 hover:bg-white/5'}`}
+                      >
+                        <CheckCircle2 className={`w-5 h-5 shrink-0 mt-0.5 transition-colors ${isChecked ? 'text-emerald-500' : 'text-zinc-600'}`} />
+                        <span className="leading-relaxed">{step}</span>
+                      </li>
+                    );
+                  })}
                 </ul>
               </div>
 
             </div>
           ) : (
-            <div className="py-8 text-center text-zinc-500">
-              <p>Unable to load strategy. Please try again later.</p>
+            <div className="py-12 text-center flex flex-col items-center relative z-10">
+              <div className="w-16 h-16 bg-white/5 text-zinc-400 rounded-full flex items-center justify-center mb-4 border border-white/10">
+                <BrainCircuit className="w-8 h-8 opacity-50" />
+              </div>
+              <h3 className="text-xl font-bold text-white mb-2">Strategy Awaiting Data</h3>
+              <p className="text-zinc-500 mb-6 max-w-sm">Take some mock tests and practice sessions. We'll analyze your mistakes and generate a custom revision plan here.</p>
+              <Link href="/mock-tests">
+                <button className="px-6 py-2.5 bg-indigo-500 hover:bg-indigo-600 text-white rounded-xl font-medium transition-colors shadow-lg shadow-indigo-500/20">
+                  Start a Mock Test
+                </button>
+              </Link>
             </div>
           )}
         </motion.div>
 
       </div>
-    </div>
+    </PageShell>
   );
 }
