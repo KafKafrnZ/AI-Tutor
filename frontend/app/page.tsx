@@ -127,10 +127,10 @@ export default function LandingPage() {
               return (
                 <div
                   key={c.title}
-                  className="group rounded-2xl border border-white/5 bg-white/[0.02] p-8 transition-all hover:border-violet-500/20 hover:bg-white/[0.04]"
+                  className="group rounded-2xl border border-white/5 bg-white/[0.02] p-8 transition-all hover:border-primary/20 hover:bg-white/[0.04]"
                 >
-                  <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-xl bg-violet-600/10 ring-1 ring-violet-500/20">
-                    <Icon className="h-6 w-6 text-violet-400" />
+                  <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 ring-1 ring-primary/20">
+                    <Icon className="h-6 w-6 text-primary" />
                   </div>
                   <h3 className="mb-2 text-xl font-bold text-white">{c.title}</h3>
                   <p className="leading-relaxed text-zinc-400">{c.body}</p>
@@ -159,8 +159,8 @@ export default function LandingPage() {
               const Icon = p.icon;
               return (
                 <div key={p.title} className="rounded-2xl border border-white/5 bg-white/[0.02] p-8 text-center">
-                  <div className="mx-auto mb-5 flex h-12 w-12 items-center justify-center rounded-xl bg-fuchsia-600/10 ring-1 ring-fuchsia-500/20">
-                    <Icon className="h-6 w-6 text-fuchsia-400" />
+                  <div className="mx-auto mb-5 flex h-12 w-12 items-center justify-center rounded-xl bg-accent/10 ring-1 ring-accent/20">
+                    <Icon className="h-6 w-6 text-accent" />
                   </div>
                   <h3 className="mb-2 text-lg font-bold text-white">{p.title}</h3>
                   <p className="text-sm leading-relaxed text-zinc-400">{p.body}</p>

@@ -9,8 +9,8 @@
   --ascend-accent-mock: 244 63 113;
   --ascend-accent-progress: 16 185 129;
   --ascend-fg: 248 250 252;
-  --ascend-font-sans: "Geist", "Geist Fallback", ui-sans-serif, system-ui, sans-serif;
-  --ascend-font-display: "Geist", "Geist Fallback", ui-sans-serif, system-ui, sans-serif;
+  --ascend-font-sans: ui-sans-serif, system-ui, sans-serif;
+  --ascend-font-display: ui-sans-serif, system-ui, sans-serif;
 }
 
 @theme inline {
@@ -40,8 +40,8 @@
   --color-border: hsl(var(--border));
   --color-input: hsl(var(--input));
   --color-ring: hsl(var(--ring));
-  --font-sans: "Geist", "Geist Fallback", ui-sans-serif, system-ui, sans-serif;
-  --font-display: "Geist", "Geist Fallback", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: ui-sans-serif, system-ui, sans-serif;
+  --font-display: ui-sans-serif, system-ui, sans-serif;
   --radius-token: 0.5rem;
   --animate-fade-up: fade-up 0.45s ease-out both;
 }

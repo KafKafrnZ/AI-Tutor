@@ -15,10 +15,8 @@ dependencies = [
     "passlib[bcrypt]>=1.7.4",
     "python-multipart>=0.0.9",
     "slowapi>=0.1.9",                    # rate limiting
-    "chromadb>=0.5.0",
-    "fastembed>=0.3.0",
-    "sentence-transformers>=3.1.0",
-    "faiss-cpu>=1.10.0",                 # or faiss-gpu if you have GPU
+    "chromadb==0.5.23",
+    "fastembed==0.3.6",
     "pandas>=2.2.0",
     "numpy>=1.26.0",
     "requests>=2.32.0",
