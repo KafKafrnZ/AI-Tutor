@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, Suspense } from "react";
 import { motion } from "framer-motion";
 import { Send, User, ArrowLeft, Sparkles, CheckCircle2, CircleDashed } from "lucide-react";
 import ReactMarkdown, { type Components } from "react-markdown";
@@ -106,7 +106,7 @@ const MarkdownMessage = ({ content }: { content: string }) => {
   );
 };
 
-export default function TutorPage() {
+function TutorPageInner() {
   const tutorMessages = useAppStore((state) => state.tutorMessages);
   const setTutorMessages = useAppStore((state) => state.setTutorMessages);
   const searchParams = useSearchParams();
@@ -535,5 +535,13 @@ export default function TutorPage() {
       </div>
 
     </div>
+  );
+}
+
+export default function TutorPage() {
+  return (
+    <Suspense fallback={null}>
+      <TutorPageInner />
+    </Suspense>
   );
 }
