@@ -16,6 +16,7 @@ import {
   BarChart,
   Bar,
   Cell,
+} from "recharts";
 import { API_URL } from "@/lib/api";
 import { SkeletonCard, Skeleton } from "@/components/ui/Skeleton";
 import { PageShell } from "@/components/layout/PageShell";

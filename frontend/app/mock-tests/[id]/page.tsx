@@ -541,7 +541,7 @@ export default function MockTestEnginePage() {
                 <span>Unattempted / Skipped</span>
               </div>
             </div>
-          </div>
+          </motion.div>
 
           {/* Mobile Floating Toggle Button */}
           <button

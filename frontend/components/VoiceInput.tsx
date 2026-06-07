@@ -26,7 +26,6 @@ export default function VoiceInput({ onTranscript, isProcessing }: VoiceInputPro
         recognitionRef.current.continuous = false;
         recognitionRef.current.interimResults = false;
         recognitionRef.current.lang = "en-IN"; // Geared towards Indian users
-
         recognitionRef.current.onresult = (event: any) => {
           const transcript = event.results[0][0].transcript;
           onTranscript(transcript);
