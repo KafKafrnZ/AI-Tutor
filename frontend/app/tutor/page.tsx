@@ -222,6 +222,7 @@ export default function TutorPage() {
     setInput("");
     
     const currentMessages = useAppStore.getState().tutorMessages;
+    const history = currentMessages.slice(-10);
     setTutorMessages([...currentMessages, { role: "user", content: userQuestion }]);
     setIsLoading(true);
     setStreamingContent("");
@@ -243,7 +244,11 @@ export default function TutorPage() {
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         signal: abortController.signal,
-        body: JSON.stringify({ question: userQuestion, context: "" }),
+        body: JSON.stringify({
+          question: userQuestion,
+          context: "",
+          history,
+        }),
       });
 
       if (!response.ok || !response.body) {

@@ -202,6 +202,7 @@ class ProfileUpdateRequest(BaseModel):
 class AskRequest(BaseModel):
     question: str = Field(..., max_length=2000, description="User question to the tutor (max 2000 chars)")
     context: str = Field("", max_length=4000)
+    history: list[dict] = Field(default_factory=list)
 
 class PracticeRequest(BaseModel):
     topic: str = Field(..., max_length=500, description="Topic for practice questions (max 500 chars)")
@@ -385,7 +386,7 @@ def update_profile(
 @limiter.limit("10/minute")
 async def ask_ai(request: Request, data: AskRequest, current_user: Any = Depends(get_current_user)):
     try:
-        answer = await ask_tutor(data.question, data.context)
+        answer = await ask_tutor(data.question, data.context, data.history)
     except LLMServiceError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
     return {"answer": answer}
@@ -393,7 +394,7 @@ async def ask_ai(request: Request, data: AskRequest, current_user: Any = Depends
 @app.post("/ask/stream")
 @limiter.limit("10/minute")
 async def ask_tutor_stream_endpoint(request: Request, data: AskRequest, current_user: Any = Depends(get_current_user)):
-    stream = ask_tutor_stream(data.question, data.context)
+    stream = ask_tutor_stream(data.question, data.context, data.history)
     try:
         first_token = await anext(stream)
     except StopAsyncIteration as exc:

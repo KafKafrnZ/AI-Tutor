@@ -332,7 +332,14 @@ export default function MockTestEnginePage() {
             </p>
           </div>
           
-          <div className="flex items-center gap-6 self-stretch sm:self-auto justify-between sm:justify-end">
+          <div className="flex flex-col gap-3 self-stretch sm:self-auto sm:items-end">
+            {timeLeft <= 300 && timeLeft > 0 && (
+              <div className="bg-rose-500/20 border border-rose-500/40 text-rose-300 text-sm font-semibold px-4 py-2 rounded-xl animate-pulse text-center">
+                <AlertTriangle className="mr-2 inline h-4 w-4 align-[-2px]" />
+                {Math.ceil(timeLeft / 60)} min remaining - submit soon!
+              </div>
+            )}
+            <div className="flex items-center gap-6 justify-between sm:justify-end">
             <div className="flex items-center gap-2 px-4 py-2 bg-zinc-950 border border-white/5 rounded-xl font-mono text-lg text-pink-400">
               <Clock className="w-5 h-5 text-pink-500" />
               {formatTime(timeLeft)}
@@ -345,6 +352,7 @@ export default function MockTestEnginePage() {
             >
               <Send className="w-4 h-4" /> Finish Exam
             </button>
+            </div>
           </div>
         </div>
 
