@@ -125,7 +125,7 @@ export default function PracticePage() {
               <Target className="w-8 h-8 text-white" />
             </div>
             <h1 className="text-4xl font-bold text-white tracking-tight mb-3 drop-shadow-lg">Practice Arena</h1>
-            <p className="text-zinc-300 max-w-lg drop-shadow-md">Generate targeted, adaptive mock questions on any IBPS SO topic to strengthen your weak areas.</p>
+            <p className="text-zinc-300 max-w-lg drop-shadow-md">Generate targeted, adaptive mock questions on any government exam topic to strengthen your weak areas.</p>
           </div>
 
           {/* Search Input (Now glassy) */}
@@ -150,17 +150,18 @@ export default function PracticePage() {
             {questions.map((q, i) => {
               const isAnswered = !!selectedAnswers[i];
               const userSelectedOpt = selectedAnswers[i];
+              const difficulty = q.difficulty || "Medium";
 
               return (
                 <motion.div 
                   initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: Math.min(i * 0.1, 1) }}
                   key={i} 
                   // Made the question card highly transparent (bg-black/20)
-                  className={`p-8 bg-black/20 backdrop-blur-xl border rounded-3xl transition-all duration-500 relative overflow-hidden ${getDifficultyHue(q.difficulty)}`}
+                  className={`p-8 bg-black/20 backdrop-blur-xl border rounded-3xl transition-all duration-500 relative overflow-hidden ${getDifficultyHue(difficulty)}`}
                 >
                   <div className="flex justify-between items-center mb-8 relative z-10">
-                    <span className={`px-4 py-1.5 text-xs font-bold rounded-full border uppercase tracking-widest ${getBadgeStyle(q.difficulty)}`}>
-                      {q.difficulty || 'Medium'}
+                    <span className={`px-4 py-1.5 text-xs font-bold rounded-full border uppercase tracking-widest ${getBadgeStyle(difficulty)}`}>
+                      {difficulty}
                     </span>
                     <span className="text-sm font-semibold text-zinc-400 tracking-wider drop-shadow-md">QUESTION {i + 1} OF {questions.length}</span>
                   </div>

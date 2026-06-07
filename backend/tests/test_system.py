@@ -11,12 +11,13 @@ Fixes verified:
   H-4  Reset-password enforces password strength (uppercase + digit)
 """
 
+import asyncio
 import secrets
 from datetime import datetime, timedelta, timezone
 
 import pytest
 
-from app.models.database import AuthToken, User
+from app.models.database import AuthToken, MasterQuestion, User
 from app.core.auth import hash_password
 from app.main import app
 from tests.conftest import make_db_session
@@ -359,7 +360,116 @@ class TestDeadDependenciesRemoved:
 
 
 # ============================================================================
-# 9. Protected endpoints enforce authentication
+# 9. Production AI/RAG hardening
+# ============================================================================
+
+class TestRAGPersistenceGuard:
+    def test_production_rejects_ephemeral_chroma_path(self, monkeypatch):
+        from app.core.config import settings
+        from app.core.rag import validate_chroma_persistence_config
+
+        monkeypatch.setattr(settings, "RAG_REQUIRE_PERSISTENT_CHROMA", True)
+        monkeypatch.setattr(settings, "RAILWAY_VOLUME_MOUNT_PATH", "")
+        monkeypatch.setattr(settings, "RAG_CHROMA_PATH", "data/chroma")
+
+        with pytest.raises(RuntimeError, match="ephemeral"):
+            validate_chroma_persistence_config()
+
+    def test_railway_volume_chroma_path_is_allowed(self, monkeypatch):
+        from pathlib import Path
+
+        from app.core.config import settings
+        from app.core.rag import validate_chroma_persistence_config
+
+        monkeypatch.setattr(settings, "RAG_REQUIRE_PERSISTENT_CHROMA", True)
+        monkeypatch.setattr(settings, "RAILWAY_VOLUME_MOUNT_PATH", "/data")
+        monkeypatch.setattr(settings, "RAG_CHROMA_PATH", "/data/chroma")
+
+        assert validate_chroma_persistence_config() == Path("/data/chroma")
+
+
+class TestLLMAdapterProviders:
+    def test_anthropic_uses_native_messages_api(self, monkeypatch):
+        from app.core import llm_adapter
+        from app.core.config import settings
+
+        class FakeResponse:
+            def raise_for_status(self):
+                return None
+
+            def json(self):
+                return {"content": [{"type": "text", "text": "hello"}]}
+
+        class FakeClient:
+            def __init__(self):
+                self.calls = []
+
+            async def post(self, url, headers, json):
+                self.calls.append({"url": url, "headers": headers, "json": json})
+                return FakeResponse()
+
+        fake_client = FakeClient()
+        monkeypatch.setattr(settings, "LLM_BASE_URL", "https://api.anthropic.com/v1")
+        monkeypatch.setattr(settings, "LLM_API_KEY", "test-anthropic-key")
+        monkeypatch.setattr(settings, "LLM_MODEL", "claude-sonnet-4-5")
+        monkeypatch.setattr(settings, "LLM_ANTHROPIC_VERSION", "2023-06-01")
+        monkeypatch.setattr(llm_adapter, "get_http_client", lambda: fake_client)
+
+        result = asyncio.run(llm_adapter.chat_complete([
+            {"role": "system", "content": "System rules"},
+            {"role": "user", "content": "Context"},
+            {"role": "user", "content": "Question"},
+        ], temperature=0.2, max_tokens=123))
+
+        call = fake_client.calls[0]
+        assert result == "hello"
+        assert call["url"] == "https://api.anthropic.com/v1/messages"
+        assert call["headers"]["x-api-key"] == "test-anthropic-key"
+        assert call["headers"]["anthropic-version"] == "2023-06-01"
+        assert call["json"]["system"] == "System rules"
+        assert call["json"]["max_tokens"] == 123
+        assert call["json"]["messages"] == [
+            {"role": "user", "content": "Context\n\nQuestion"}
+        ]
+
+
+class TestLLMFailureResponses:
+    EMAIL = "llm_failure@test.com"
+
+    @pytest.fixture(autouse=True)
+    def logged_in(self, client):
+        _create_db_user(self.EMAIL, is_verified=True)
+        r = _login(client, self.EMAIL)
+        assert r.status_code == 200
+
+    def test_ask_returns_503_when_model_provider_fails(self, client, monkeypatch):
+        async def broken_chat_complete(*args, **kwargs):
+            raise RuntimeError("provider down")
+
+        monkeypatch.setattr("modules.tutor.chat_complete", broken_chat_complete)
+
+        r = client.post("/ask", json={"question": "Explain TCP/IP", "context": "Network context"})
+
+        assert r.status_code == 503
+        assert "AI model service is unavailable" in r.json()["detail"]
+        assert "Local Engine Error" not in r.text
+
+    def test_stream_returns_503_when_provider_fails_before_first_token(self, client, monkeypatch):
+        async def broken_chat_stream(*args, **kwargs):
+            if False:
+                yield ""
+            raise RuntimeError("provider down")
+
+        monkeypatch.setattr("modules.tutor.chat_stream", broken_chat_stream)
+
+        r = client.post("/ask/stream", json={"question": "Explain TCP/IP", "context": "Network context"})
+
+        assert r.status_code == 503
+        assert "AI model stream is unavailable" in r.json()["detail"]
+
+
+# ============================================================================
+# 10. Protected endpoints enforce authentication
 # ============================================================================
 
 PROTECTED = [
@@ -467,3 +577,42 @@ class TestMockTests:
     def test_each_test_has_required_fields(self, client):
         for t in client.get("/mock-tests").json()["tests"]:
             assert "id" in t and "title" in t and "question_count" in t
+
+    def test_unseeded_tests_expose_generated_fallback_count(self, client):
+        first = client.get("/mock-tests").json()["tests"][0]
+        assert first["question_count"] > 0
+        assert first["is_fallback"] is True
+        assert first["source"] == "generated_fallback"
+
+    def test_unseeded_questions_return_generated_fallback(self, client):
+        r = client.get("/mock-tests/1/questions")
+        assert r.status_code == 200
+        payload = r.json()
+        assert payload["test"]["is_fallback"] is True
+        assert len(payload["questions"]) > 0
+        assert payload["questions"][0]["source"] == "generated_fallback"
+        assert payload["questions"][0]["correct_answer"] in {"A", "B", "C", "D"}
+
+    def test_seeded_question_answer_text_is_normalized_to_option_letter(self, client):
+        db = make_db_session()
+        db.add(MasterQuestion(
+            test_id=77,
+            section="Polity",
+            topic="Union Executive",
+            question_text="Who is the nominal head of the Union Executive?",
+            option_a="Prime Minister",
+            option_b="Speaker",
+            option_c="President",
+            option_d="Cabinet Secretary",
+            correct_answer="President",
+            explanation="The President is the nominal head of the Union Executive.",
+        ))
+        db.commit()
+        db.close()
+
+        r = client.get("/mock-tests/77/questions")
+        assert r.status_code == 200
+        question = r.json()["questions"][0]
+        assert question["source"] == "database"
+        assert question["correct_answer"] == "C"
+        assert question["correct_answer_text"] == "President"

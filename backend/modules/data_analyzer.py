@@ -57,8 +57,8 @@ def get_overall_stats(df):
             "total_tests": 0
         }
     return {
-        "avg_accuracy": round(df["accuracy"].mean(), 2) if not df.empty else 0,
-        "total_tests": len(df)
+        "avg_accuracy": float(round(df["accuracy"].mean(), 2)) if not df.empty else 0,
+        "total_tests": int(len(df))
     }
 
 # ====================== NEW: AI INTELLIGENCE ENGINE ======================

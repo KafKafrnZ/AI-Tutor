@@ -15,8 +15,10 @@ function VerifyEmailContent() {
 
   useEffect(() => {
     if (!token) {
-      setStatus("error");
-      setMessage("Verification token is missing. Please use the link from your email.");
+      queueMicrotask(() => {
+        setStatus("error");
+        setMessage("Verification token is missing. Please use the link from your email.");
+      });
       return;
     }
 

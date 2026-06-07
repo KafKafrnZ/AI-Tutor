@@ -1,10 +1,11 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useCallback } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
-import { Clock, ChevronLeft, ChevronRight, Send, AlertTriangle, CheckCircle } from "lucide-react"
+import { Clock, ChevronLeft, ChevronRight, Send, AlertTriangle } from "lucide-react"
 import { API_URL } from "@/lib/api" // H-02 FIX: Import API_URL
+import { buildFallbackMockQuestions, getFallbackMockTest } from "@/lib/mockFallback"
 
 interface Question {
   id: number
@@ -14,8 +15,10 @@ interface Question {
   option_c: string
   option_d: string
   correct_option: string
+  correct_answer_text: string
   explanation: string
   subject: string
+  source?: string
 }
 
 interface TestDetails {
@@ -23,14 +26,74 @@ interface TestDetails {
   title: string
   duration_minutes: number
   questions: Question[]
+  is_fallback?: boolean
+  source?: string
+}
+
+interface ApiQuestion {
+  id: number
+  question: string
+  options?: string[]
+  correct_answer?: string
+  correct_answer_text?: string
+  explanation?: string
+  section?: string
+  topic?: string
+  source?: string
+}
+
+interface MockTestPayload {
+  test?: Partial<Pick<TestDetails, "id" | "title" | "duration_minutes" | "is_fallback" | "source">>
+  questions?: ApiQuestion[]
+}
+
+const OPTION_KEYS = ["A", "B", "C", "D"] as const
+
+function normalizeCorrectOption(correctAnswer: string | undefined, options: string[]): string {
+  const answer = (correctAnswer || "").trim()
+  if (!answer) return ""
+
+  const normalized = answer.toUpperCase().replace("OPTION", "").replace(/[.):-]/g, "").trim()
+  if (OPTION_KEYS.includes(normalized as (typeof OPTION_KEYS)[number])) {
+    return normalized
+  }
+
+  const leadingLetter = answer.match(/^([A-D])[\s.):-]/i)
+  if (leadingLetter) {
+    return leadingLetter[1].toUpperCase()
+  }
+
+  const answerLower = answer.toLowerCase()
+  const matchedIndex = options.findIndex((option) => option.trim().toLowerCase() === answerLower)
+  return matchedIndex >= 0 ? OPTION_KEYS[matchedIndex] : ""
+}
+
+function optionTextFor(correctOption: string, options: string[]): string {
+  const index = OPTION_KEYS.findIndex((key) => key === correctOption)
+  return index >= 0 ? options[index] : correctOption
+}
+
+function localFallbackPayload(testId: number): MockTestPayload {
+  const fallbackTest = getFallbackMockTest(testId)
+  return {
+    test: {
+      id: fallbackTest.id,
+      title: fallbackTest.title,
+      duration_minutes: fallbackTest.duration_minutes,
+      is_fallback: true,
+      source: fallbackTest.source,
+    },
+    questions: buildFallbackMockQuestions(testId),
+  }
 }
 
 export default function MockTestEnginePage() {
-  const { id } = useParams()
+  const { id } = useParams<{ id: string }>()
   const router = useRouter()
   
   const [test, setTest] = useState<TestDetails | null>(null)
   const [loading, setLoading] = useState(true)
+  const [loadNotice, setLoadNotice] = useState("")
   const [currentIdx, setCurrentIdx] = useState(0)
   const [answers, setAnswers] = useState<Record<number, string>>({}) // { questionId: "A" }
   const [timeLeft, setTimeLeft] = useState(0) // seconds
@@ -45,62 +108,80 @@ export default function MockTestEnginePage() {
   // Fetch Mock Test Data
   useEffect(() => {
     async function fetchTest() {
+      const numericId = Number(id) || 1
+      let data: MockTestPayload
+
       try {
         // H-02 FIX: Target the correct sub-route with environment variable interpolation
         const res = await fetch(`${API_URL}/mock-tests/${id}/questions`, {
           credentials: "include"
         })
-        if (!res.ok) throw new Error("Failed to fetch test data")
-        const data = await res.json()
-        
+        if (!res.ok) throw new Error(`Failed to fetch test data: ${res.status}`)
+        data = (await res.json()) as MockTestPayload
+
+        if (!Array.isArray(data.questions) || data.questions.length === 0) {
+          data = localFallbackPayload(numericId)
+          setLoadNotice("No seeded questions were found for this set, so generated starter questions are loaded.")
+        } else if (data.test?.is_fallback || data.test?.source?.includes("fallback")) {
+          setLoadNotice("Generated starter questions are loaded because this mock has not been seeded yet.")
+        } else {
+          setLoadNotice("")
+        }
+      } catch (err) {
+        console.error(err)
+        data = localFallbackPayload(numericId)
+        setLoadNotice("Backend mock questions are unavailable, so local starter questions are loaded.")
+      }
+
+      try {
         const meta = data.test || {}
         // H-02 FIX: Construct data schema mapping object transformation layer
-        const mappedQuestions: Question[] = (data.questions || []).map((q: any) => ({
+        const mappedQuestions: Question[] = (data.questions || []).map((q) => ({
           id: q.id,
           question_text: q.question,
-          option_a: q.options[0] || "",
-          option_b: q.options[1] || "",
-          option_c: q.options[2] || "",
-          option_d: q.options[3] || "",
-          correct_option: q.correct_answer,
+          option_a: q.options?.[0] || "",
+          option_b: q.options?.[1] || "",
+          option_c: q.options?.[2] || "",
+          option_d: q.options?.[3] || "",
+          correct_option: normalizeCorrectOption(
+            q.correct_answer || q.correct_answer_text,
+            [q.options?.[0] || "", q.options?.[1] || "", q.options?.[2] || "", q.options?.[3] || ""],
+          ),
+          correct_answer_text:
+            q.correct_answer_text ||
+            optionTextFor(
+              normalizeCorrectOption(q.correct_answer, [
+                q.options?.[0] || "",
+                q.options?.[1] || "",
+                q.options?.[2] || "",
+                q.options?.[3] || "",
+              ]),
+              [q.options?.[0] || "", q.options?.[1] || "", q.options?.[2] || "", q.options?.[3] || ""],
+            ),
           explanation: q.explanation || "",
-          subject: q.section || "General"
+          subject: q.section || "General",
+          source: q.source,
         }))
 
         const durMin = meta.duration_minutes || 90
         setTest({
-          id: Number(id),
+          id: numericId,
           title: meta.title || `Mock Test Set ${id}`,
           duration_minutes: durMin,
-          questions: mappedQuestions
+          questions: mappedQuestions,
+          is_fallback: meta.is_fallback,
+          source: meta.source,
         })
         setTimeLeft(durMin * 60)
       } catch (err) {
-        console.error(err)
+        console.error("Failed to map mock test payload", err)
+        setTest(null)
       } finally {
         setLoading(false)
       }
     }
     fetchTest()
   }, [id])
-
-  // Countdown Timer Hook
-  useEffect(() => {
-    if (loading || timeLeft <= 0 || isSubmitting) return
-
-    const timer = setInterval(() => {
-      setTimeLeft((prev) => {
-        if (prev <= 1) {
-          clearInterval(timer)
-          handleFinalSubmit(true)
-          return 0
-        }
-        return prev - 1
-      })
-    }, 1000)
-
-    return () => clearInterval(timer)
-  }, [loading, isSubmitting])
 
   // Handle selecting an answer choice
   const handleSelectOption = (questionId: number, optionLetter: string) => {
@@ -111,7 +192,7 @@ export default function MockTestEnginePage() {
   }
 
   // Submit Logic
-  const handleFinalSubmit = async (isAutoSubmit = false) => {
+  const handleFinalSubmit = useCallback(async (isAutoSubmit = false) => {
     if (isSubmitting || !test) return
     setIsSubmitting(true)
 
@@ -143,7 +224,12 @@ export default function MockTestEnginePage() {
         mistakesToLog.push({
           question_text: q.question_text,
           user_answer: userAnswer,
-          correct_answer: q.correct_option,
+          correct_answer: q.correct_answer_text || optionTextFor(q.correct_option, [
+            q.option_a,
+            q.option_b,
+            q.option_c,
+            q.option_d,
+          ]),
           explanation: q.explanation
         })
       }
@@ -182,7 +268,25 @@ export default function MockTestEnginePage() {
     } finally {
       setIsSubmitting(false)
     }
-  }
+  }, [isSubmitting, router, test, timeLeft])
+
+  // Countdown Timer Hook
+  useEffect(() => {
+    if (loading || timeLeft <= 0 || isSubmitting) return
+
+    const timer = setInterval(() => {
+      setTimeLeft((prev) => {
+        if (prev <= 1) {
+          clearInterval(timer)
+          handleFinalSubmit(true)
+          return 0
+        }
+        return prev - 1
+      })
+    }, 1000)
+
+    return () => clearInterval(timer)
+  }, [handleFinalSubmit, isSubmitting, loading, timeLeft])
 
   // Format seconds to MM:SS
   const formatTime = (seconds: number) => {
@@ -201,8 +305,14 @@ export default function MockTestEnginePage() {
 
   if (!test || test.questions.length === 0) {
     return (
-      <div className="min-h-screen bg-[#09090b] flex items-center justify-center text-rose-400 font-medium">
-        Exam layout not found or contains no questions. Return to index.
+      <div className="min-h-screen bg-[#09090b] flex flex-col items-center justify-center gap-4 px-6 text-center font-medium">
+        <p className="text-rose-400">Exam layout not found or contains no questions.</p>
+        <button
+          onClick={() => router.push("/mock-tests")}
+          className="rounded-xl border border-white/10 bg-zinc-900 px-4 py-2 text-sm text-zinc-200 transition-colors hover:bg-white hover:text-black"
+        >
+          Return to Mock Tests
+        </button>
       </div>
     )
   }
@@ -237,6 +347,13 @@ export default function MockTestEnginePage() {
             </button>
           </div>
         </div>
+
+        {loadNotice && (
+          <div className="flex items-start gap-3 rounded-2xl border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+            <span>{loadNotice}</span>
+          </div>
+        )}
 
         {/* Main Interface Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">

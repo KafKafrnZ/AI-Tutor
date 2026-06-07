@@ -3,9 +3,10 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
-import { FileText, Clock, ChevronRight, Brain, Target, BookOpen, Loader2 } from "lucide-react";
+import { FileText, Clock, ChevronRight, Brain, Target, BookOpen, Loader2, AlertTriangle, type LucideIcon } from "lucide-react";
 import { MouseEvent } from "react";
 import { API_URL } from "@/lib/api";
+import { fallbackMockTests } from "@/lib/mockFallback";
 
 interface MockTest {
   id: number;
@@ -13,6 +14,8 @@ interface MockTest {
   duration_minutes: number;
   question_count: number;
   difficulty: string;
+  is_fallback?: boolean;
+  source?: string;
 }
 
 const difficultyStyles: Record<string, string> = {
@@ -21,12 +24,12 @@ const difficultyStyles: Record<string, string> = {
   Easy: "text-emerald-400 border-emerald-500/20 bg-emerald-500/5",
 };
 
-const icons: Record<string, any> = {
+const icons: Record<number, LucideIcon> = {
   1: Brain,
   2: Target,
   3: BookOpen,
 };
-const iconColors: Record<string, string> = {
+const iconColors: Record<number, string> = {
   1: "text-rose-500 bg-rose-500/10",
   2: "text-amber-500 bg-amber-500/10",
   3: "text-emerald-500 bg-emerald-500/10",
@@ -35,18 +38,29 @@ const iconColors: Record<string, string> = {
 export default function MockTestsPage() {
   const [tests, setTests] = useState<MockTest[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadNotice, setLoadNotice] = useState("");
 
   useEffect(() => {
     async function load() {
       try {
         const res = await fetch(`${API_URL}/mock-tests`, { credentials: "include" });
-        if (res.ok) {
-          const data = await res.json();
-          setTests(data.tests || []);
+        if (!res.ok) {
+          throw new Error(`Mock test list returned ${res.status}`);
+        }
+
+        const data = await res.json();
+        const nextTests = Array.isArray(data.tests) ? data.tests : [];
+        if (nextTests.length > 0) {
+          setTests(nextTests);
+          setLoadNotice("");
+        } else {
+          setTests(fallbackMockTests);
+          setLoadNotice("Showing generated starter mocks because no seeded tests are available yet.");
         }
       } catch (e) {
         console.error("Failed to load mock tests list", e);
-        // Fallback to empty (UI will show no tests or user can still try direct /1 etc.)
+        setTests(fallbackMockTests);
+        setLoadNotice("Backend mock catalog is unavailable, so local starter mocks are shown.");
       } finally {
         setLoading(false);
       }
@@ -71,10 +85,17 @@ export default function MockTestsPage() {
             <div className="w-12 h-12 bg-pink-600 rounded-xl flex items-center justify-center shadow-lg shadow-pink-900/20 text-white"><FileText className="w-6 h-6" /></div>
             <div>
               <h1 className="text-3xl font-bold text-white tracking-tight">Mock Tests</h1>
-              <p className="text-zinc-400 mt-1">Full-length exams with AI grading and analytics. (Seeded data for Set 1+)</p>
+              <p className="text-zinc-400 mt-1">Timed government-exam practice with AI grading and analytics.</p>
             </div>
           </div>
         </div>
+
+        {loadNotice && (
+          <div className="mb-6 flex items-start gap-3 rounded-2xl border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+            <span>{loadNotice}</span>
+          </div>
+        )}
 
         {loading ? (
           <div className="flex items-center gap-2 text-zinc-400"><Loader2 className="animate-spin" /> Loading available tests...</div>
@@ -100,6 +121,7 @@ export default function MockTestsPage() {
                   <div className="flex items-center gap-4 text-zinc-500 text-sm mb-8 font-medium">
                     <div className="flex items-center gap-1.5"><Clock className="w-4 h-4" /> {dur}</div>
                     <div className="flex items-center gap-1.5"><BookOpen className="w-4 h-4" /> {qstr}</div>
+                    {test.is_fallback && <span className="text-amber-300">Generated</span>}
                   </div>
                   <Link href={`/mock-tests/${test.id}`} className="block w-full">
                     <button className="w-full py-4 rounded-xl bg-zinc-950 border border-white/5 text-zinc-300 font-semibold hover:bg-white hover:text-black hover:border-transparent transition-all flex items-center justify-center gap-2 group-hover:shadow-[0_0_20px_rgba(255,255,255,0.1)]">
