@@ -189,7 +189,7 @@ export default function MockTestEnginePage() {
     let skippedCount = 0
 
     // Evaluate answers
-    for (const q of test.questions) {
+    for (const q of test?.questions || []) {
       const userAnswer = finalAnswers[q.id]
 
       if (!userAnswer) {
