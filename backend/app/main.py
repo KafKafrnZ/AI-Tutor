@@ -12,7 +12,7 @@ from typing import List, Optional, Dict, Any
 from pydantic import BaseModel, EmailStr, Field, field_validator
 from contextlib import asynccontextmanager
 import secrets
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import json
 import time
 import logging
@@ -35,7 +35,8 @@ from pathlib import Path as _Path
 from sse_starlette.sse import EventSourceResponse
 from app.models.database import (
     create_user, get_user_by_email, get_db, save_mock_test,
-    get_questions_for_test, save_error_log, ErrorLog, AuthToken, User, MasterQuestion
+    get_questions_for_test, save_error_log,
+    ErrorLog, AuthToken, User, MasterQuestion, Conversation, MockTestSession,
 )
 from app.core.auth import hash_password, verify_password, create_token, verify_token
 from app.schemas.mock_test import MockTestCreate
@@ -288,6 +289,10 @@ class ErrorItem(BaseModel):
 
 class ErrorPayload(BaseModel):
     errors: List[ErrorItem]
+
+class ConversationSaveRequest(BaseModel):
+    question: str = Field(..., max_length=2000)
+    answer: str = Field(..., max_length=12000)
 
 
 # ====================== ENDPOINTS ======================
@@ -852,15 +857,30 @@ def get_test_questions(test_id: int, db: Session = Depends(get_db), current_user
         formatted = build_fallback_mock_questions(test_id)
 
     meta = MOCK_TEST_META.get(test_id, {"title": f"Mock Test Set {test_id}", "duration_minutes": 90, "difficulty": "Medium"})
+
+    # Create server-side timer session — prevents client-side timer manipulation
+    session_token = secrets.token_urlsafe(32)
+    duration_minutes = meta["duration_minutes"]
+    expires_at = datetime.now(timezone.utc) + timedelta(minutes=duration_minutes + 2)  # 2-min grace
+    db_session = MockTestSession(
+        id=session_token,
+        user_id=current_user.id,
+        test_id=test_id,
+        expires_at=expires_at,
+    )
+    db.add(db_session)
+    db.commit()
+
     return {
         "test": {
             "id": test_id,
             "title": meta["title"],
-            "duration_minutes": meta["duration_minutes"],
+            "duration_minutes": duration_minutes,
             "difficulty": meta["difficulty"],
             "question_count": len(formatted),
             "is_fallback": uses_fallback,
             "source": "generated_fallback" if uses_fallback else "database",
+            "session_id": session_token,
         },
         "questions": formatted
     }
@@ -875,13 +895,34 @@ def save_mock_test_result(data: MockTestCreate, db: Session = Depends(get_db), c
     data.test_name = sanitize_user_input(data.test_name)
     data.section = sanitize_user_input(data.section)
 
+    # Server-side timer enforcement — validate session if provided
+    if data.session_id:
+        session = db.query(MockTestSession).filter(
+            MockTestSession.id == data.session_id,
+            MockTestSession.user_id == current_user.id,
+        ).first()
+        if not session:
+            raise HTTPException(status_code=400, detail={
+                "code": "INVALID_SESSION",
+                "message": "Test session not found. Please reload and start a new test.",
+            })
+        expires = session.expires_at
+        if expires.tzinfo is None:
+            expires = expires.replace(tzinfo=timezone.utc)
+        if datetime.now(timezone.utc) > expires:
+            db.delete(session)
+            db.commit()
+            raise HTTPException(status_code=400, detail={
+                "code": "SESSION_EXPIRED",
+                "message": "Test time has expired. Results cannot be saved.",
+            })
+        db.delete(session)  # one-shot: consume the session on use
+
     saved_test = save_mock_test(db, current_user.id, data.model_dump())
     if not saved_test:
         raise HTTPException(status_code=500, detail="Failed to save mock test")
-    
-    # CRITICAL: Invalidate the cache because the user has new data!
+
     invalidate_user_cache(current_user.id)
-    
     return {"message": "Mock test saved successfully", "id": saved_test.id}
 
 @app.get("/stats", response_model=StatsResponse)
@@ -970,3 +1011,34 @@ def get_error_log(
         .all()
     )
     return logs
+
+
+@app.get("/conversations")
+def get_conversations(
+    limit: int = 50,
+    db: Session = Depends(get_db),
+    current_user: Any = Depends(get_current_user),
+):
+    messages = (
+        db.query(Conversation)
+        .filter(Conversation.user_id == current_user.id)
+        .order_by(Conversation.created_at.asc())
+        .limit(limit)
+        .all()
+    )
+    return [{"role": m.role, "content": m.content} for m in messages]
+
+
+@app.post("/conversations/save")
+@limiter.limit("30/minute")
+def save_conversation(
+    request: Request,
+    data: ConversationSaveRequest,
+    db: Session = Depends(get_db),
+    current_user: Any = Depends(get_current_user),
+):
+    question = guard_input(data.question, max_length=2000)
+    db.add(Conversation(user_id=current_user.id, role="user", content=question))
+    db.add(Conversation(user_id=current_user.id, role="assistant", content=data.answer[:12000]))
+    db.commit()
+    return {"saved": 2}

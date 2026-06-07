@@ -98,6 +98,7 @@ export default function MockTestEnginePage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [showSubmitModal, setShowSubmitModal] = useState(false)
   const [isGridOpen, setIsGridOpen] = useState(false)
+  const [sessionId, setSessionId] = useState<string | null>(null)
 
   // CRITICAL FIX FOR BUG-3: Use a mutable ref to always keep track of the latest user answers.
   const answersRef = useRef(answers)
@@ -159,6 +160,8 @@ export default function MockTestEnginePage() {
         })
 
         const durMin = meta.duration_minutes || 90
+        const sid = (meta as { session_id?: string }).session_id
+        if (sid) setSessionId(sid)
         setTest({
           id: numericId,
           title: meta.title || `Mock Test Set ${id}`,
@@ -210,8 +213,8 @@ export default function MockTestEnginePage() {
     }
 
     try {
-      // 1. Submit exam summary metrics to backend using environment dynamic URL
-      await fetch(`${API_URL}/save-mock-test`, {
+      // 1. Submit exam summary metrics (with server-side session token for timer enforcement)
+      const saveRes = await fetch(`${API_URL}/save-mock-test`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -221,9 +224,25 @@ export default function MockTestEnginePage() {
           section: "Full Mock",
           attempted: test.questions.length - skippedCount,
           correct: correctCount,
-          time_taken: (test.duration_minutes * 60) - timeLeft
+          time_taken: (test.duration_minutes * 60) - timeLeft,
+          session_id: sessionId,
         })
       })
+      if (!saveRes.ok) {
+        const errBody = await saveRes.json().catch(() => ({}))
+        const code = errBody?.detail?.code
+        if (code === "SESSION_EXPIRED") {
+          toast.error("Time's up — your session expired and results could not be saved.")
+          router.push("/mock-tests")
+          return
+        }
+        if (code === "INVALID_SESSION") {
+          toast.error("Invalid test session. Please start a new test.")
+          router.push("/mock-tests")
+          return
+        }
+        throw new Error(`save-mock-test HTTP ${saveRes.status}`)
+      }
 
     // 2. Batch upload genuine incorrect answers to Mistake Locker with corrected parameter key
       if (mistakesToLog.length > 0) {

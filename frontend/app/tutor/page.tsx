@@ -114,6 +114,7 @@ export default function TutorPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
   const [streamingContent, setStreamingContent] = useState("");
+  const [historyLoaded, setHistoryLoaded] = useState(false);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const streamingFullRef = useRef(""); // for skip / finalize
@@ -151,6 +152,19 @@ export default function TutorPage() {
       active: agentStep >= 2,
     },
   ];
+
+  // Load conversation history from DB on first mount
+  useEffect(() => {
+    if (historyLoaded || tutorMessages.length > 0) { setHistoryLoaded(true); return; }
+    fetch(`${API_URL}/conversations?limit=50`, { credentials: "include" })
+      .then((r) => (r.ok ? r.json() : []))
+      .then((msgs: { role: string; content: string }[]) => {
+        if (msgs.length > 0) setTutorMessages(msgs);
+      })
+      .catch(() => {})
+      .finally(() => setHistoryLoaded(true));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }), [tutorMessages, streamingContent]);
 
@@ -327,6 +341,13 @@ export default function TutorPage() {
         const finalAnswer = streamingFullRef.current || "No response received.";
         const updatedMessages = useAppStore.getState().tutorMessages;
         setTutorMessages([...updatedMessages, { role: "assistant", content: finalAnswer }]);
+        // Persist exchange to DB — fire and forget, never block the UI
+        fetch(`${API_URL}/conversations/save`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ question: userQuestion, answer: finalAnswer }),
+        }).catch(() => {});
       }
     } catch (error) {
       if (abortController.signal.aborted || streamFinalizedRef.current) return;
