@@ -22,7 +22,6 @@ def parse_bool(raw: str | None, default: bool = False) -> bool:
         return default
     return raw.lower() in {"1", "true", "yes", "on"}
 
-
 def _safe_int(value: str | None, default: int) -> int:
     try:
         return int(value) if value is not None else default
@@ -67,6 +66,7 @@ class Settings:
     EMAIL_USER: str = os.getenv("EMAIL_USER", "")
     EMAIL_PASSWORD: str = os.getenv("EMAIL_PASSWORD", "")
     EMAIL_FROM: str = os.getenv("EMAIL_FROM", "noreply@ascend-ai.in")
+    REDIS_URL: str = os.getenv("REDIS_URL", "")
     FRONTEND_URL: str = os.getenv("FRONTEND_URL", "http://localhost:3000")
 
     # LLM provider adapter. Defaults preserve the current Groq setup, while
