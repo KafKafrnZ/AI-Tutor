@@ -12,6 +12,7 @@ interface VoiceInputProps {
 export default function VoiceInput({ onTranscript, isProcessing }: VoiceInputProps) {
   const [isRecording, setIsRecording] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isRecognitionAvailable, setIsRecognitionAvailable] = useState(false);
   const recognitionRef = useRef<any>(null);
 
   useEffect(() => {
@@ -21,6 +22,7 @@ export default function VoiceInput({ onTranscript, isProcessing }: VoiceInputPro
 
       if (SpeechRecognition) {
         recognitionRef.current = new SpeechRecognition();
+        setIsRecognitionAvailable(true);
         recognitionRef.current.continuous = false;
         recognitionRef.current.interimResults = false;
         recognitionRef.current.lang = "en-IN"; // Geared towards Indian users
@@ -107,7 +109,7 @@ export default function VoiceInput({ onTranscript, isProcessing }: VoiceInputPro
       <button
         type="button"
         onClick={toggleRecording}
-        disabled={isProcessing || (!recognitionRef.current && !isRecording)}
+        disabled={isProcessing || (!isRecognitionAvailable && !isRecording)}
         className={`relative z-10 p-2.5 rounded-full transition-all shadow-lg flex items-center justify-center ${
           isProcessing
             ? "bg-zinc-800 text-zinc-400 opacity-50 cursor-not-allowed"
