@@ -8,6 +8,7 @@ class MockTestCreate(BaseModel):
     attempted: int
     correct: int
     time_taken: float = 0.0
+    session_id: Optional[str] = None
 
 class MockTestResponse(BaseModel):
     id: int

@@ -30,8 +30,8 @@ class User(Base):
     is_verified = Column(Boolean, default=False)      
 
     mock_tests = relationship("MockTest", back_populates="user")
-
     auth_tokens = relationship("AuthToken", back_populates="user", cascade="all, delete-orphan")
+    conversations = relationship("Conversation", back_populates="user", cascade="all, delete-orphan")
 
 class AuthToken(Base):
     __tablename__ = "auth_tokens"
@@ -85,6 +85,27 @@ class ErrorLog(Base):
     correct_answer = Column(String)
     explanation = Column(String)
     date_added = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+class Conversation(Base):
+    __tablename__ = "conversations"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    role = Column(String, nullable=False)  # "user" | "assistant"
+    content = Column(String, nullable=False)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+    user = relationship("User", back_populates="conversations")
+
+
+class MockTestSession(Base):
+    __tablename__ = "mock_test_sessions"
+
+    id = Column(String(64), primary_key=True)  # URL-safe token, one per test attempt
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    test_id = Column(Integer, nullable=False)
+    expires_at = Column(DateTime, nullable=False)
+
 
 def get_db():
     db = SessionLocal()
