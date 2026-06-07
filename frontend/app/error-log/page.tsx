@@ -144,7 +144,7 @@ export default function ErrorLogPage() {
                   <div className="flex gap-3 pt-3 border-t border-white/5 mt-2">
                     <button 
                       onClick={() => router.push(`/tutor?q=${encodeURIComponent(`Explain the answer to this question: ${err.question_text}`)}`)}
-                      className="flex items-center gap-1.5 px-3 py-1.5 bg-violet-500/10 hover:bg-violet-500/20 text-violet-400 rounded-lg text-xs font-medium transition-colors"
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-accent/10 hover:bg-accent/20 text-accent rounded-lg text-xs font-medium transition-colors"
                     >
                       <Bot className="w-3.5 h-3.5" /> Ask Tutor
                     </button>
@@ -153,7 +153,7 @@ export default function ErrorLogPage() {
                         setPracticeTopic(err.question_text.slice(0, 50) + "...");
                         router.push("/practice");
                       }}
-                      className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 rounded-lg text-xs font-medium transition-colors"
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-accent-practice/10 hover:bg-accent-practice/20 text-accent-practice rounded-lg text-xs font-medium transition-colors"
                     >
                       <Target className="w-3.5 h-3.5" /> Practice Topic
                     </button>
