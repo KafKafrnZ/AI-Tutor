@@ -1,7 +1,7 @@
-from fastapi import Request, status
-from fastapi.responses import JSONResponse
+from fastapi import HTTPException, Request, status
 from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
 from sqlalchemy.exc import SQLAlchemyError
 import structlog
 
