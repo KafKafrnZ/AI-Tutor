@@ -7,7 +7,7 @@ import {
   ShieldCheck, ArrowRight, Server, GraduationCap,
 } from "lucide-react";
 import Logo from "@/components/Logo";
-import VideoBackground from "@/components/VideoBackground";
+
 
 const capabilities = [
   {
@@ -63,7 +63,7 @@ export default function LandingPage() {
 
       {/* ---------- Hero ---------- */}
       <section className="relative flex min-h-[92dvh] flex-col items-center justify-center overflow-hidden px-6 pb-20 pt-32">
-        <VideoBackground posterSrc="/media/hero-still.jpg" priority />
+        <div className="absolute inset-0 bg-gradient-to-br from-[rgb(var(--ascend-bg))] via-[rgb(var(--ascend-accent)/0.05)] to-[rgb(var(--ascend-primary)/0.08)]" />
 
         <motion.div
           initial={{ opacity: 0, y: 20 }}

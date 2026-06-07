@@ -144,9 +144,9 @@ export default function ProgressPage() {
             {/* KPI Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {[
-                { label: "Overall Accuracy", value: `${stats?.accuracy ? Number(stats.accuracy).toFixed(1) : "0"}%`, icon: Target, color: "text-emerald-400", delay: 0 },
-                { label: "Tests Taken", value: `${stats?.testsTaken || 0}`, icon: BarChart3, color: "text-pink-400", delay: 0.1 },
-                { label: "Data Status", value: dataStatus, icon: TrendingUp, color: "text-blue-400", delay: 0.2, small: true },
+                { label: "Overall Accuracy", value: `${stats?.accuracy ? Number(stats.accuracy).toFixed(1) : "0"}%`, icon: Target, color: "text-accent-progress", delay: 0 },
+                { label: "Tests Taken", value: `${stats?.testsTaken || 0}`, icon: BarChart3, color: "text-accent-mock", delay: 0.1 },
+                { label: "Data Status", value: dataStatus, icon: TrendingUp, color: "text-primary", delay: 0.2, small: true },
               ].map(({ label, value, icon: Icon, color, delay, small }) => (
                 <GlassCard key={label} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay }}
                   className="p-6">
@@ -165,7 +165,7 @@ export default function ProgressPage() {
               <GlassCard initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
                 className="p-6 md:p-8">
                 <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
-                  <TrendingUp className="w-5 h-5 text-emerald-500" /> Accuracy Trend
+                  <TrendingUp className="w-5 h-5 text-accent-progress" /> Accuracy Trend
                 </h3>
                 {accuracyChartData.length > 0 ? (
                   <ResponsiveContainer width="100%" height={220}>
@@ -192,7 +192,7 @@ export default function ProgressPage() {
               <GlassCard initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}
                 className="p-6 md:p-8">
                 <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
-                  <AlertCircle className="w-5 h-5 text-rose-500" /> Focus Areas
+                  <AlertCircle className="w-5 h-5 text-accent-mock" /> Focus Areas
                 </h3>
                 {weakAreasData.length > 0 ? (
                   <ResponsiveContainer width="100%" height={220}>
@@ -227,7 +227,7 @@ export default function ProgressPage() {
             <GlassCard initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}
               className="p-6 md:p-8">
               <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
-                <Clock className="w-5 h-5 text-emerald-500" /> Recent Activity
+                <Clock className="w-5 h-5 text-accent-progress" /> Recent Activity
               </h3>
               {stats?.recent_tests && stats.recent_tests.length > 0 ? (
                 <div className="flex flex-col gap-3">
@@ -237,7 +237,7 @@ export default function ProgressPage() {
                       <div key={idx} className="flex flex-col sm:flex-row justify-between sm:items-center p-4 rounded-2xl bg-black/40 border border-white/5 gap-4">
                         <div>
                           <div className="flex items-center gap-2 mb-1">
-                            <span className="text-xs font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded uppercase tracking-wider">
+                            <span className="text-xs font-bold text-accent-progress bg-accent-progress/10 px-2 py-0.5 rounded uppercase tracking-wider">
                               {test.section || "General"}
                             </span>
                             <span className="text-xs text-zinc-500">{new Date(test.date).toLocaleDateString()}</span>
