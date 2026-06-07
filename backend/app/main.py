@@ -1,7 +1,7 @@
 from fastapi import FastAPI, HTTPException, Depends, Request, Cookie
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
-from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi import Limiter
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 from fastapi.exceptions import RequestValidationError
@@ -20,7 +20,14 @@ import os
 
 # Project Imports
 from app.core.config import settings
-from app.core.error_handler import validation_exception_handler, sqlalchemy_exception_handler, general_exception_handler
+from app.core.error_handler import (
+    general_exception_handler,
+    http_exception_handler,
+    rate_limit_exception_handler,
+    sqlalchemy_exception_handler,
+    validation_exception_handler,
+)
+from app.core.guards import detect_injection, sanitize_user_input
 from app.core.rag import validate_chroma_persistence_config
 
 from sse_starlette.sse import EventSourceResponse
@@ -56,6 +63,12 @@ def set_cached(key: str, data):
     _cache[key] = {"data": data, "ts": time.time()}
 
 
+def clean_or_reject_user_input(text: str) -> str:
+    if detect_injection(text):
+        raise HTTPException(status_code=400, detail="Invalid input")
+    return sanitize_user_input(text)
+
+
 # --- MODERN ASYNC LIFESPAN MANAGER ---
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -71,8 +84,9 @@ app = FastAPI(title=settings.PROJECT_NAME, version=settings.VERSION, lifespan=li
 
 # Middleware & Exception Handlers
 app.state.limiter = limiter
-app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+app.add_exception_handler(RateLimitExceeded, rate_limit_exception_handler)
 app.add_exception_handler(RequestValidationError, validation_exception_handler)
+app.add_exception_handler(HTTPException, http_exception_handler)
 app.add_exception_handler(SQLAlchemyError, sqlalchemy_exception_handler)
 app.add_exception_handler(Exception, general_exception_handler)
 
@@ -383,10 +397,12 @@ def update_profile(
     }
 
 @app.post("/ask")
-@limiter.limit("10/minute")
+@limiter.limit("15/minute")
 async def ask_ai(request: Request, data: AskRequest, current_user: Any = Depends(get_current_user)):
+    question = clean_or_reject_user_input(data.question)
+    context = clean_or_reject_user_input(data.context) if data.context else ""
     try:
-        answer = await ask_tutor(data.question, data.context, data.history)
+        answer = await ask_tutor(question, context, data.history)
     except LLMServiceError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
     return {"answer": answer}
@@ -394,7 +410,9 @@ async def ask_ai(request: Request, data: AskRequest, current_user: Any = Depends
 @app.post("/ask/stream")
 @limiter.limit("10/minute")
 async def ask_tutor_stream_endpoint(request: Request, data: AskRequest, current_user: Any = Depends(get_current_user)):
-    stream = ask_tutor_stream(data.question, data.context, data.history)
+    question = clean_or_reject_user_input(data.question)
+    context = clean_or_reject_user_input(data.context) if data.context else ""
+    stream = ask_tutor_stream(question, context, data.history)
     try:
         first_token = await anext(stream)
     except StopAsyncIteration as exc:
@@ -417,12 +435,13 @@ async def ask_tutor_stream_endpoint(request: Request, data: AskRequest, current_
     return EventSourceResponse(event_generator(), ping=10)
 
 @app.post("/practice")
-@limiter.limit("10/minute")
+@limiter.limit("15/minute")
 async def practice_ai(request: Request, data: PracticeRequest, current_user: Any = Depends(get_current_user)):
     """FIX-13 FIX: Eliminated redundant string parsing logic layer. 
     Trusting clean parsing execution handle directly from within generate_questions()."""
+    topic = clean_or_reject_user_input(data.topic)
     try:
-        raw_result = await generate_questions(data.topic)
+        raw_result = await generate_questions(topic)
     except LLMServiceError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
     try:
@@ -754,6 +773,9 @@ def list_mock_tests(db: Session = Depends(get_db), current_user: Any = Depends(g
 
 @app.get("/mock-tests/{test_id}/questions")
 def get_test_questions(test_id: int, db: Session = Depends(get_db), current_user: Any = Depends(get_current_user)):
+    if detect_injection(str(test_id)):
+        raise HTTPException(status_code=400, detail="Invalid input")
+
     questions = get_questions_for_test(db, test_id)
     formatted = [
         format_question_payload(
@@ -788,6 +810,14 @@ def get_test_questions(test_id: int, db: Session = Depends(get_db), current_user
 
 @app.post("/save-mock-test")
 def save_mock_test_result(data: MockTestCreate, db: Session = Depends(get_db), current_user: Any = Depends(get_current_user)):
+    mock_inputs = [data.date, data.test_name, data.section]
+    if any(detect_injection(value) for value in mock_inputs):
+        raise HTTPException(status_code=400, detail="Invalid input")
+
+    data.date = sanitize_user_input(data.date)
+    data.test_name = sanitize_user_input(data.test_name)
+    data.section = sanitize_user_input(data.section)
+
     saved_test = save_mock_test(db, current_user.id, data.model_dump())
     if not saved_test:
         raise HTTPException(status_code=500, detail="Failed to save mock test")

@@ -11,6 +11,10 @@ function messageFromValue(value: unknown): string | null {
     return value;
   }
 
+  if (value && typeof value === "object" && "message" in value) {
+    return messageFromValue((value as { message?: unknown }).message);
+  }
+
   if (Array.isArray(value)) {
     const first = value[0] as { msg?: unknown } | undefined;
     return messageFromValue(first?.msg);
