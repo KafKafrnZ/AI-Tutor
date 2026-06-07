@@ -29,6 +29,8 @@ from app.core.error_handler import (
 )
 from app.core.guards import detect_injection, sanitize_user_input
 from app.core.rag import validate_chroma_persistence_config
+from app.core.guards import guard_input
+from pathlib import Path as _Path
 
 from sse_starlette.sse import EventSourceResponse
 from app.models.database import (
@@ -51,16 +53,44 @@ logging.basicConfig(
 logger = logging.getLogger("ibps_so")
 
 _cache: dict = {}
-CACHE_TTL = 300  # 5 minutes in seconds
+CACHE_TTL = 300
+
+try:
+    import redis as _redis
+    _redis_client = _redis.from_url(settings.REDIS_URL, decode_responses=True) if settings.REDIS_URL else None
+except Exception:
+    _redis_client = None
 
 def get_cached(key: str):
+    if _redis_client:
+        try:
+            raw = _redis_client.get(key)
+            if raw:
+                return json.loads(raw)
+        except Exception:
+            pass
     entry = _cache.get(key)
     if entry and time.time() - entry["ts"] < CACHE_TTL:
         return entry["data"]
     return None
 
 def set_cached(key: str, data):
+    if _redis_client:
+        try:
+            _redis_client.setex(key, CACHE_TTL, json.dumps(data, default=str))
+            return
+        except Exception:
+            pass
     _cache[key] = {"data": data, "ts": time.time()}
+
+def invalidate_user_cache(user_id: int):
+    for key in [f"stats_{user_id}", f"revision_{user_id}"]:
+        if _redis_client:
+            try:
+                _redis_client.delete(key)
+            except Exception:
+                pass
+        _cache.pop(key, None)
 
 
 def clean_or_reject_user_input(text: str) -> str:
@@ -70,11 +100,40 @@ def clean_or_reject_user_input(text: str) -> str:
 
 
 # --- MODERN ASYNC LIFESPAN MANAGER ---
+def _check_migration_drift() -> None:
+    try:
+        from alembic.config import Config as _AlembicConfig
+        from alembic.script import ScriptDirectory as _ScriptDirectory
+        from alembic.runtime.migration import MigrationContext as _MigrationContext
+        from sqlalchemy import create_engine as _create_engine
+
+        ini_path = _Path(__file__).resolve().parents[1] / "alembic.ini"
+        alembic_cfg = _AlembicConfig(str(ini_path))
+        script = _ScriptDirectory.from_config(alembic_cfg)
+        engine = _create_engine(settings.DATABASE_URL)
+        with engine.connect() as conn:
+            ctx = _MigrationContext.configure(conn)
+            db_heads = set(ctx.get_current_heads())
+        engine.dispose()
+        script_heads = set(script.get_heads())
+        if db_heads != script_heads:
+            logger.warning(
+                "MIGRATION DRIFT: DB is at %s but scripts expect %s — "
+                "run: alembic upgrade head",
+                db_heads,
+                script_heads,
+            )
+        else:
+            logger.info("Migration check OK — DB and scripts both at %s", db_heads)
+    except Exception as exc:
+        logger.warning("Migration drift check skipped (%s)", exc)
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # ARCH-2 FIX: Removed init_db() call. Alembic now handles all schema migrations safely.
     chroma_path = validate_chroma_persistence_config()
     logger.info("App starting - schema managed by Alembic. RAG Chroma path: %s", chroma_path)
+    _check_migration_drift()
     yield
 
 limiter = Limiter(key_func=get_remote_address, default_limits=["100/minute"])
@@ -399,8 +458,8 @@ def update_profile(
 @app.post("/ask")
 @limiter.limit("15/minute")
 async def ask_ai(request: Request, data: AskRequest, current_user: Any = Depends(get_current_user)):
-    question = clean_or_reject_user_input(data.question)
-    context = clean_or_reject_user_input(data.context) if data.context else ""
+    question = guard_input(data.question, max_length=2000)
+    context = guard_input(data.context, max_length=4000) if data.context else ""
     try:
         answer = await ask_tutor(question, context, data.history)
     except LLMServiceError as exc:
@@ -408,10 +467,10 @@ async def ask_ai(request: Request, data: AskRequest, current_user: Any = Depends
     return {"answer": answer}
 
 @app.post("/ask/stream")
-@limiter.limit("10/minute")
+@limiter.limit("15/minute")
 async def ask_tutor_stream_endpoint(request: Request, data: AskRequest, current_user: Any = Depends(get_current_user)):
-    question = clean_or_reject_user_input(data.question)
-    context = clean_or_reject_user_input(data.context) if data.context else ""
+    question = guard_input(data.question, max_length=2000)
+    context = guard_input(data.context, max_length=4000) if data.context else ""
     stream = ask_tutor_stream(question, context, data.history)
     try:
         first_token = await anext(stream)
@@ -437,9 +496,7 @@ async def ask_tutor_stream_endpoint(request: Request, data: AskRequest, current_
 @app.post("/practice")
 @limiter.limit("15/minute")
 async def practice_ai(request: Request, data: PracticeRequest, current_user: Any = Depends(get_current_user)):
-    """FIX-13 FIX: Eliminated redundant string parsing logic layer. 
-    Trusting clean parsing execution handle directly from within generate_questions()."""
-    topic = clean_or_reject_user_input(data.topic)
+    topic = guard_input(data.topic, max_length=500)
     try:
         raw_result = await generate_questions(topic)
     except LLMServiceError as exc:
@@ -685,7 +742,7 @@ def normalize_correct_option(correct_answer: str | None, options: list[str]) -> 
     if normalized in OPTION_LETTERS:
         return normalized
 
-    if len(answer) >= 2 and answer[0].upper() in OPTION_LETTERS and answer[1] in {".", ")", ":", "-", " "}:
+    if len(answer) >= 2 and answer[0].upper() in OPTION_LETTERS and answer[1] in {'.', ')', ':', '-', ' '}:
         return answer[0].upper()
 
     answer_lower = answer.casefold()
@@ -823,8 +880,7 @@ def save_mock_test_result(data: MockTestCreate, db: Session = Depends(get_db), c
         raise HTTPException(status_code=500, detail="Failed to save mock test")
     
     # CRITICAL: Invalidate the cache because the user has new data!
-    _cache.pop(f"stats_{current_user.id}", None)
-    _cache.pop(f"revision_{current_user.id}", None)
+    invalidate_user_cache(current_user.id)
     
     return {"message": "Mock test saved successfully", "id": saved_test.id}
 
@@ -895,8 +951,7 @@ def save_errors(payload: ErrorPayload, db: Session = Depends(get_db), current_us
     for error in payload.errors:
         save_error_log(db, current_user.id, error.model_dump())
     # Ensure revision plan + stats reflect the new mistakes immediately (was missing vs save-mock-test)
-    _cache.pop(f"stats_{current_user.id}", None)
-    _cache.pop(f"revision_{current_user.id}", None)
+    invalidate_user_cache(current_user.id)
     return {"message": "Errors logged successfully"}
 
 @app.get("/error-log", response_model=List[ErrorLogResponse])

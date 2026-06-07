@@ -74,6 +74,7 @@ PyJWT==2.9.0
 python-multipart==0.0.27
 pytokens==0.4.1
 PyYAML==6.0.3
+redis==5.2.1
 regex==2026.4.4
 requests==2.33.1
 requests-toolbelt==1.0.0
@@ -95,7 +96,7 @@ tomli_w==1.2.0
 typer==0.25.1
 typing-inspection==0.4.2
 typing_extensions==4.15.0
-tzdata==2026.2
+ttzdata==2026.2
 urllib3==2.7.0
 uuid_utils==0.16.0
 uvicorn==0.46.0
