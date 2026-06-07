@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
 
+// BACKEND_API_URL must be set in Vercel → Settings → Environment Variables.
+// Value: your Railway service URL (no trailing slash).
+// If missing, all API calls return 502.
+
 const BACKEND_API_URL = (process.env.BACKEND_API_URL || "http://127.0.0.1:8000").replace(/\/$/, "");
 
 const HOP_BY_HOP_HEADERS = new Set([

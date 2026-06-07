@@ -3,6 +3,11 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+# Add your Vercel production URL to BACKEND_CORS_ORIGINS on Railway:
+#   Railway dashboard → ai-tutor service → Variables →
+#   BACKEND_CORS_ORIGINS=https://your-app.vercel.app,http://localhost:3000
+# These defaults are fallback only — always set the env var in production.
+
 DEFAULT_CORS_ORIGINS = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
@@ -50,9 +55,7 @@ class Settings:
     )
     REQUIRE_EMAIL_VERIFICATION: bool = os.getenv("REQUIRE_EMAIL_VERIFICATION", "false").lower() in {
         "1",
-        "true",
-        "yes",
-        "on",
+        "true", "yes", "on",
     }
 
     # Parse comma-separated list from env (supports .env.example + docker overrides). Falls back to localhost dev.
