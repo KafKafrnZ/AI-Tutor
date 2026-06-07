@@ -22,6 +22,7 @@ import os
 from app.core.config import settings
 from app.core.error_handler import validation_exception_handler, sqlalchemy_exception_handler, general_exception_handler
 from app.core.rag import validate_chroma_persistence_config
+from app.core.guards import guard_input
 
 from sse_starlette.sse import EventSourceResponse
 from app.models.database import (
@@ -383,18 +384,22 @@ def update_profile(
     }
 
 @app.post("/ask")
-@limiter.limit("10/minute")
+@limiter.limit("15/minute")
 async def ask_ai(request: Request, data: AskRequest, current_user: Any = Depends(get_current_user)):
+    question = guard_input(data.question, max_length=2000)
+    context = guard_input(data.context, max_length=4000) if data.context else ""
     try:
-        answer = await ask_tutor(data.question, data.context, data.history)
+        answer = await ask_tutor(question, context, data.history)
     except LLMServiceError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
     return {"answer": answer}
 
 @app.post("/ask/stream")
-@limiter.limit("10/minute")
+@limiter.limit("15/minute")
 async def ask_tutor_stream_endpoint(request: Request, data: AskRequest, current_user: Any = Depends(get_current_user)):
-    stream = ask_tutor_stream(data.question, data.context, data.history)
+    question = guard_input(data.question, max_length=2000)
+    context = guard_input(data.context, max_length=4000) if data.context else ""
+    stream = ask_tutor_stream(question, context, data.history)
     try:
         first_token = await anext(stream)
     except StopAsyncIteration as exc:
@@ -417,12 +422,11 @@ async def ask_tutor_stream_endpoint(request: Request, data: AskRequest, current_
     return EventSourceResponse(event_generator(), ping=10)
 
 @app.post("/practice")
-@limiter.limit("10/minute")
+@limiter.limit("15/minute")
 async def practice_ai(request: Request, data: PracticeRequest, current_user: Any = Depends(get_current_user)):
-    """FIX-13 FIX: Eliminated redundant string parsing logic layer. 
-    Trusting clean parsing execution handle directly from within generate_questions()."""
+    topic = guard_input(data.topic, max_length=500)
     try:
-        raw_result = await generate_questions(data.topic)
+        raw_result = await generate_questions(topic)
     except LLMServiceError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
     try:
