@@ -45,16 +45,44 @@ logging.basicConfig(
 logger = logging.getLogger("ibps_so")
 
 _cache: dict = {}
-CACHE_TTL = 300  # 5 minutes in seconds
+CACHE_TTL = 300
+
+try:
+    import redis as _redis
+    _redis_client = _redis.from_url(settings.REDIS_URL, decode_responses=True) if settings.REDIS_URL else None
+except Exception:
+    _redis_client = None
 
 def get_cached(key: str):
+    if _redis_client:
+        try:
+            raw = _redis_client.get(key)
+            if raw:
+                return json.loads(raw)
+        except Exception:
+            pass
     entry = _cache.get(key)
     if entry and time.time() - entry["ts"] < CACHE_TTL:
         return entry["data"]
     return None
 
 def set_cached(key: str, data):
+    if _redis_client:
+        try:
+            _redis_client.setex(key, CACHE_TTL, json.dumps(data, default=str))
+            return
+        except Exception:
+            pass
     _cache[key] = {"data": data, "ts": time.time()}
+
+def invalidate_user_cache(user_id: int):
+    for key in [f"stats_{user_id}", f"revision_{user_id}"]:
+        if _redis_client:
+            try:
+                _redis_client.delete(key)
+            except Exception:
+                pass
+        _cache.pop(key, None)
 
 
 # --- MODERN ASYNC LIFESPAN MANAGER ---
@@ -670,7 +698,7 @@ def normalize_correct_option(correct_answer: str | None, options: list[str]) -> 
     if normalized in OPTION_LETTERS:
         return normalized
 
-    if len(answer) >= 2 and answer[0].upper() in OPTION_LETTERS and answer[1] in {".", ")", ":", "-", " "}:
+    if len(answer) >= 2 and answer[0].upper() in OPTION_LETTERS and answer[1] in {'.', ')', ':', '-', ' '}:
         return answer[0].upper()
 
     answer_lower = answer.casefold()
@@ -797,8 +825,7 @@ def save_mock_test_result(data: MockTestCreate, db: Session = Depends(get_db), c
         raise HTTPException(status_code=500, detail="Failed to save mock test")
     
     # CRITICAL: Invalidate the cache because the user has new data!
-    _cache.pop(f"stats_{current_user.id}", None)
-    _cache.pop(f"revision_{current_user.id}", None)
+    invalidate_user_cache(current_user.id)
     
     return {"message": "Mock test saved successfully", "id": saved_test.id}
 
@@ -869,8 +896,7 @@ def save_errors(payload: ErrorPayload, db: Session = Depends(get_db), current_us
     for error in payload.errors:
         save_error_log(db, current_user.id, error.model_dump())
     # Ensure revision plan + stats reflect the new mistakes immediately (was missing vs save-mock-test)
-    _cache.pop(f"stats_{current_user.id}", None)
-    _cache.pop(f"revision_{current_user.id}", None)
+    invalidate_user_cache(current_user.id)
     return {"message": "Errors logged successfully"}
 
 @app.get("/error-log", response_model=List[ErrorLogResponse])
