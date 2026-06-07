@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
+// Allow the handler time for Railway cold starts (free tier) + our internal abort.
+// Prevents Vercel function kill during upstream fetch -> browser fetch reject -> "Cannot reach..." catch path.
+export const maxDuration = 30;
 
 // BACKEND_API_URL must be set in Vercel → Settings → Environment Variables.
 // Value: your Railway service URL (no trailing slash).
@@ -69,7 +72,14 @@ async function proxyRequest(request: NextRequest, context: RouteContext): Promis
       init.body = await request.arrayBuffer();
     }
 
-    const upstream = await fetch(targetUrl, init);
+    // 25s timeout: Railway free tier cold starts frequently take 10-30s.
+    // Without this the Vercel serverless invocation can be terminated before
+    // upstream responds, causing browser fetch() to reject (the exact
+    // "Cannot reach the backend API" client catch path). maxDuration above must be >= this.
+    const upstream = await fetch(targetUrl, {
+      ...init,
+      signal: AbortSignal.timeout(25000),
+    });
     const body =
       request.method === "HEAD" || upstream.status === 204 || upstream.status === 304
         ? null
