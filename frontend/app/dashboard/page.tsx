@@ -102,14 +102,14 @@ export default function DashboardPage() {
         {/* AI Study Strategy Section */}
         <motion.div 
           initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}
-          className="bg-gradient-to-br from-indigo-900/20 to-purple-900/10 border border-indigo-500/20 rounded-3xl p-8 relative overflow-hidden"
+          className="bg-gradient-to-br from-accent/10 to-accent/5 border border-accent/20 rounded-3xl p-8 relative overflow-hidden"
         >
           {/* Decorative Background Blob */}
-          <div className="absolute top-0 right-0 -mr-20 -mt-20 w-64 h-64 bg-indigo-500/10 blur-[80px] rounded-full pointer-events-none" />
+          <div className="absolute top-0 right-0 -mr-20 -mt-20 w-64 h-64 bg-accent/10 blur-[80px] rounded-full pointer-events-none" />
 
           <div className="flex items-center gap-3 mb-8 relative z-10">
-            <div className="p-2.5 bg-indigo-500/20 rounded-lg">
-              <BrainCircuit className="w-6 h-6 text-indigo-400" />
+            <div className="p-2.5 bg-accent/20 rounded-lg">
+              <BrainCircuit className="w-6 h-6 text-accent" />
             </div>
             <div>
               <h2 className="text-2xl font-bold text-white">Dynamic AI Strategy</h2>
@@ -160,7 +160,7 @@ export default function DashboardPage() {
               {/* Right Column: Checklist */}
               <div className="bg-black/20 rounded-2xl p-6 border border-white/5">
                 <h4 className="text-sm font-bold text-white mb-4 flex items-center gap-2">
-                  <Target className="w-4 h-4 text-indigo-400" /> Target Checklist
+                  <Target className="w-4 h-4 text-accent" /> Target Checklist
                 </h4>
                 <ul className="space-y-3">
                   {plan.actionable_checklist.map((step, idx) => {
@@ -188,7 +188,7 @@ export default function DashboardPage() {
               <h3 className="text-xl font-bold text-white mb-2">Strategy Awaiting Data</h3>
               <p className="text-zinc-500 mb-6 max-w-sm">Take some mock tests and practice sessions. We'll analyze your mistakes and generate a custom revision plan here.</p>
               <Link href="/mock-tests">
-                <button className="px-6 py-2.5 bg-indigo-500 hover:bg-indigo-600 text-white rounded-xl font-medium transition-colors shadow-lg shadow-indigo-500/20">
+                <button className="px-6 py-2.5 bg-accent hover:bg-accent/80 text-white rounded-xl font-medium transition-colors shadow-lg shadow-accent/20">
                   Start a Mock Test
                 </button>
               </Link>

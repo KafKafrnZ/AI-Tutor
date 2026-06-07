@@ -159,7 +159,7 @@ export default function TutorPage() {
     fetch(`${API_URL}/conversations?limit=50`, { credentials: "include" })
       .then((r) => (r.ok ? r.json() : []))
       .then((msgs: { role: string; content: string }[]) => {
-        if (msgs.length > 0) setTutorMessages(msgs);
+        if (msgs.length > 0) setTutorMessages(msgs.map((m) => ({ ...m, role: m.role as "user" | "assistant" })));
       })
       .catch(() => {})
       .finally(() => setHistoryLoaded(true));

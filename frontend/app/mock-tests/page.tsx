@@ -33,9 +33,9 @@ const icons: Record<number, LucideIcon> = {
   3: BookOpen,
 };
 const iconColors: Record<number, string> = {
-  1: "text-rose-500 bg-rose-500/10",
-  2: "text-amber-500 bg-amber-500/10",
-  3: "text-emerald-500 bg-emerald-500/10",
+  1: "text-accent-mock bg-accent-mock/10",
+  2: "text-accent-practice bg-accent-practice/10",
+  3: "text-accent-progress bg-accent-progress/10",
 };
 
 export default function MockTestsPage() {
@@ -114,7 +114,7 @@ export default function MockTestsPage() {
                     <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${iconColor}`}><Icon className="w-6 h-6" /></div>
                     <span className={`px-3 py-1 rounded-full border text-[10px] font-bold uppercase tracking-widest ${diffColor}`}>{test.difficulty}</span>
                   </div>
-                  <h3 className="text-xl font-bold text-white mb-2 group-hover:text-pink-400 transition-colors">{test.title}</h3>
+                  <h3 className="text-xl font-bold text-white mb-2 group-hover:text-accent-mock transition-colors">{test.title}</h3>
                   <div className="flex items-center gap-4 text-zinc-500 text-sm mb-8 font-medium">
                     <div className="flex items-center gap-1.5"><Clock className="w-4 h-4" /> {dur}</div>
                     <div className="flex items-center gap-1.5"><BookOpen className="w-4 h-4" /> {qstr}</div>

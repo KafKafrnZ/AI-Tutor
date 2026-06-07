@@ -185,8 +185,9 @@ export default function MockTestEnginePage() {
 
   // Execute the actual submission
   const executeSubmit = useCallback(async (isAutoSubmit = false) => {
+    if (!test) return;
     const finalAnswers = answersRef.current
-    
+
     const mistakesToLog = []
     let correctCount = 0
     let skippedCount = 0

@@ -123,7 +123,7 @@ export default function PracticePage() {
           
           {/* Header Area */}
           <div className="flex flex-col items-center text-center mb-12 mt-8">
-            <div className="w-16 h-16 bg-gradient-to-br from-amber-500/80 to-orange-600/80 backdrop-blur-md border border-white/20 rounded-2xl flex items-center justify-center shadow-lg shadow-amber-900/20 mb-6">
+            <div className="w-16 h-16 bg-gradient-to-br from-accent-practice/80 to-accent-practice/50 backdrop-blur-md border border-white/20 rounded-2xl flex items-center justify-center shadow-lg shadow-accent-practice/20 mb-6">
               <Target className="w-8 h-8 text-white" />
             </div>
             <h1 className="text-4xl font-bold text-white tracking-tight mb-3 drop-shadow-lg">Practice Arena</h1>
@@ -132,7 +132,7 @@ export default function PracticePage() {
 
           {/* Search Input (Now glassy) */}
           <div className="relative group max-w-2xl mx-auto mb-16">
-            <div className="absolute -inset-1 bg-gradient-to-r from-amber-500/30 to-orange-600/30 rounded-2xl blur opacity-0 group-focus-within:opacity-100 transition duration-500"></div>
+            <div className="absolute -inset-1 bg-gradient-to-r from-accent-practice/30 to-accent-practice/20 rounded-2xl blur opacity-0 group-focus-within:opacity-100 transition duration-500"></div>
             <div className="relative flex items-center bg-black/40 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl p-2">
               <input
                 value={topic}
@@ -141,7 +141,7 @@ export default function PracticePage() {
                 className="flex-1 bg-transparent text-lg text-white px-4 focus:outline-none placeholder:text-zinc-500"
                 onKeyDown={(e) => e.key === 'Enter' && generateQuestions()}
               />
-              <Button onClick={generateQuestions} disabled={loading} className="px-8 py-6 text-md bg-amber-500/90 hover:bg-amber-400 text-black font-bold rounded-xl transition-all shadow-lg backdrop-blur-md">
+              <Button onClick={generateQuestions} disabled={loading} className="px-8 py-6 text-md bg-accent-practice/90 hover:bg-accent-practice text-black font-bold rounded-xl transition-all shadow-lg backdrop-blur-md">
                 {loading ? <Loader2 className="animate-spin w-5 h-5" /> : <span className="flex items-center gap-2"><Sparkles className="w-4 h-4"/> Generate</span>}
               </Button>
             </div>
@@ -158,7 +158,7 @@ export default function PracticePage() {
                   {questions.map((_, i) => (
                     <div 
                       key={i} 
-                      className={`h-1.5 w-6 rounded-full transition-colors ${i === currentIdx ? 'bg-amber-500' : !!selectedAnswers[i] ? 'bg-amber-500/40' : 'bg-white/10'}`} 
+                      className={`h-1.5 w-6 rounded-full transition-colors ${i === currentIdx ? 'bg-accent-practice' : !!selectedAnswers[i] ? 'bg-accent-practice/40' : 'bg-white/10'}`}
                     />
                   ))}
                 </div>
@@ -230,7 +230,7 @@ export default function PracticePage() {
                         initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }}
                         className="mt-8 pt-6 border-t border-white/10 relative z-10"
                       >
-                        <p className="font-semibold text-amber-400 mb-3 text-lg flex items-center gap-2 drop-shadow-md">
+                        <p className="font-semibold text-accent-practice mb-3 text-lg flex items-center gap-2 drop-shadow-md">
                           💡 Explanation
                         </p>
                         <p className="text-zinc-200 leading-relaxed text-[15px] drop-shadow-sm">{q.explanation}</p>
@@ -252,7 +252,7 @@ export default function PracticePage() {
                 <button
                   onClick={() => setCurrentIdx(prev => Math.min(questions.length - 1, prev + 1))}
                   disabled={currentIdx === questions.length - 1}
-                  className="px-6 py-2.5 rounded-xl bg-amber-500/90 text-black hover:bg-amber-400 disabled:opacity-30 disabled:hover:bg-amber-500/90 transition-colors font-bold backdrop-blur-sm shadow-lg shadow-amber-500/20"
+                  className="px-6 py-2.5 rounded-xl bg-accent-practice/90 text-black hover:bg-accent-practice disabled:opacity-30 disabled:hover:bg-accent-practice/90 transition-colors font-bold backdrop-blur-sm shadow-lg shadow-accent-practice/20"
                 >
                   Next Question
                 </button>
