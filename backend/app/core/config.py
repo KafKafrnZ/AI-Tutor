@@ -11,9 +11,6 @@ load_dotenv()
 DEFAULT_CORS_ORIGINS = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
-    "https://ai-tutor-ten-chi.vercel.app",
-    "https://ai-tutor-5ingularity-s-projects.vercel.app",
-    "https://ai-tutor-git-main-5ingularity-s-projects.vercel.app",
 ]
 
 

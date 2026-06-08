@@ -1,4 +1,4 @@
-﻿import bcrypt
+import bcrypt
 import jwt
 from jwt.exceptions import InvalidTokenError
 from datetime import datetime, timedelta, timezone
@@ -25,6 +25,9 @@ def create_token(data: dict) -> str:
 
 def verify_token(token: str) -> dict | None:
     try:
-        return jwt.decode(token, settings.JWT_SECRET, algorithms=[settings.JWT_ALGORITHM])
+        payload = jwt.decode(token, settings.JWT_SECRET, algorithms=[settings.JWT_ALGORITHM])
+        if not payload.get("sub"):
+            return None
+        return payload
     except InvalidTokenError:
         return None
