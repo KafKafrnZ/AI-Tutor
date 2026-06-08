@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, Suspense } from "react";
 import { motion } from "framer-motion";
 import { Send, User, ArrowLeft, Sparkles, CheckCircle2, CircleDashed } from "lucide-react";
 import ReactMarkdown, { type Components } from "react-markdown";
+import rehypeSanitize from "rehype-sanitize";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useAppStore } from "@/store/useAppStore";
@@ -101,7 +102,7 @@ function parseSseToken(payload: string): string {
 const MarkdownMessage = ({ content }: { content: string }) => {
   return (
     <div className="text-[15px] leading-7 break-words text-zinc-200">
-      <ReactMarkdown components={markdownComponents}>{content}</ReactMarkdown>
+      <ReactMarkdown components={markdownComponents} rehypePlugins={[rehypeSanitize]}>{content}</ReactMarkdown>
     </div>
   );
 };

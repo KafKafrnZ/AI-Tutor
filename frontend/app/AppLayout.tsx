@@ -187,9 +187,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             </div>
 
             <div className="space-y-4">
-              <label className="block">
+              <label htmlFor="profile-name" className="block">
                 <span className="mb-1.5 block text-sm font-medium text-zinc-300">Name</span>
                 <input
+                  id="profile-name"
                   value={profileName}
                   onChange={(event) => setProfileName(event.target.value)}
                   className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-white outline-none transition-all focus:border-primary focus:ring-1 focus:ring-primary"
@@ -197,9 +198,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 />
               </label>
 
-              <label className="block">
+              <label htmlFor="profile-email" className="block">
                 <span className="mb-1.5 block text-sm font-medium text-zinc-300">Email</span>
                 <input
+                  id="profile-email"
                   value={userEmail || "Not loaded"}
                   disabled
                   className="w-full rounded-xl border border-zinc-800 bg-zinc-950/70 px-4 py-3 text-zinc-500 outline-none"

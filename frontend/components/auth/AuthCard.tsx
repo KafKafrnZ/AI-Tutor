@@ -36,6 +36,7 @@ export default function AuthCard({ initialMode = "signin", apiBaseUrl, onSuccess
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [isPasswordFocused, setIsPasswordFocused] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -43,6 +44,14 @@ export default function AuthCard({ initialMode = "signin", apiBaseUrl, onSuccess
   const selectedCopy = copy[mode];
   const baseUrl = (apiBaseUrl ?? API_URL).replace(/\/$/, "");
   const canSubmit = mode === "signin" ? Boolean(email && password) : Boolean(name.trim() && email && password);
+  const passwordRules = [
+    { met: password.length >= 8, hint: "Use at least 8 characters." },
+    { met: /[A-Z]/.test(password), hint: "Add an uppercase letter." },
+    { met: /\d/.test(password), hint: "Add a digit." },
+    { met: /[^A-Za-z0-9]/.test(password), hint: "Add a special character." },
+  ];
+  const firstUnmetPasswordRule = passwordRules.find((rule) => !rule.met);
+  const showPasswordStrength = mode === "signup" && (isPasswordFocused || password.length > 0);
 
   const selectMode = (nextMode: AuthMode) => {
     setMode(nextMode);
@@ -130,11 +139,12 @@ export default function AuthCard({ initialMode = "signin", apiBaseUrl, onSuccess
 
       <form onSubmit={handleSubmit} className="space-y-4">
         {mode === "signup" && (
-          <label className="block">
+          <label htmlFor="auth-name" className="block">
             <span className="mb-1.5 block text-sm font-medium text-zinc-300">Name</span>
             <div className="relative">
               <User className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-zinc-500" />
               <input
+                id="auth-name"
                 type="text"
                 value={name}
                 onChange={(event) => setName(event.target.value)}
@@ -147,11 +157,12 @@ export default function AuthCard({ initialMode = "signin", apiBaseUrl, onSuccess
           </label>
         )}
 
-        <label className="block">
+        <label htmlFor="auth-email" className="block">
           <span className="mb-1.5 block text-sm font-medium text-zinc-300">Email</span>
           <div className="relative">
             <Mail className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-zinc-500" />
             <input
+              id="auth-email"
               type="email"
               value={email}
               onChange={(event) => setEmail(event.target.value)}
@@ -163,14 +174,17 @@ export default function AuthCard({ initialMode = "signin", apiBaseUrl, onSuccess
           </div>
         </label>
 
-        <label className="block">
+        <label htmlFor="auth-password" className="block">
           <span className="mb-1.5 block text-sm font-medium text-zinc-300">Password</span>
           <div className="relative">
             <LockKeyhole className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-zinc-500" />
             <input
+              id="auth-password"
               type={showPassword ? "text" : "password"}
               value={password}
               onChange={(event) => setPassword(event.target.value)}
+              onFocus={() => setIsPasswordFocused(true)}
+              onBlur={() => setIsPasswordFocused(false)}
               autoComplete={mode === "signin" ? "current-password" : "new-password"}
               placeholder={mode === "signin" ? "Your password" : "8+ chars, 1 uppercase, 1 digit"}
               className="w-full rounded-xl border border-white/10 bg-black/45 py-3 pl-10 pr-12 text-white placeholder-zinc-600 outline-none transition-all focus:border-primary/60 focus:ring-2 focus:ring-primary/20"
@@ -185,10 +199,25 @@ export default function AuthCard({ initialMode = "signin", apiBaseUrl, onSuccess
               {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
             </button>
           </div>
+          {showPasswordStrength && (
+            <div className="mt-2 space-y-1.5">
+              <div className="grid grid-cols-4 gap-1.5">
+                {passwordRules.map((rule, index) => (
+                  <div
+                    key={index}
+                    className={cn("h-1.5 rounded-full transition-colors", rule.met ? "bg-emerald-400" : "bg-zinc-700")}
+                  />
+                ))}
+              </div>
+              {firstUnmetPasswordRule && (
+                <p className="text-xs text-zinc-400">{firstUnmetPasswordRule.hint}</p>
+              )}
+            </div>
+          )}
         </label>
 
         {error && (
-          <div role="alert" className="flex gap-2 rounded-xl border border-rose-500/25 bg-rose-500/10 p-3 text-sm text-rose-200">
+          <div role="alert" aria-live="polite" className="flex gap-2 rounded-xl border border-rose-500/25 bg-rose-500/10 p-3 text-sm text-rose-200">
             <AlertCircle className="mt-0.5 size-4 shrink-0 text-rose-300" />
             <span>{error}</span>
           </div>
