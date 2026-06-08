@@ -72,7 +72,10 @@ async function proxyRequest(request: NextRequest, context: RouteContext): Promis
       init.body = await request.arrayBuffer();
     }
 
-    const upstream = await fetch(targetUrl, init);
+    const upstream = await fetch(targetUrl, {
+      ...init,
+      signal: AbortSignal.timeout(55000),
+    });
     if (upstream.headers.get("content-type")?.includes("text/event-stream")) {
       const headers = copyResponseHeaders(upstream);
       headers.set("content-type", "text/event-stream");

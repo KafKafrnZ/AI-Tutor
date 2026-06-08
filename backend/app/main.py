@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 from typing import List, Optional, Dict, Any
 from pydantic import BaseModel, EmailStr, Field, field_validator
 from contextlib import asynccontextmanager
+import asyncio
 import secrets
 from datetime import datetime, timedelta, timezone
 import json
@@ -167,6 +168,18 @@ def cookie_security_options() -> dict[str, Any]:
 
 
 @app.middleware("http")
+async def request_timeout_middleware(request: Request, call_next):
+    try:
+        return await asyncio.wait_for(call_next(request), timeout=300.0)
+    except asyncio.TimeoutError:
+        logger.warning("Request timeout", method=request.method, path=request.url.path)
+        return JSONResponse(
+            status_code=504,
+            content={"error": {"code": "REQUEST_TIMEOUT", "message": "The request took too long. Please try again."}},
+        )
+
+
+@app.middleware("http")
 async def log_requests_and_add_headers(request: Request, call_next):
     start_time = time.time()
     
@@ -298,13 +311,31 @@ class ConversationSaveRequest(BaseModel):
 # ====================== ENDPOINTS ======================
 
 @app.get("/health")
-def health_check(db: Session = Depends(get_db)):
-    """ARCH-6 FIX: Actively verifies that the relational database container is alive."""
+@limiter.limit("30/minute")
+def health_check(request: Request, db: Session = Depends(get_db)):
+    """Health check — verifies DB, Redis, and ChromaDB availability."""
+    db_ok = False
     try:
         db.execute(text("SELECT 1"))
-        return {"status": "ok", "database": "connected"}
-    except Exception as e:
-        raise HTTPException(status_code=503, detail=f"Database cluster unavailable: {str(e)}")
+        db_ok = True
+    except Exception:
+        logger.error("DB health check failed", exc_info=True)
+
+    redis_ok = True
+    if _redis_client:
+        try:
+            _redis_client.ping()
+        except Exception:
+            redis_ok = False
+
+    if not db_ok:
+        raise HTTPException(status_code=503, detail={"code": "DB_UNAVAILABLE", "message": "Database unavailable"})
+
+    return {
+        "status": "ok",
+        "database": "connected",
+        "redis": "connected" if redis_ok else "unavailable",
+    }
 
 @app.post("/signup")
 @limiter.limit("3/minute")
@@ -886,7 +917,8 @@ def get_test_questions(test_id: int, db: Session = Depends(get_db), current_user
     }
 
 @app.post("/save-mock-test")
-def save_mock_test_result(data: MockTestCreate, db: Session = Depends(get_db), current_user: Any = Depends(get_current_user)):
+@limiter.limit("10/minute")
+def save_mock_test_result(request: Request, data: MockTestCreate, db: Session = Depends(get_db), current_user: Any = Depends(get_current_user)):
     mock_inputs = [data.date, data.test_name, data.section]
     if any(detect_injection(value) for value in mock_inputs):
         raise HTTPException(status_code=400, detail="Invalid input")
@@ -926,7 +958,8 @@ def save_mock_test_result(data: MockTestCreate, db: Session = Depends(get_db), c
     return {"message": "Mock test saved successfully", "id": saved_test.id}
 
 @app.get("/stats", response_model=StatsResponse)
-def stats(db: Session = Depends(get_db), current_user: Any = Depends(get_current_user)):
+@limiter.limit("10/minute")
+def stats(request: Request, db: Session = Depends(get_db), current_user: Any = Depends(get_current_user)):
     cache_key = f"stats_{current_user.id}"
     cached_data = get_cached(cache_key)
     if cached_data:
@@ -988,7 +1021,8 @@ async def revision_plan(request: Request, db: Session = Depends(get_db), current
     return plan
 
 @app.post("/save-errors")
-def save_errors(payload: ErrorPayload, db: Session = Depends(get_db), current_user: Any = Depends(get_current_user)):
+@limiter.limit("30/minute")
+def save_errors(request: Request, payload: ErrorPayload, db: Session = Depends(get_db), current_user: Any = Depends(get_current_user)):
     for error in payload.errors:
         save_error_log(db, current_user.id, error.model_dump())
     # Ensure revision plan + stats reflect the new mistakes immediately (was missing vs save-mock-test)
