@@ -1,0 +1,824 @@
+================================================================================
+ASCEND AI — ENGINEERING REFERENCE
+Last 3 Queries & Replies
+Date: 2026-06-09
+================================================================================
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+QUERY 1 — FULL FLAW ANALYSIS (117 problems)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+USER:
+"I'll provide you with the flaw analysis and you just go through it and act like
+Senior Engineer manager, give hard, strict and descriptive prompts for all the
+117 problems in this to the LLMs and after that you can audit the whole fix at
+last as per your role."
+
+[Full flaw analysis document provided — summarized below for reference]
+
+FLAW COUNTS:
+  Critical (🔴): 15
+  High     (🟠): 32
+  Medium   (🟡): 48
+  Low      (🟢): 22
+  Total       : 117
+
+TOP 10 FIXES (highest impact):
+  1.  Strip correct_answer/explanation from pre-submit mock API response
+  2.  Add CSRF protection
+  3.  Require Redis when WEB_CONCURRENCY > 1
+  4.  Run RAG ingest + question seed on deploy
+  5.  Add frontend test suite
+  6.  Delete cleanup.py
+  7.  Update stale deploy URLs + redeploy
+  8.  Add /explore to PROTECTED_ROUTES
+  9.  Wire observability (Sentry + structured logging + correlation IDs)
+  10. Implement LangGraph loop OR remove stubs and fix README
+
+PRODUCTION READINESS (honest):
+  Portfolio/demo      : ~85%
+  Closed beta         : ~65%
+  Public SaaS MVP     : ~50%
+  Production-grade    : ~35%
+  Enterprise/auctionable: ~25%
+
+FLAW CATEGORIES:
+  A. Security (19 flaws)
+  B. Backend Architecture (19 flaws)
+  C. AI/RAG (13 flaws)
+  D. Mock Test & Content (10 flaws)
+  E. Frontend (25 flaws)
+  F. Infrastructure/DevOps (19 flaws)
+  G. Testing (10 flaws)
+  H. Docs & Product Integrity (7 flaws)
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+REPLY 1 — 46 LLM PROMPTS (ENGINEERING MANAGER DIRECTIVES)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+WHAT WAS FIXED IN THIS SESSION (already committed to repo):
+  - ImportError on startup (missing http_exception_handler + rate_limit_exception_handler)
+  - IBPS SO hardcoded → all-gov-exams in data_analyzer.py system prompt
+  - Logger name ibps_so → ascend_ai
+  - 6x loading.tsx skeleton screens (dashboard, tutor, practice, mock-tests, progress, error-log)
+  - app/error.tsx global error boundary
+  - app/not-found.tsx 404 page
+  - app/tutor/error.tsx route-level error page
+
+─────────────────────────────────────────────────────────────────────────────
+PROMPT 1 — A1/D7: SERVER-SIDE MOCK GRADING (ANSWER LEAK)   [🔴 CRITICAL]
+─────────────────────────────────────────────────────────────────────────────
+Files: backend/app/main.py (~line 798), frontend/app/mock-tests/[id]/page.tsx (~line 204)
+
+TASK: The mock test API leaks answers before submission. Fix completely.
+
+1. In format_question_payload(), create TWO output modes:
+   - exam_view: {id, question_text, options[], subject, difficulty} ONLY.
+     NO correct_answer, NO correct_answer_text, NO explanation.
+   - result_view: full payload including correct_answer, explanation.
+
+2. GET /mock-tests/{id}/questions must use exam_view mode only.
+
+3. Add new endpoint: POST /mock-tests/{id}/submit
+   - Accepts: {session_id: str, answers: {question_id: int, selected: str}[]}
+   - Validates session_id exists and not expired
+   - Grades server-side using result_view
+   - Scoring: +1 correct, 0 wrong (negative marking handled by Prompt 22)
+   - Returns: {score, total, percentage, results: [{question_id, correct,
+     correct_answer, explanation}]}
+   - Saves result via existing save_mock_test()
+   - Rate limit: 10/minute
+
+4. In frontend mock-tests/[id]/page.tsx:
+   - Remove all local grading logic
+   - On submit/timer expiry, call POST /api/mock-tests/{id}/submit
+   - Display results from server response
+   - Remove correct_answer from question state type
+
+ACCEPTANCE: Browser DevTools /questions response has zero correct_answer fields.
+
+─────────────────────────────────────────────────────────────────────────────
+PROMPT 2 — A2: CSRF PROTECTION                              [🔴 CRITICAL]
+─────────────────────────────────────────────────────────────────────────────
+Files: backend/app/main.py, backend/app/core/config.py, backend/.env.example
+
+1. Add CSRF middleware (before rate limiter):
+   @app.middleware("http")
+   async def csrf_protection(request: Request, call_next):
+       SAFE_METHODS = {"GET", "HEAD", "OPTIONS"}
+       if request.method not in SAFE_METHODS:
+           origin = request.headers.get("origin", "")
+           referer = request.headers.get("referer", "")
+           allowed_origins = settings.ALLOWED_ORIGINS
+           source = origin or referer
+           if not any(source.startswith(o) for o in allowed_origins):
+               return JSONResponse(status_code=403,
+                   content={"error":{"code":"CSRF_REJECTED","message":"Cross-site request rejected."}})
+       return await call_next(request)
+
+2. In config.py: ALLOWED_ORIGINS: list[str] = json.loads(os.getenv("ALLOWED_ORIGINS", '["http://localhost:3000"]'))
+
+3. In .env.example: ALLOWED_ORIGINS=["https://your-app.vercel.app","http://localhost:3000"]
+
+4. Change auth cookie samesite="lax" to samesite="strict" where applicable.
+
+ACCEPTANCE: curl -X POST with no Origin → 403. With correct Origin → 200.
+
+─────────────────────────────────────────────────────────────────────────────
+PROMPT 3 — A3: /explore MISSING FROM AUTH GUARD             [🟠 HIGH]
+─────────────────────────────────────────────────────────────────────────────
+File: frontend/proxy.ts
+
+1. Add '/explore' to PROTECTED_ROUTES array.
+2. Add '/explore/:path*' to config.matcher.
+NOTE: Already fixed in session — committed.
+
+─────────────────────────────────────────────────────────────────────────────
+PROMPT 4 — A4: CORS LOCALHOST ALWAYS IN PRODUCTION          [🟠 HIGH]
+─────────────────────────────────────────────────────────────────────────────
+File: backend/app/core/config.py (lines 17-19)
+
+Replace merged cors list with a property:
+   @property
+   def cors_origins(self) -> list[str]:
+       env_origins = json.loads(os.getenv("BACKEND_CORS_ORIGINS", "[]"))
+       if env_origins:
+           return env_origins  # production: ONLY env var origins
+       return ["http://localhost:3000", "http://localhost:3001"]  # dev fallback
+
+ACCEPTANCE: With BACKEND_CORS_ORIGINS set, localhost is blocked in CORS.
+
+─────────────────────────────────────────────────────────────────────────────
+PROMPT 5 — A5/A6: AUTH TOKEN LOGGING + RATE LIMIT           [🟠 HIGH]
+─────────────────────────────────────────────────────────────────────────────
+File: backend/app/core/email.py (~lines 67, 92)
+File: backend/app/main.py (/verify-email endpoint)
+
+FIX 1: Replace full URL logs with:
+   logger.info("[DEV] Email sending skipped — SMTP not configured. Token generated but not logged.")
+
+FIX 2: Add @limiter.limit("10/minute") to /verify-email route.
+
+─────────────────────────────────────────────────────────────────────────────
+PROMPT 6 — A7/A8: CSP + HSTS HEADERS                       [🟠 HIGH]
+─────────────────────────────────────────────────────────────────────────────
+File: frontend/next.config.ts
+
+Add to headers() for matcher '/(.*)'  :
+   Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline'
+     'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:;
+     connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'
+   Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
+   X-Content-Type-Options: nosniff
+   Referrer-Policy: strict-origin-when-cross-origin
+
+─────────────────────────────────────────────────────────────────────────────
+PROMPT 7 — A10/A11/A16: INPUT SANITIZATION GAPS             [🟡 MEDIUM]
+─────────────────────────────────────────────────────────────────────────────
+Files: backend/app/main.py (~lines 1025, 1074), frontend/app/tutor/page.tsx
+
+FIX 1: /save-errors — add guard_input(body.error_text, max_len=2000)
+FIX 2: /conversations/save — add guard_input(body.assistant_answer, max_len=8000)
+FIX 3: npm install rehype-sanitize → add rehypePlugins={[rehypeSanitize]} to ReactMarkdown
+
+─────────────────────────────────────────────────────────────────────────────
+PROMPT 8 — A13: JWT REFRESH TOKEN + REVOCATION              [🟡 MEDIUM]
+─────────────────────────────────────────────────────────────────────────────
+Files: backend/app/core/auth.py, backend/app/main.py, backend/app/models/database.py
+
+1. Add refresh_token + refresh_expires_at to AuthToken model
+2. Create Alembic migration
+3. Add create_refresh_token() → 30-day JWT, stored hashed in DB
+4. POST /auth/refresh: validate, rotate, issue new pair
+5. POST /auth/logout: delete refresh record, clear cookies
+6. Shorten access token 4h → 1h
+7. Frontend: on 401, auto-call /api/auth/refresh, retry once, else redirect /login
+
+─────────────────────────────────────────────────────────────────────────────
+PROMPT 9 — B1: REFACTOR MONOLITHIC main.py                 [🟠 HIGH]
+─────────────────────────────────────────────────────────────────────────────
+SPLIT INTO:
+  backend/app/routers/auth.py       — all auth endpoints
+  backend/app/routers/tutor.py      — /ask, /ask/stream, /conversations
+  backend/app/routers/practice.py   — /practice, /evaluate
+  backend/app/routers/mock_tests.py — /mock-tests, /submit, /save-mock-test
+  backend/app/routers/analytics.py  — /stats, /revision-plan, /error-log
+  backend/app/routers/health.py     — /health
+  backend/app/core/dependencies.py  — get_db, get_current_user, limiter
+  backend/data/fallback_questions.py — FALLBACK_MOCK_QUESTION_BANK
+  backend/app/main.py               — app init + router includes ONLY (~80 lines)
+
+RULE: pytest must pass after refactor. main.py must be under 100 lines.
+
+─────────────────────────────────────────────────────────────────────────────
+PROMPT 10 — B2/B13: MULTI-WORKER CACHE SPLIT-BRAIN         [🟠 HIGH]
+─────────────────────────────────────────────────────────────────────────────
+Files: backend/app/main.py, backend/railway.toml, backend/app/core/config.py
+
+1. Add WEB_CONCURRENCY and REDIS_URL to config.py
+2. On startup: if WEB_CONCURRENCY > 1 and not REDIS_URL → raise RuntimeError
+3. Log warning when using in-memory cache with single worker
+4. In railway.toml: default workers = 1, document Redis requirement for scaling
+5. Update .env.example
+
+─────────────────────────────────────────────────────────────────────────────
+PROMPT 11 — B3: HEALTH CHECK MISSING CHROMADB              [🟠 HIGH]
+─────────────────────────────────────────────────────────────────────────────
+File: backend/app/main.py, GET /health (~line 316)
+
+Add ChromaDB check:
+   try:
+       client = get_chroma_client(); client.heartbeat()
+       chroma_status = "connected"
+   except Exception:
+       chroma_status = "unavailable"
+
+Add "chroma": chroma_status to response. Overall status "ok" if DB is up.
+
+─────────────────────────────────────────────────────────────────────────────
+PROMPT 12 — B4: SYNCHRONOUS DB BLOCKING EVENT LOOP         [🟠 HIGH]
+─────────────────────────────────────────────────────────────────────────────
+Files: backend/app/models/database.py, backend/app/main.py
+
+1. Add async engine + AsyncSession using asyncpg driver
+2. Add get_async_db() async generator
+3. Add asyncpg==0.29.0 to requirements.txt
+4. Convert all FastAPI route handlers to async def + Depends(get_async_db)
+5. Run pytest — all tests must pass before committing
+
+─────────────────────────────────────────────────────────────────────────────
+PROMPT 13 — B5: INCONSISTENT ERROR RESPONSE CODES          [🟠 HIGH]
+─────────────────────────────────────────────────────────────────────────────
+File: backend/app/core/error_handler.py, backend/app/main.py
+
+1. Add helper: def api_error(status, code, message) → HTTPException(detail={"code","message"})
+2. Update http_exception_handler to check isinstance(exc.detail, dict)
+3. Replace all raise HTTPException(detail="string") with api_error(...)
+
+Semantic codes: USER_NOT_FOUND, EMAIL_ALREADY_EXISTS, INVALID_CREDENTIALS,
+TOKEN_EXPIRED, TOKEN_INVALID, SESSION_NOT_FOUND, SESSION_EXPIRED,
+TEST_NOT_FOUND, RATE_LIMITED, UNAUTHORIZED, VALIDATION_ERROR
+
+─────────────────────────────────────────────────────────────────────────────
+PROMPT 14 — B9: NAIVE DATETIME MIX                         [🟡 MEDIUM]
+─────────────────────────────────────────────────────────────────────────────
+Run: grep -rn "datetime.utcnow" backend/
+Replace every occurrence with datetime.now(timezone.utc)
+Verify: grep -rn "datetime.utcnow" backend/ → zero results
+
+─────────────────────────────────────────────────────────────────────────────
+PROMPT 15 — B10/B11: STRUCTURED LOGGING + CORRELATION IDs  [🟡 MEDIUM]
+─────────────────────────────────────────────────────────────────────────────
+Files: backend/app/main.py, backend/app/core/error_handler.py
+
+1. Configure structlog with JSON renderer at startup
+2. Add correlation ID middleware (X-Request-ID header, uuid4 if not provided)
+3. Use structlog.contextvars.bind_contextvars(request_id=...) per request
+4. Replace all logging.getLogger string calls with structlog keyword args
+5. Remove logging.basicConfig() call
+
+─────────────────────────────────────────────────────────────────────────────
+PROMPT 16 — B16: DB INDEX ON mock_test_sessions.expires_at [🟡 MEDIUM]
+─────────────────────────────────────────────────────────────────────────────
+1. Add index=True to expires_at in MockTestSession ORM model
+2. alembic revision --autogenerate -m "index_mock_test_sessions_expires_at"
+3. Add startup cleanup: DELETE expired sessions on lifespan start
+
+─────────────────────────────────────────────────────────────────────────────
+PROMPT 17 — C1/C2: RAG INGEST IN DEPLOY PIPELINE           [🔴 CRITICAL]
+─────────────────────────────────────────────────────────────────────────────
+Files: backend/data/pyqs.json, backend/data/ingest.py, backend/Dockerfile
+
+1. Expand pyqs.json from 27 → 200+ entries covering UPSC/SSC/IBPS/RRB/State PSC
+   Format: {id, question, answer, exam, subject, year}
+
+2. In Dockerfile CMD / entrypoint.sh, after alembic upgrade head, BEFORE uvicorn:
+   python -m data.ingest --source /app/data/pyqs.json --chroma-path /data/chroma
+
+3. Make ingest idempotent: skip if collection already has >= N docs
+
+ACCEPTANCE: Fresh deploy → ChromaDB has 200+ docs. GET /health shows chroma: "connected"
+
+─────────────────────────────────────────────────────────────────────────────
+PROMPT 18 — C3/H1: DELETE LANGGRAPH STUBS + FIX README     [🔴 CRITICAL]
+─────────────────────────────────────────────────────────────────────────────
+1. Delete: backend/modules/agents/ (entire directory)
+2. Delete: backend/modules/multimodal/ (entire directory)
+3. Remove MAX_AGENT_ROUNDS constant from tutor.py
+4. Remove evaluate_answer import from main.py
+5. Remove langgraph + langchain-core from pyproject.toml
+6. Fix README: remove all "agentic", "LangGraph" claims
+7. Update exam scope copy: "IBPS SO" → "Indian government exams"
+
+─────────────────────────────────────────────────────────────────────────────
+PROMPT 19 — C5/C6: LLM RETRY ON 429/5xx + KEY VALIDATION  [🟠 HIGH]
+─────────────────────────────────────────────────────────────────────────────
+File: backend/app/core/llm_adapter.py, backend/app/core/config.py
+
+1. Use tenacity @retry decorator with retry_if_exception covering:
+   - httpx.TransportError, httpx.TimeoutException
+   - response.status_code in (429, 500, 502, 503, 504)
+   - stop_after_attempt(3), wait_exponential(min=1, max=8)
+
+2. In config.py: if not LLM_API_KEY → raise ValueError("CRITICAL: LLM_API_KEY missing")
+
+─────────────────────────────────────────────────────────────────────────────
+PROMPT 20 — C7: FASTEMBED WARMUP AT STARTUP                [🟠 HIGH]
+─────────────────────────────────────────────────────────────────────────────
+In lifespan startup:
+   from fastembed import TextEmbedding
+   _warmup = TextEmbedding()
+   list(_warmup.embed(["warmup"]))
+   logger.info("embedding_model_warmup_complete")
+Non-fatal: log warning and continue if warmup fails.
+
+─────────────────────────────────────────────────────────────────────────────
+PROMPT 21 — D1/D2/D3: REMOVE HARDCODED FALLBACKS           [🔴 CRITICAL]
+─────────────────────────────────────────────────────────────────────────────
+1. Move FALLBACK_MOCK_QUESTION_BANK → backend/data/fallback_questions.py
+2. Move MOCK_TEST_META → backend/data/mock_test_meta.py
+3. Add ALLOW_FALLBACK_QUESTIONS=false config flag (env var)
+4. Gate fallback serving: if not settings.ALLOW_FALLBACK_QUESTIONS → 503
+5. Frontend mockFallback.ts: only used when process.env.NODE_ENV === 'development'
+
+─────────────────────────────────────────────────────────────────────────────
+PROMPT 22 — D5/H3: IMPLEMENT NEGATIVE MARKING              [🟠 HIGH]
+─────────────────────────────────────────────────────────────────────────────
+In POST /mock-tests/{id}/submit scoring:
+   CORRECT = +1.0, WRONG = -0.25, SKIPPED = 0
+   final_score = max(0.0, raw_score)   # floor at zero
+
+Return negative_marks_applied: true in response.
+Frontend results UI: show correct/wrong/skipped breakdown + final score.
+
+─────────────────────────────────────────────────────────────────────────────
+PROMPT 23 — D8/D9: alert() REMOVAL + useCallback DEPS      [🟡 MEDIUM]
+─────────────────────────────────────────────────────────────────────────────
+File: frontend/app/mock-tests/[id]/page.tsx
+
+1. Replace alert() with toast.error() from sonner
+2. Add sessionId (or session token var) to executeSubmit useCallback deps array
+3. Verify: ESLint react-hooks/exhaustive-deps reports no warnings
+
+─────────────────────────────────────────────────────────────────────────────
+PROMPT 24 — E1/G1: FRONTEND TEST SUITE                     [🟠 HIGH]
+─────────────────────────────────────────────────────────────────────────────
+Stack: Vitest + React Testing Library
+
+Install: vitest @vitest/coverage-v8 @testing-library/react @testing-library/jest-dom jsdom
+
+Test files to write:
+  tests/proxy-auth.test.ts     — unauthenticated → /login, authenticated → /dashboard
+  tests/sse-parser.test.ts     — parse data: JSON, handle [DONE], handle bad JSON
+  tests/mock-submit.test.ts    — correct answers → positive score, wrong → -0.25
+
+Add "test": "vitest run" to package.json scripts.
+Add test step to .github/workflows/frontend-ci.yml.
+
+─────────────────────────────────────────────────────────────────────────────
+PROMPT 25 — E2: CONVERT PAGES TO SERVER COMPONENTS         [🟠 HIGH]
+─────────────────────────────────────────────────────────────────────────────
+Target pages (no browser APIs on mount):
+  - frontend/app/mock-tests/page.tsx
+  - frontend/app/progress/page.tsx
+  - frontend/app/error-log/page.tsx
+
+Pattern: Remove "use client", make component async, fetch data server-side,
+pass as props to child Client Components (*Client.tsx) for interactivity.
+Check node_modules/next/dist/docs/01-app/ for cookie-forwarding in Server Components.
+
+─────────────────────────────────────────────────────────────────────────────
+PROMPT 26 — E4: /me FAILURE → REDIRECT LOGIN               [🟠 HIGH]
+─────────────────────────────────────────────────────────────────────────────
+File: frontend/app/AppLayout.tsx
+
+In GET /api/me useEffect:
+   if (res.status === 401) { router.replace('/login'); return }
+   if (!res.ok) { setUserError(true); return }
+
+Add "Failed to load your profile. Please refresh." error state UI.
+
+─────────────────────────────────────────────────────────────────────────────
+PROMPT 27 — E5: PASSWORD VALIDATION ENFORCEMENT            [🟠 HIGH]
+─────────────────────────────────────────────────────────────────────────────
+Frontend: client-side check before submit — 8+ chars, 1 uppercase, 1 digit.
+Show inline error + strength indicator (weak/medium/strong bar).
+
+Backend (defense in depth): Pydantic @field_validator on password in SignupRequest.
+Same 3 rules. Returns 422 with clear message if violated.
+
+─────────────────────────────────────────────────────────────────────────────
+PROMPT 28 — E6: FIX CI BUILD API URL                       [🟠 HIGH]
+─────────────────────────────────────────────────────────────────────────────
+File: .github/workflows/frontend-ci.yml (~line 45)
+
+Change: NEXT_PUBLIC_API_URL=http://localhost:8000
+To:     NEXT_PUBLIC_API_URL=/api
+
+File: frontend/lib/api.ts
+   export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? '/api'
+
+─────────────────────────────────────────────────────────────────────────────
+PROMPT 29 — E7: ACCESSIBILITY — div onClick → button       [🟡 MEDIUM]
+─────────────────────────────────────────────────────────────────────────────
+Run: grep -rn "div onClick" frontend/app/
+Replace all interactive div onClick with <button type="button" onClick ...>
+Add focus:ring-2 focus:ring-accent/50 to each.
+Add aria-pressed where applicable (answer options, checklist items).
+
+─────────────────────────────────────────────────────────────────────────────
+PROMPT 30 — E11: SSE RECONNECT ON CONNECTION DROP          [🟡 MEDIUM]
+─────────────────────────────────────────────────────────────────────────────
+File: frontend/app/tutor/page.tsx
+
+On STREAM_DROPPED with partial content: append "Connection interrupted" note + Retry button.
+On STREAM_DROPPED with no content: auto-retry once after 1500ms (max 2 retries via ref).
+Manual Retry button resets retryCount.current to 0.
+
+─────────────────────────────────────────────────────────────────────────────
+PROMPT 31 — E12/E13: global-error COPY + 404 LINK FIX     [🟡 MEDIUM]
+─────────────────────────────────────────────────────────────────────────────
+1. frontend/app/global-error.tsx: Remove "team has been notified" (no Sentry yet).
+   Replace with: "An unexpected error occurred. Please refresh the page."
+
+2. frontend/app/not-found.tsx: Change Back button href from /dashboard to /
+   (landing page is always public — avoids redirect loop for logged-out users)
+
+─────────────────────────────────────────────────────────────────────────────
+PROMPT 32 — E14/E15: BRANDING + DYNAMIC MODEL BADGE        [🟡 MEDIUM]
+─────────────────────────────────────────────────────────────────────────────
+1. grep -rn "IBPS SO" frontend/app/ → replace with "Government Exams"
+2. Backend: add LLM_MODEL_DISPLAY_NAME env var, expose in GET /health response
+3. Frontend dashboard: fetch model name from /api/health, show dynamically
+   instead of hardcoded "Llama 3.3 Active"
+
+─────────────────────────────────────────────────────────────────────────────
+PROMPT 33 — E17/E18/E19: CSS FIXES                        [🟡 MEDIUM]
+─────────────────────────────────────────────────────────────────────────────
+1. pb-safe → pb-[env(safe-area-inset-bottom,0px)] or pb-20 (context-dependent)
+2. grep -rn "h-screen" frontend/app/ → replace with h-dvh for full-height containers
+3. tutor/page.tsx Suspense fallback={null} → fallback={<TutorLoading />}
+   (import TutorLoading from './loading')
+
+─────────────────────────────────────────────────────────────────────────────
+PROMPT 34 — E20/E21: VOICE INPUT ERRORS + EMAIL RESEND UI [🟡 MEDIUM]
+─────────────────────────────────────────────────────────────────────────────
+1. VoiceInput.tsx: recognition.onerror → toast.error() with human-readable messages
+   per error type (not-allowed, no-speech, network)
+
+2. Login page: on EMAIL_NOT_VERIFIED error → show "Resend verification email" link
+   calling POST /api/resend-verification. Show success toast on response.
+   Backend: add POST /resend-verification endpoint, rate limit 3/hour per email.
+
+─────────────────────────────────────────────────────────────────────────────
+PROMPT 35 — E25/F11: ENV VALIDATION + COMPLETE .env.example [🟠 HIGH]
+─────────────────────────────────────────────────────────────────────────────
+1. Expand frontend/scripts/check-env.mjs to include all NEXT_PUBLIC_* vars
+2. Add "prebuild": "node scripts/check-env.mjs" to package.json
+
+Complete backend/.env.example:
+   DATABASE_URL=postgresql://user:password@host:5432/dbname
+   JWT_SECRET=<openssl rand -hex 32>
+   LLM_API_KEY=<provider-api-key>
+   LLM_BASE_URL=https://api.your-provider.com/v1
+   LLM_MODEL=llama-3.3-70b-instruct
+   LLM_MODEL_DISPLAY_NAME=Llama 3.3
+   BACKEND_CORS_ORIGINS=["https://your-app.vercel.app"]
+   ALLOWED_ORIGINS=["https://your-app.vercel.app"]
+   ENVIRONMENT=production
+   REQUIRE_EMAIL_VERIFICATION=true
+   REDIS_URL=redis://your-redis-host:6379
+   WEB_CONCURRENCY=1
+   SMTP_HOST=smtp.yourprovider.com
+   SMTP_PORT=587
+   SMTP_USER=noreply@yourdomain.com
+   SMTP_PASSWORD=<smtp-password>
+   FRONTEND_URL=https://your-app.vercel.app
+   ALLOW_FALLBACK_QUESTIONS=false
+   SENTRY_DSN=https://...@sentry.io/...
+
+─────────────────────────────────────────────────────────────────────────────
+PROMPT 36 — F1/F2: DELETE cleanup.py + PURGE STALE URLS   [🔴 CRITICAL]
+─────────────────────────────────────────────────────────────────────────────
+1. git rm backend/cleanup.py  ← DO THIS FIRST BEFORE ANY BUILD
+   (this file downgrades fastembed 0.5.0 → 0.3.6, breaks numpy 2.x compat)
+
+2. grep -rn "railway.app\|vercel.app" frontend/ backend/ .github/
+   Replace hardcoded production URLs with generic placeholders or env var references
+
+─────────────────────────────────────────────────────────────────────────────
+PROMPT 37 — F3: SENTRY OBSERVABILITY                       [🟠 HIGH]
+─────────────────────────────────────────────────────────────────────────────
+Backend: pip install sentry-sdk[fastapi], init on startup if SENTRY_DSN set.
+         Add FastApiIntegration(). capture_exception() in general_exception_handler.
+Frontend: npm install @sentry/nextjs, run npx @sentry/wizard -i nextjs.
+          In global-error.tsx: Sentry.captureException(error).
+          Update copy to: "Error reported automatically."
+Non-fatal: app starts normally if SENTRY_DSN not set.
+
+─────────────────────────────────────────────────────────────────────────────
+PROMPT 38 — F4: pyproject.toml vs requirements.txt SYNC   [🟠 HIGH]
+─────────────────────────────────────────────────────────────────────────────
+1. Remove from pyproject.toml: langgraph, langchain-core, old fastembed pins
+2. Split requirements.txt:
+   requirements.txt     — production only
+   requirements-dev.txt — includes -r requirements.txt + pytest/black/mypy/pip-audit
+3. Update Dockerfile: use requirements.txt only in production image
+4. Update CI: pip install -r requirements.txt -r requirements-dev.txt
+
+─────────────────────────────────────────────────────────────────────────────
+PROMPT 39 — F6/F7: CI GATE + WORKER COUNT CONSISTENCY     [🟠 HIGH]
+─────────────────────────────────────────────────────────────────────────────
+1. .github/workflows/deploy-gate.yml: add deploy-gate job with needs:
+   [frontend-ci, backend-ci], if: always(), that fails if either failed.
+
+2. Standardize workers via WEB_CONCURRENCY env var:
+   Dockerfile CMD: uvicorn ... --workers ${WEB_CONCURRENCY:-1}
+   railway.toml:   same pattern, default 1
+
+─────────────────────────────────────────────────────────────────────────────
+PROMPT 40 — F8/F9/F10: FULL-STACK docker-compose          [🟡 MEDIUM]
+─────────────────────────────────────────────────────────────────────────────
+Create docker-compose.yml at repo ROOT with:
+  - postgres:16-alpine (healthcheck)
+  - redis:7-alpine
+  - backend (depends_on postgres healthy, redis started)
+    - DATABASE_URL: postgresql://ascend:localdev@postgres:5432/ascend_ai
+    - REDIS_URL: redis://redis:6379
+    - ALLOW_FALLBACK_QUESTIONS: "true"
+  - frontend (Dockerfile.dev in frontend/, dev server, volume mount)
+    - BACKEND_API_URL: http://backend:8000
+
+Create frontend/Dockerfile.dev: node:20-alpine, npm install, npm run dev.
+Update backend/docker-compose.yml: change postgres:15 → postgres:16.
+
+─────────────────────────────────────────────────────────────────────────────
+PROMPT 41 — F12: DEV DEPS OUT OF PRODUCTION DOCKER IMAGE  [🟡 MEDIUM]
+─────────────────────────────────────────────────────────────────────────────
+After Prompt 38 creates requirements-dev.txt:
+- Dockerfile production stage: pip install -r requirements.txt ONLY
+- Verify: docker run --rm ascend-ai which pytest → non-zero exit (not installed)
+
+─────────────────────────────────────────────────────────────────────────────
+PROMPT 42 — F13/F18: LICENSE + SECURITY.md + README       [🟡 MEDIUM]
+─────────────────────────────────────────────────────────────────────────────
+1. Create LICENSE (MIT) at repo root
+2. Create SECURITY.md with responsible disclosure process
+3. Replace frontend/README.md boilerplate with project-specific content
+4. Update root README.md — accurate architecture, no LangGraph claims
+
+─────────────────────────────────────────────────────────────────────────────
+PROMPT 43 — G2/G3/G5/G6: BACKEND TEST COVERAGE            [🟠 HIGH]
+─────────────────────────────────────────────────────────────────────────────
+Add to backend test suite:
+
+1. Rate limit test: loop 6x /login → 7th returns 429 with RATE_LIMITED code
+   (remove _mock_limiter.hit=True mock for this specific test)
+
+2. SSE stream test: POST /ask/stream returns content-type: text/event-stream,
+   lines contain "data:" prefix, ends with [DONE]
+
+3. Session timer test: expired session_id on /submit returns 400 + "expired" message
+
+4. Conversations test: POST /conversations/save + GET /conversations roundtrip
+
+─────────────────────────────────────────────────────────────────────────────
+PROMPT 44 — G4: ALEMBIC MIGRATION SMOKE TEST IN CI        [🟡 MEDIUM]
+─────────────────────────────────────────────────────────────────────────────
+In .github/workflows/backend-ci.yml, BEFORE pytest:
+   alembic upgrade head
+   alembic downgrade -1
+   alembic upgrade head
+This verifies: migrations apply, are reversible, re-apply cleanly.
+
+─────────────────────────────────────────────────────────────────────────────
+PROMPT 45 — H2: UPDATE MEMORY.md POST-AUDIT               [🟠 HIGH]
+─────────────────────────────────────────────────────────────────────────────
+1. Mark [x] for items actually completed (loading.tsx, error.tsx, 404, handlers,
+   timeout, rate limits, health partial)
+2. Add "Completed in Enterprise Audit" section
+3. Add "Next Sprint" section from these prompts
+4. Update "Current State" to reflect: ImportError fixed, exam scope fixed,
+   cleanup.py deleted, deployments being rebuilt
+
+─────────────────────────────────────────────────────────────────────────────
+PROMPT 46 — H4/D5: LANDING PAGE COPY CONSISTENCY          [🟡 MEDIUM]
+─────────────────────────────────────────────────────────────────────────────
+File: frontend/app/page.tsx
+
+1. grep -n "IBPS SO\|agentic\|LangGraph" frontend/app/page.tsx → fix all
+2. Align exam scope copy with actual product: "UPSC, SSC, IBPS, RRB & more"
+3. Only claim features that exist in code
+4. Accurate feature bullets:
+   - "AI Tutor: Instant answers with RAG-grounded citations"
+   - "Adaptive Practice: AI-generated questions by topic"
+   - "Mistake Locker: Personalized weakness analysis"
+   - "Mock Tests: Timed full-length tests with analytics"
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+QUERY 2 — LLM ASSIGNMENT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+USER:
+"Tell me which prompts to assign to Which LLMs:
+grok / gpt / gemini #1 / gemini #2 / Claude"
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+REPLY 2 — LLM ASSIGNMENT MAP
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+ASSIGNMENT LOGIC:
+  Grok      — Python backend, large refactors, config
+  GPT       — TypeScript, React, Next.js, frontend testing
+  Gemini #1 — AI pipeline, infrastructure, DevOps, docs
+  Gemini #2 — CI/CD, config management, cleanup tasks
+  Claude    — Security-critical, architecture, full-context work
+
+─────────────────────────────────────────────────────────────────────────────
+CLAUDE — Prompts: 3, 2, 8, 12, 43, 45
+─────────────────────────────────────────────────────────────────────────────
+  Prompt 3  — /explore auth guard (tiny, already in context — done in session)
+  Prompt 2  — CSRF middleware (security, requires nuanced judgment)
+  Prompt 8  — JWT refresh token rotation (auth = highest-risk surface)
+  Prompt 12 — Async SQLAlchemy migration (highest-effort, needs full context)
+  Prompt 43 — Backend test coverage (I know the test file structure)
+  Prompt 45 — MEMORY.md update (I wrote it)
+
+Order: 3 → 2 → 8 → 45 → 43 → 12
+
+Starter brief for Claude:
+  "Read MEMORY.md. Start with Prompt 3 (/explore auth guard — 2 lines in
+   proxy.ts). Then Prompt 2 (CSRF middleware). Then Prompt 8 (JWT refresh).
+   Run pytest after each change before committing."
+
+─────────────────────────────────────────────────────────────────────────────
+GROK — Prompts: 1, 4, 5, 9, 7, 10, 11, 13, 19, 21, 14, 15, 16
+─────────────────────────────────────────────────────────────────────────────
+  Prompt 1  — Server-side mock grading (answer leak)          [🔴 FIRST]
+  Prompt 4  — CORS localhost-in-production fix
+  Prompt 5  — Auth token logging + /verify-email rate limit
+  Prompt 9  — Refactor monolithic main.py → routers           [FLAGSHIP]
+  Prompt 7  — Input sanitization (3 gaps)
+  Prompt 10 — Multi-worker cache + Redis enforcement
+  Prompt 11 — Health check add ChromaDB
+  Prompt 13 — Consistent error response codes
+  Prompt 19 — LLM retry on 429/5xx + API key validation
+  Prompt 21 — Remove hardcoded fallbacks behind feature flag
+  Prompt 14 — Replace datetime.utcnow() everywhere
+  Prompt 15 — Structured logging + correlation IDs
+  Prompt 16 — DB index + expired session cleanup
+
+Order: 1 → 4 → 5 → 9 (blocks rest) → 7 → 10 → 11 → 13 → 19 → 21 → 14 → 15 → 16
+
+Starter brief for Grok:
+  "You are working on D:\AI\treasury\AI-Tutor. This is a FastAPI + PostgreSQL
+   backend. Read MEMORY.md first, then backend/app/main.py in full before
+   touching anything. Start with Prompt 1 (server-side grading — backend +
+   one frontend file). After Prompt 9 (main.py refactor), run pytest before
+   committing. Every commit must pass pip install -r requirements.txt --dry-run
+   with zero errors."
+
+─────────────────────────────────────────────────────────────────────────────
+GPT — Prompts: 6, 22, 24, 25, 26, 27, 23, 29, 30, 31, 32, 33, 34
+─────────────────────────────────────────────────────────────────────────────
+  Prompt 6  — CSP + HSTS headers in next.config.ts
+  Prompt 22 — Implement negative marking (UI + server)
+  Prompt 24 — Frontend test suite (Vitest + RTL)             [FLAGSHIP]
+  Prompt 25 — Convert 3 pages to Server Components
+  Prompt 26 — /me failure → redirect to login
+  Prompt 27 — Password validation enforcement
+  Prompt 23 — Remove alert(), fix useCallback deps
+  Prompt 29 — Accessibility: div onClick → button
+  Prompt 30 — SSE reconnect on connection drop
+  Prompt 31 — global-error copy + 404 link fix
+  Prompt 32 — Branding consistency + dynamic model badge
+  Prompt 33 — CSS: pb-safe, h-dvh, Suspense fallback
+  Prompt 34 — Voice input errors + email resend UI
+
+Order: 6 → 22 → 24 → 25 → 26 → 27 → 23 → 29 → 30 → 31 → 32 → 33 → 34
+
+Starter brief for GPT:
+  "You are working on D:\AI\treasury\AI-Tutor\frontend. This is Next.js 16
+   with breaking changes — before writing any code, read
+   node_modules/next/dist/docs/01-app/03-api-reference/03-file-conventions/
+   for the relevant file convention. Design tokens are in styles/tokens.css —
+   use text-accent, text-accent-practice, etc., never hardcoded Tailwind colors.
+   Start with Prompt 6 (security headers). After Prompt 24, npm test must pass
+   before committing."
+
+─────────────────────────────────────────────────────────────────────────────
+GEMINI #1 — Prompts: 18, 17, 37, 20, 40, 41, 42, 46
+─────────────────────────────────────────────────────────────────────────────
+  Prompt 18 — Delete LangGraph stubs + fix README            [FIRST]
+  Prompt 17 — RAG ingest in deploy pipeline + expand corpus  [FLAGSHIP]
+  Prompt 37 — Sentry integration (backend + frontend)
+  Prompt 20 — FastEmbed warmup at startup
+  Prompt 40 — Full-stack docker-compose (Postgres 16 + Redis + frontend)
+  Prompt 41 — Dev deps out of production Docker image
+  Prompt 42 — LICENSE + SECURITY.md + README rewrite
+  Prompt 46 — Landing page copy consistency
+
+Order: 18 → 17 → 37 → 20 → 40 → 41 → 42 → 46
+
+Starter brief for Gemini #1:
+  "You are working on D:\AI\treasury\AI-Tutor. Read MEMORY.md first. Start
+   with Prompt 18 — delete backend/modules/agents/ and backend/modules/multimodal/
+   entirely (they are stubs, never called, and misrepresent the product). Then
+   Prompt 17 — expand backend/data/pyqs.json from 27 → 200+ real PYQ-style
+   questions and wire ingest into the Dockerfile so ChromaDB is populated on
+   every deploy."
+
+─────────────────────────────────────────────────────────────────────────────
+GEMINI #2 — Prompts: 36, 35, 38, 28, 39, 44
+─────────────────────────────────────────────────────────────────────────────
+  Prompt 36 — Delete cleanup.py + purge stale URLs           [FIRST — CRITICAL]
+  Prompt 35 — Expand env validation + complete .env.example
+  Prompt 38 — Sync pyproject.toml, split dev requirements
+  Prompt 28 — Fix CI build API URL (localhost → /api)
+  Prompt 39 — CI deploy gate always-runs + worker consistency
+  Prompt 44 — Alembic migration smoke test in CI
+
+Order: 36 → 35 → 38 → 28 → 39 → 44
+
+Starter brief for Gemini #2:
+  "You are working on D:\AI\treasury\AI-Tutor. DO THIS FIRST: git rm
+   backend/cleanup.py — this file downgrades fastembed from 0.5.0 to 0.3.6,
+   breaking the numpy 2.x compatibility fix. Commit it immediately with message
+   'chore: remove cleanup.py — reverses critical dependency fix'. Then proceed
+   with Prompt 35 (env validation). Find every os.getenv() call in
+   backend/app/core/config.py and document each one in .env.example."
+
+─────────────────────────────────────────────────────────────────────────────
+OVERALL EXECUTION ORDER (across all LLMs — run in parallel where possible)
+─────────────────────────────────────────────────────────────────────────────
+IMMEDIATE (today — before any build):
+  Claude    → Prompt 3  (/explore auth guard)
+  Gemini #2 → Prompt 36 (delete cleanup.py — BEFORE ANYONE BUILDS)
+  Grok      → Prompt 1  (answer leak — biggest security hole)
+
+SPRINT 1 (this week — run all LLMs in parallel):
+  Claude    → Prompts 2, 8
+  Grok      → Prompts 4, 5, 9
+  GPT       → Prompts 6, 22, 24
+  Gemini #1 → Prompts 18, 17
+  Gemini #2 → Prompts 35, 38
+
+SPRINT 2 (next week — after Prompt 9 is merged):
+  Grok      → Prompts 7, 10, 11, 13, 19, 21
+  GPT       → Prompts 25, 26, 27, 23
+  Gemini #1 → Prompts 37, 20, 40
+  Gemini #2 → Prompts 28, 39, 44
+
+SPRINT 3 (polish — all remaining):
+  Grok      → Prompts 14, 15, 16
+  GPT       → Prompts 29, 30, 31, 32, 33, 34
+  Gemini #1 → Prompts 41, 42, 46
+  Claude    → Prompts 43, 45, 12
+
+RULE FOR ALL LLMs:
+  Run pytest (backend) or npm test (frontend) after EVERY prompt.
+  If tests fail, fix before moving to next prompt.
+  Every commit must be pushed to the branch immediately.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+QUERY 3 — THIS REFERENCE FILE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+USER:
+"Give me a text file for the last 3 queries and replies between us so I can
+code and use it as reference."
+
+REPLY:
+This file. Saved to: D:\AI\treasury\AI-Tutor\REFERENCE_PROMPTS.txt
+Also committed to GitHub: KafKafrnZ/AI-Tutor (branch: claude/pc-file-access-mnxju)
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+QUICK REFERENCE — KEY FILE LOCATIONS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  backend/app/main.py                    — monolithic file (target of Prompt 9)
+  backend/app/core/config.py             — all env var settings
+  backend/app/core/error_handler.py      — exception handlers (now complete)
+  backend/app/core/llm_adapter.py        — LLM timeout + retry logic
+  backend/app/models/database.py         — SQLAlchemy models + pool config
+  backend/modules/data_analyzer.py       — revision plan prompt (IBPS→all-gov fixed)
+  backend/modules/tutor.py               — RAG → LLM pipeline (real, not agentic)
+  backend/data/pyqs.json                 — RAG corpus (only 27 entries — Prompt 17)
+  backend/requirements.txt               — pinned production deps
+  frontend/proxy.ts                      — auth middleware (Next.js 16 convention)
+  frontend/app/api/[...path]/route.ts    — reverse proxy to Railway
+  frontend/styles/tokens.css             — design tokens (use these, not hardcoded colors)
+  frontend/components/layout/            — PageShell, GlassCard, Sidebar, etc.
+  frontend/lib/api.ts                    — API_URL constant
+  MEMORY.md                              — full project context for session handoff
+  REFERENCE_PROMPTS.txt                  — this file
+
+================================================================================
+END OF REFERENCE FILE
+================================================================================
