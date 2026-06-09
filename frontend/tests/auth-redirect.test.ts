@@ -11,6 +11,9 @@ vi.mock("next/server", () => ({
   NextResponse: responseMocks,
 }));
 
+// A real JWT-shaped token with exp=9999999999 (year 2286) so isTokenExpired() returns false
+const VALID_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ0ZXN0IiwiZXhwIjo5OTk5OTk5OTk5fQ.fakesig";
+
 function request(pathname: string, token?: string) {
   return {
     cookies: {
@@ -63,14 +66,14 @@ describe("proxy auth guard — protected routes", () => {
 
   it("passes through authenticated request to /dashboard", async () => {
     const { proxy } = await import("../proxy");
-    proxy(request("/dashboard", "valid-token") as never);
+    proxy(request("/dashboard", VALID_TOKEN) as never);
     expect(responseMocks.next).toHaveBeenCalled();
     expect(responseMocks.redirect).not.toHaveBeenCalled();
   });
 
   it("passes through authenticated request to /explore", async () => {
     const { proxy } = await import("../proxy");
-    proxy(request("/explore", "valid-token") as never);
+    proxy(request("/explore", VALID_TOKEN) as never);
     expect(responseMocks.next).toHaveBeenCalled();
     expect(responseMocks.redirect).not.toHaveBeenCalled();
   });
@@ -84,7 +87,7 @@ describe("proxy auth guard — auth route redirects", () => {
 
   it("redirects authenticated user on /login to /dashboard", async () => {
     const { proxy } = await import("../proxy");
-    proxy(request("/login", "valid-token") as never);
+    proxy(request("/login", VALID_TOKEN) as never);
     expect(responseMocks.redirect).toHaveBeenCalledWith(
       new URL("/dashboard", "https://example.test/login")
     );
@@ -92,7 +95,7 @@ describe("proxy auth guard — auth route redirects", () => {
 
   it("redirects authenticated user on /signup to /dashboard", async () => {
     const { proxy } = await import("../proxy");
-    proxy(request("/signup", "valid-token") as never);
+    proxy(request("/signup", VALID_TOKEN) as never);
     expect(responseMocks.redirect).toHaveBeenCalledWith(
       new URL("/dashboard", "https://example.test/signup")
     );

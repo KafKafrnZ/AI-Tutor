@@ -1,4 +1,4 @@
-﻿import bcrypt
+import bcrypt
 import hashlib
 import secrets as _secrets
 import jwt
@@ -27,7 +27,10 @@ def create_token(data: dict) -> str:
 
 def verify_token(token: str) -> dict | None:
     try:
-        return jwt.decode(token, settings.JWT_SECRET, algorithms=[settings.JWT_ALGORITHM])
+        payload = jwt.decode(token, settings.JWT_SECRET, algorithms=[settings.JWT_ALGORITHM])
+        if not payload.get("sub"):
+            return None
+        return payload
     except InvalidTokenError:
         return None
 

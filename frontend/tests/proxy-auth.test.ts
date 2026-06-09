@@ -9,6 +9,9 @@ vi.mock("next/server", () => ({
   NextResponse: responseMocks,
 }));
 
+// A real JWT-shaped token with exp=9999999999 (year 2286) so isTokenExpired() returns false
+const VALID_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ0ZXN0IiwiZXhwIjo5OTk5OTk5OTk5fQ.fakesig";
+
 function request(pathname: string, token?: string) {
   return {
     cookies: {
@@ -36,7 +39,7 @@ describe("proxy auth guard", () => {
   it("redirects authenticated request to /login -> /dashboard", async () => {
     const { proxy } = await import("../proxy");
 
-    proxy(request("/login", "token") as never);
+    proxy(request("/login", VALID_TOKEN) as never);
 
     expect(responseMocks.redirect).toHaveBeenCalledWith(new URL("/dashboard", "https://example.test/login"));
   });
@@ -44,7 +47,7 @@ describe("proxy auth guard", () => {
   it("passes through authenticated request to /dashboard", async () => {
     const { proxy } = await import("../proxy");
 
-    proxy(request("/dashboard", "token") as never);
+    proxy(request("/dashboard", VALID_TOKEN) as never);
 
     expect(responseMocks.next).toHaveBeenCalled();
   });

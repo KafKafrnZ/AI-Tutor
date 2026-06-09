@@ -2,6 +2,7 @@ from fastapi import HTTPException, Request, status
 from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
+from slowapi.errors import RateLimitExceeded
 from sqlalchemy.exc import SQLAlchemyError
 from slowapi.errors import RateLimitExceeded
 import structlog
@@ -36,20 +37,26 @@ async def sqlalchemy_exception_handler(request: Request, exc: SQLAlchemyError):
 
 
 async def http_exception_handler(request: Request, exc: HTTPException):
-    if isinstance(exc.detail, dict) and "code" in exc.detail:
-        content = {"error": exc.detail}
+    detail = exc.detail
+    if isinstance(detail, dict) and "code" in detail:
+        # Already a structured api_error() response — pass through as-is
+        content = {"error": detail}
+    elif isinstance(detail, dict):
+        code = detail.get("code", "HTTP_ERROR")
+        message = detail.get("message", str(detail))
+        content = _error_body(code, message)
     else:
-        content = _error_body("HTTP_ERROR", str(exc.detail))
-    logger.warning(
-        "http_exception",
-        status=exc.status_code,
-        code=content["error"].get("code"),
-    )
+        content = _error_body("HTTP_ERROR", str(detail) if detail else "Request error")
+    logger.warning("http_exception", status=exc.status_code, code=content["error"].get("code"))
     return JSONResponse(status_code=exc.status_code, content=content)
 
 
 async def rate_limit_exception_handler(request: Request, exc: RateLimitExceeded):
-    logger.warning("rate_limited", path=request.url.path)
+    logger.warning(
+        "rate_limited",
+        client=request.client.host if request.client else "unknown",
+        path=request.url.path,
+    )
     return JSONResponse(
         status_code=status.HTTP_429_TOO_MANY_REQUESTS,
         content=_error_body("RATE_LIMITED", "Too many requests. Please slow down and try again."),
