@@ -60,3 +60,31 @@ def setup_test_db():
 def client():
     with TestClient(app, raise_server_exceptions=False) as c:
         yield c
+
+
+@pytest.fixture
+def real_limiter():
+    """Swap in a fresh real in-memory rate limiter for this test.
+
+    The global mock always returns True (within-limit).  This fixture replaces
+    it with a genuine MovingWindowRateLimiter backed by a clean MemoryStorage,
+    so endpoint rate limits are actually enforced.  The mock is restored on
+    teardown so every other test is unaffected.
+    """
+    from limits.storage import MemoryStorage
+    from limits.strategies import MovingWindowRateLimiter
+
+    old = limiter._limiter
+    limiter._limiter = MovingWindowRateLimiter(MemoryStorage())
+    yield
+    limiter._limiter = old
+
+
+@pytest.fixture
+def db_session():
+    """Yield a raw SQLAlchemy session for direct DB manipulation in tests."""
+    session = _TestingSession()
+    try:
+        yield session
+    finally:
+        session.close()
