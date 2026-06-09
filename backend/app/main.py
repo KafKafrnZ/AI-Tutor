@@ -30,10 +30,11 @@ from app.core.middleware import (
 from app.routers import analytics, auth, health, mock_tests, practice, tutor
 
 import os
-import sentry_sdk
 
 _sentry_dsn = os.getenv("SENTRY_DSN", "")
 if _sentry_dsn:
+    import sentry_sdk
+
     sentry_sdk.init(
         dsn=_sentry_dsn,
         traces_sample_rate=0.1,

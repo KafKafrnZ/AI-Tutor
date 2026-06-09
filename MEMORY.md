@@ -39,6 +39,19 @@ Target: production-quality SaaS, $35k+/yr value, auctionable asset.
 9. **Current State Updates**: `cleanup.py` deleted, `ImportError` fixed, exam scope fixed, deployments being rebuilt fresh.
 
 ### Completed in June 2026 Session
+- **GK-1 → GK-11** (branch `claude/pc-file-access-mnxju`, commit `e1d7c89`):
+  - GK-1: Server-side mock grading (no answer leak pre-submit)
+  - GK-2: CORS production/dev split (`get_cors_origins`)
+  - GK-3: Token logging removed; `/verify-email` rate-limited
+  - GK-4: `main.py` refactored to routers (73 lines) + `dependencies.py` + `fallback_questions.py`
+  - GK-5: Semantic `{error:{code,message}}` via `api_error()`
+  - GK-6: structlog JSON + `X-Request-ID` correlation
+  - GK-7: Redis required when `WEB_CONCURRENCY > 1`
+  - GK-8: tenacity LLM retry + `LLM_API_KEY` startup validation
+  - GK-9: timezone-aware datetimes, session index, column length migrations
+  - GK-10: Chroma health check, FastEmbed warmup, input sanitization
+  - GK-11: `ALLOW_FALLBACK_QUESTIONS` feature flag
+  - **pytest: 61 passed**
 - GK-1 / GP-1 / GP-2 / G2-0
 - G1-1: Delete LangGraph Stubs + Fix README
 - G1-2: Expand RAG Corpus + Wire Ingest into Deployment
