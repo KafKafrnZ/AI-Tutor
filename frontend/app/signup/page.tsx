@@ -42,7 +42,7 @@ export default function SignupPage() {
       </Link>
 
       <div className="relative z-10 mx-auto flex w-full max-w-6xl items-center justify-center pt-14">
-        <AuthCard initialMode="signup" onSuccess={handleSuccess} />
+        <AuthCard key="signup" initialMode="signup" onSuccess={handleSuccess} />
       </div>
     </main>
   );
