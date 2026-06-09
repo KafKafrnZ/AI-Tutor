@@ -257,7 +257,7 @@ export default function MockTestEnginePage() {
   if (!test || test.questions.length === 0) {
     return (
       <div className="min-h-screen bg-bg flex flex-col items-center justify-center gap-4 px-6 text-center font-medium">
-        <p className="text-rose-400">Exam layout not found or contains no questions.</p>
+        <p className="text-accent-mock">Exam layout not found or contains no questions.</p>
         <button
           onClick={() => router.push("/mock-tests")}
           className="rounded-xl border border-white/10 bg-zinc-900 px-4 py-2 text-sm text-zinc-200 transition-colors hover:bg-white hover:text-black"
@@ -278,14 +278,14 @@ export default function MockTestEnginePage() {
           <div className="bg-zinc-900/60 border border-white/5 rounded-2xl p-6">
             <h1 className="text-2xl font-bold">{test.title} - Results</h1>
             <p className="text-zinc-400 mt-2">
-              Correct: <span className="text-emerald-400">{submitResults.correct}</span> | Wrong:{" "}
-              <span className="text-rose-400">{wrongCount}</span> | Skipped:{" "}
+              Correct: <span className="text-accent-progress">{submitResults.correct}</span> | Wrong:{" "}
+              <span className="text-accent-mock">{wrongCount}</span> | Skipped:{" "}
               <span className="text-zinc-400">{skippedCount}</span>
             </p>
             <p className="text-zinc-400 mt-2">
-              Score: <span className="text-pink-400 font-mono">{submitResults.score}</span> / {submitResults.total} ({submitResults.percentage}%)
+              Score: <span className="text-accent-mock font-mono">{submitResults.score}</span> / {submitResults.total} ({submitResults.percentage}%)
             </p>
-            <p className="text-xs text-amber-400 mt-1">Negative marks applied: -0.25 per wrong answer</p>
+            <p className="text-xs text-accent-practice mt-1">Negative marks applied: -0.25 per wrong answer</p>
           </div>
 
           <div className="flex flex-col gap-4">
@@ -299,25 +299,25 @@ export default function MockTestEnginePage() {
                   : item.user_selected || "Skipped"
               const questionText = item.question_text || item.question || ""
               const marksClass =
-                item.marks_awarded > 0 ? "text-emerald-400" : item.marks_awarded < 0 ? "text-rose-400" : "text-zinc-400"
-              const selectedClass = item.is_correct ? "text-emerald-300" : item.user_selected ? "text-rose-300" : "text-zinc-400"
+                item.marks_awarded > 0 ? "text-accent-progress" : item.marks_awarded < 0 ? "text-accent-mock" : "text-zinc-400"
+              const selectedClass = item.is_correct ? "text-accent-progress" : item.user_selected ? "text-accent-mock" : "text-zinc-400"
 
               return (
                 <div
                   key={item.id}
                   className={`rounded-2xl border p-5 ${
                     item.is_correct
-                      ? "border-emerald-500/30 bg-emerald-500/5"
+                      ? "border-accent-progress/30 bg-accent-progress/5"
                       : item.user_selected
-                      ? "border-rose-500/30 bg-rose-500/5"
+                      ? "border-accent-mock/30 bg-accent-mock/5"
                       : "border-white/10 bg-zinc-900/40"
                   }`}
                 >
                   <div className="flex items-start gap-3">
                     {item.is_correct ? (
-                      <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
+                      <CheckCircle2 className="w-5 h-5 text-accent-progress shrink-0 mt-0.5" />
                     ) : item.user_selected ? (
-                      <XCircle className="w-5 h-5 text-rose-400 shrink-0 mt-0.5" />
+                      <XCircle className="w-5 h-5 text-accent-mock shrink-0 mt-0.5" />
                     ) : (
                       <AlertTriangle className="w-5 h-5 text-zinc-500 shrink-0 mt-0.5" />
                     )}
@@ -325,7 +325,7 @@ export default function MockTestEnginePage() {
                       <p className="text-sm text-zinc-500 mb-1">Q{idx + 1}</p>
                       <p className="font-medium">{questionText}</p>
                       <p className={`text-sm mt-2 ${selectedClass}`}>Your answer: {selectedText}</p>
-                      <p className="text-sm text-emerald-300 mt-1">
+                      <p className="text-sm text-accent-progress mt-1">
                         Correct answer: {item.correct_answer}. {item.correct_answer_text}
                       </p>
                       <p className={`text-sm font-semibold mt-1 ${marksClass}`}>
@@ -342,7 +342,7 @@ export default function MockTestEnginePage() {
           <button
             type="button"
             onClick={() => router.push("/progress")}
-            className="self-center px-6 py-3 rounded-xl bg-pink-600 hover:bg-pink-700 font-semibold transition-colors"
+            className="self-center px-6 py-3 rounded-xl bg-accent-mock hover:bg-accent-mock font-semibold transition-colors"
           >
             View Progress
           </button>
@@ -385,7 +385,7 @@ export default function MockTestEnginePage() {
                 <button
                   onClick={() => void executeSubmit(false)}
                   disabled={isSubmitting}
-                  className="px-5 py-2.5 rounded-xl bg-pink-600 hover:bg-pink-700 text-white font-bold transition-all shadow-lg flex items-center gap-2"
+                  className="px-5 py-2.5 rounded-xl bg-accent-mock hover:bg-accent-mock text-white font-bold transition-all shadow-lg flex items-center gap-2"
                 >
                   {isSubmitting ? "Submitting..." : "Yes, Submit"}
                 </button>
@@ -406,20 +406,20 @@ export default function MockTestEnginePage() {
 
           <div className="flex flex-col gap-3 self-stretch sm:self-auto sm:items-end">
             {timeLeft <= 300 && timeLeft > 0 && (
-              <div aria-live="polite" className="bg-rose-500/20 border border-rose-500/40 text-rose-300 text-sm font-semibold px-4 py-2 rounded-xl animate-pulse text-center">
+              <div aria-live="polite" className="bg-accent-mock/20 border border-accent-mock/40 text-accent-mock text-sm font-semibold px-4 py-2 rounded-xl animate-pulse text-center">
                 <AlertTriangle className="mr-2 inline h-4 w-4 align-[-2px]" />
                 {Math.ceil(timeLeft / 60)} min remaining - submit soon!
               </div>
             )}
             <div className="flex items-center gap-6 justify-between sm:justify-end">
-              <div className="flex items-center gap-2 px-4 py-2 bg-zinc-950 border border-white/5 rounded-xl font-mono text-lg text-pink-400">
-                <Clock className="w-5 h-5 text-pink-500" />
+              <div className="flex items-center gap-2 px-4 py-2 bg-zinc-950 border border-white/5 rounded-xl font-mono text-lg text-accent-mock">
+                <Clock className="w-5 h-5 text-accent-mock" />
                 {formatTime(timeLeft)}
               </div>
               <button
                 onClick={() => handleFinalSubmit(false)}
                 disabled={isSubmitting}
-                className="flex items-center gap-2 px-5 py-2.5 bg-pink-600 hover:bg-pink-700 disabled:bg-zinc-800 rounded-xl text-sm font-semibold transition-all shadow-lg shadow-pink-950/20"
+                className="flex items-center gap-2 px-5 py-2.5 bg-accent-mock hover:bg-accent-mock disabled:bg-zinc-800 rounded-xl text-sm font-semibold transition-all shadow-lg shadow-accent-mock/20"
               >
                 <Send className="w-4 h-4" /> Finish Exam
               </button>
@@ -428,7 +428,7 @@ export default function MockTestEnginePage() {
         </div>
 
         {loadNotice && (
-          <div className="flex items-start gap-3 rounded-2xl border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
+          <div className="flex items-start gap-3 rounded-2xl border border-accent-practice/20 bg-accent-practice/10 px-4 py-3 text-sm text-accent-practice">
             <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
             <span>{loadNotice}</span>
           </div>
@@ -466,14 +466,14 @@ export default function MockTestEnginePage() {
                         aria-pressed={isSelected}
                         className={`w-full text-left px-5 py-4 rounded-xl border text-sm transition-all flex items-center justify-between group ${
                           isSelected
-                            ? "bg-pink-500/10 border-pink-500 text-pink-400 font-medium"
+                            ? "bg-accent-mock/10 border-accent-mock text-accent-mock font-medium"
                             : "bg-zinc-950/50 border-white/5 text-zinc-300 hover:bg-zinc-900 hover:border-zinc-700"
                         }`}
                       >
                         <span className="flex gap-4 items-center">
                           <span
                             className={`w-6 h-6 rounded-md flex items-center justify-center text-xs border font-bold ${
-                              isSelected ? "bg-pink-500 border-transparent text-white" : "bg-zinc-900 border-white/10 text-zinc-400"
+                              isSelected ? "bg-accent-mock border-transparent text-white" : "bg-zinc-900 border-white/10 text-zinc-400"
                             }`}
                           >
                             {key}
@@ -503,7 +503,7 @@ export default function MockTestEnginePage() {
                     return updated
                   })
                 }
-                className="text-xs text-zinc-500 hover:text-rose-400 transition-colors underline underline-offset-4"
+                className="text-xs text-zinc-500 hover:text-accent-mock transition-colors underline underline-offset-4"
               >
                 Clear Answer Choice
               </button>
@@ -554,7 +554,7 @@ export default function MockTestEnginePage() {
                       isCurrent
                         ? "bg-white text-black border-transparent shadow-lg scale-105"
                         : isAnswered
-                        ? "bg-pink-500/20 border-pink-500/40 text-pink-400"
+                        ? "bg-accent-mock/20 border-accent-mock/40 text-accent-mock"
                         : "bg-zinc-950 border-white/5 text-zinc-500 hover:border-zinc-700"
                     }`}
                   >

@@ -53,7 +53,7 @@ export default function ForgotPasswordPage() {
 
         {submitted ? (
           <div className="text-center space-y-4">
-            <p className="text-emerald-400 font-medium">
+            <p role="alert" aria-live="polite" className="text-emerald-400 font-medium">
               If that email exists, a reset link has been sent.
             </p>
             <p className="text-zinc-500 text-sm">
@@ -69,10 +69,11 @@ export default function ForgotPasswordPage() {
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-zinc-300 mb-1.5">
+              <label htmlFor="forgot-email" className="block text-sm font-medium text-zinc-300 mb-1.5">
                 Email
               </label>
               <input
+                id="forgot-email"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}

@@ -43,6 +43,7 @@ export default function AuthCard({ initialMode = "signin", apiBaseUrl, onSuccess
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [isPasswordFocused, setIsPasswordFocused] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [passwordError, setPasswordError] = useState("");
@@ -51,8 +52,14 @@ export default function AuthCard({ initialMode = "signin", apiBaseUrl, onSuccess
   const selectedCopy = copy[mode];
   const baseUrl = (apiBaseUrl ?? API_URL).replace(/\/$/, "");
   const canSubmit = mode === "signin" ? Boolean(email && password) : Boolean(name.trim() && email && password);
-  const passwordStrength =
-    password.length < 8 ? "weak" : validatePassword(password) ? "medium" : "strong";
+  const passwordRules = [
+    { met: password.length >= 8, hint: "Use at least 8 characters." },
+    { met: /[A-Z]/.test(password), hint: "Add an uppercase letter." },
+    { met: /\d/.test(password), hint: "Add a digit." },
+    { met: /[^A-Za-z0-9]/.test(password), hint: "Add a special character." },
+  ];
+  const firstUnmetPasswordRule = passwordRules.find((rule) => !rule.met);
+  const showPasswordStrength = mode === "signup" && (isPasswordFocused || password.length > 0);
 
   const selectMode = (nextMode: AuthMode) => {
     setMode(nextMode);
@@ -151,11 +158,12 @@ export default function AuthCard({ initialMode = "signin", apiBaseUrl, onSuccess
 
       <form onSubmit={handleSubmit} className="space-y-4">
         {mode === "signup" && (
-          <label className="block">
+          <label htmlFor="auth-name" className="block">
             <span className="mb-1.5 block text-sm font-medium text-zinc-300">Name</span>
             <div className="relative">
               <User className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-zinc-500" />
               <input
+                id="auth-name"
                 type="text"
                 value={name}
                 onChange={(event) => setName(event.target.value)}
@@ -168,11 +176,12 @@ export default function AuthCard({ initialMode = "signin", apiBaseUrl, onSuccess
           </label>
         )}
 
-        <label className="block">
+        <label htmlFor="auth-email" className="block">
           <span className="mb-1.5 block text-sm font-medium text-zinc-300">Email</span>
           <div className="relative">
             <Mail className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-zinc-500" />
             <input
+              id="auth-email"
               type="email"
               value={email}
               onChange={(event) => setEmail(event.target.value)}
@@ -184,17 +193,20 @@ export default function AuthCard({ initialMode = "signin", apiBaseUrl, onSuccess
           </div>
         </label>
 
-        <label className="block">
+        <label htmlFor="auth-password" className="block">
           <span className="mb-1.5 block text-sm font-medium text-zinc-300">Password</span>
           <div className="relative">
             <LockKeyhole className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-zinc-500" />
             <input
+              id="auth-password"
               type={showPassword ? "text" : "password"}
               value={password}
               onChange={(event) => {
                 setPassword(event.target.value);
                 setPasswordError("");
               }}
+              onFocus={() => setIsPasswordFocused(true)}
+              onBlur={() => setIsPasswordFocused(false)}
               autoComplete={mode === "signin" ? "current-password" : "new-password"}
               placeholder={mode === "signin" ? "Your password" : "8+ chars, 1 uppercase, 1 digit"}
               className="w-full rounded-xl border border-white/10 bg-black/45 py-3 pl-10 pr-12 text-white placeholder-zinc-600 outline-none transition-all focus:border-primary/60 focus:ring-2 focus:ring-primary/20"
@@ -209,25 +221,26 @@ export default function AuthCard({ initialMode = "signin", apiBaseUrl, onSuccess
               {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
             </button>
           </div>
-          {mode === "signup" && (
-            <div className="mt-2">
-              <div className="h-1.5 overflow-hidden rounded-full bg-white/10">
-                <div
-                  className={cn(
-                    "h-full rounded-full transition-all",
-                    passwordStrength === "weak" && "w-1/3 bg-rose-500",
-                    passwordStrength === "medium" && "w-2/3 bg-amber-400",
-                    passwordStrength === "strong" && "w-full bg-emerald-400"
-                  )}
-                />
+          {showPasswordStrength && (
+            <div className="mt-2 space-y-1.5">
+              <div className="grid grid-cols-4 gap-1.5">
+                {passwordRules.map((rule, index) => (
+                  <div
+                    key={index}
+                    className={cn("h-1.5 rounded-full transition-colors", rule.met ? "bg-emerald-400" : "bg-zinc-700")}
+                  />
+                ))}
               </div>
-              {passwordError && <p className="mt-1.5 text-sm text-rose-400">{passwordError}</p>}
+              {firstUnmetPasswordRule && (
+                <p className="text-xs text-zinc-400">{firstUnmetPasswordRule.hint}</p>
+              )}
+              {passwordError && <p className="mt-0.5 text-xs text-rose-400">{passwordError}</p>}
             </div>
           )}
         </label>
 
         {error && (
-          <div role="alert" className="flex gap-2 rounded-xl border border-rose-500/25 bg-rose-500/10 p-3 text-sm text-rose-200">
+          <div role="alert" aria-live="polite" className="flex gap-2 rounded-xl border border-rose-500/25 bg-rose-500/10 p-3 text-sm text-rose-200">
             <AlertCircle className="mt-0.5 size-4 shrink-0 text-rose-300" />
             <span>{error}</span>
           </div>
@@ -236,7 +249,7 @@ export default function AuthCard({ initialMode = "signin", apiBaseUrl, onSuccess
         <button
           type="submit"
           disabled={isLoading || !canSubmit}
-          className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 font-semibold text-bg shadow-lg shadow-primary/20 transition-colors hover:bg-cyan-300 disabled:cursor-not-allowed disabled:opacity-45"
+          className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 font-semibold text-bg shadow-lg shadow-primary/20 transition-colors hover:bg-primary disabled:cursor-not-allowed disabled:opacity-45"
         >
           {isLoading && <Loader2 className="size-5 animate-spin" />}
           {selectedCopy.cta}
@@ -246,14 +259,14 @@ export default function AuthCard({ initialMode = "signin", apiBaseUrl, onSuccess
       {mode === "signin" ? (
         <p className="mt-5 text-center text-sm text-zinc-500">
           Forgot your password?{" "}
-          <Link href="/forgot-password" className="font-medium text-primary transition-colors hover:text-cyan-200">
+          <Link href="/forgot-password" className="font-medium text-primary transition-colors hover:text-primary">
             Reset it
           </Link>
         </p>
       ) : (
         <p className="mt-5 text-center text-sm text-zinc-500">
           Already have an account?{" "}
-          <button type="button" onClick={() => selectMode("signin")} className="font-medium text-primary transition-colors hover:text-cyan-200">
+          <button type="button" onClick={() => selectMode("signin")} className="font-medium text-primary transition-colors hover:text-primary">
             Sign in
           </button>
         </p>

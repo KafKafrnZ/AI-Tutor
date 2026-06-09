@@ -171,7 +171,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
         <div className="relative z-10 flex-1 overflow-auto scrollbar-thin scrollbar-thumb-zinc-800 pb-16 md:pb-0">
           {authError && (
-            <div className="border-b border-rose-500/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
+            <div className="border-b border-accent-mock/20 bg-accent-mock/10 px-4 py-3 text-sm text-accent-mock">
               {authError}
             </div>
           )}
@@ -200,9 +200,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             </div>
 
             <div className="space-y-4">
-              <label className="block">
+              <label htmlFor="profile-name" className="block">
                 <span className="mb-1.5 block text-sm font-medium text-zinc-300">Name</span>
                 <input
+                  id="profile-name"
                   value={profileName}
                   onChange={(event) => setProfileName(event.target.value)}
                   className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-white outline-none transition-all focus:border-primary focus:ring-1 focus:ring-primary"
@@ -210,9 +211,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 />
               </label>
 
-              <label className="block">
+              <label htmlFor="profile-email" className="block">
                 <span className="mb-1.5 block text-sm font-medium text-zinc-300">Email</span>
                 <input
+                  id="profile-email"
                   value={userEmail || "Not loaded"}
                   disabled
                   className="w-full rounded-xl border border-zinc-800 bg-zinc-950/70 px-4 py-3 text-zinc-500 outline-none"
@@ -220,7 +222,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               </label>
             </div>
 
-            {profileError && <p className="mt-4 text-sm text-rose-400">{profileError}</p>}
+            {profileError && <p className="mt-4 text-sm text-accent-mock">{profileError}</p>}
 
             <div className="mt-6 flex justify-end gap-3">
               <button
@@ -233,7 +235,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               <button
                 type="submit"
                 disabled={isSavingProfile || !profileName.trim()}
-                className="flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-bg transition-colors hover:bg-cyan-300 disabled:opacity-50"
+                className="flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-bg transition-colors hover:bg-primary disabled:opacity-50"
               >
                 {isSavingProfile && <Loader2 className="size-4 animate-spin" />}
                 Save Changes

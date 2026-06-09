@@ -205,13 +205,13 @@ export default function ThreeDExplorer() {
         <div className="flex flex-col gap-6">
           {GRAPH_DATA.nodes.filter(n => n.type === 'root').map(rootNode => (
             <div key={rootNode.id} className="p-5 bg-zinc-900/50 border border-white/10 rounded-2xl shadow-lg">
-              <h3 className="text-violet-400 font-bold mb-4 text-lg">{rootNode.label}</h3>
+              <h3 className="text-accent font-bold mb-4 text-lg">{rootNode.label}</h3>
               <div className="flex flex-wrap gap-2">
                 {GRAPH_DATA.nodes.filter(n => n.type !== 'root').map(node => (
                   <button 
                     key={node.id} 
                     onClick={() => handleNodeClick(node)}
-                    className="px-3 py-1.5 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 text-sm font-semibold rounded-full border border-cyan-500/20 transition-colors"
+                    className="px-3 py-1.5 bg-primary/10 hover:bg-primary/20 text-primary text-sm font-semibold rounded-full border border-primary/20 transition-colors"
                   >
                     {node.label}
                   </button>

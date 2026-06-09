@@ -155,7 +155,7 @@ export default function Sidebar({
                 Profile Details
               </DropdownMenuItem>
               <DropdownMenuSeparator className="bg-white/5" />
-              <DropdownMenuItem onClick={onLogout} className="cursor-pointer rounded-xl py-3 text-rose-400 outline-none transition-colors hover:bg-rose-500/10 hover:text-rose-300">
+              <DropdownMenuItem onClick={onLogout} className="cursor-pointer rounded-xl py-3 text-accent-mock outline-none transition-colors hover:bg-accent-mock/10 hover:text-accent-mock">
                 <LogOut className="mr-3 size-4" />
                 Sign Out
               </DropdownMenuItem>
