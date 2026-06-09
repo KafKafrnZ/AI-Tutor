@@ -38,8 +38,10 @@ class AuthToken(Base):
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"))
     token = Column(String, unique=True, index=True)
-    token_type = Column(String) # Will store "verify_email" or "reset_password"
+    token_type = Column(String)  # "verify_email", "reset_password", or "refresh"
     expires_at = Column(DateTime)
+    refresh_token = Column(String(512), nullable=True, index=True)
+    refresh_expires_at = Column(DateTime, nullable=True)
 
     user = relationship("User", back_populates="auth_tokens")
 

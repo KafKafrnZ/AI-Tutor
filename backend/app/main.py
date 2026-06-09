@@ -38,7 +38,7 @@ from app.models.database import (
     get_questions_for_test, save_error_log,
     ErrorLog, AuthToken, User, MasterQuestion, Conversation, MockTestSession,
 )
-from app.core.auth import hash_password, verify_password, create_token, verify_token
+from app.core.auth import hash_password, verify_password, create_token, verify_token, create_refresh_token, verify_refresh_token
 from app.schemas.mock_test import MockTestCreate
 
 # Module Imports
@@ -160,26 +160,43 @@ app.add_middleware(
 
 def cookie_security_options() -> dict[str, Any]:
     is_prod = settings.ENVIRONMENT.lower() == "production"
+    # SameSite=Lax required — frontend (Vercel) and backend (Railway) are on different domains.
     return {
         "secure": is_prod,
-        "samesite": "strict" if is_prod else "lax",
+        "samesite": "lax",
     }
 
 
 @app.middleware("http")
 async def log_requests_and_add_headers(request: Request, call_next):
     start_time = time.time()
-    
+
     response = await call_next(request)
-    
+
     duration = time.time() - start_time
     logger.info(f"{request.method} {request.url.path} → {response.status_code} ({duration:.2f}s)")
-    
+
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["X-Frame-Options"] = "DENY"
     response.headers["X-XSS-Protection"] = "1; mode=block"
-    
+
     return response
+
+# Registered after log_requests so it is outermost (runs first for every request).
+@app.middleware("http")
+async def csrf_protection(request: Request, call_next):
+    SAFE_METHODS = {"GET", "HEAD", "OPTIONS"}
+    if request.method not in SAFE_METHODS:
+        origin = request.headers.get("origin", "")
+        referer = request.headers.get("referer", "")
+        source = origin or referer
+        if source and not any(source.startswith(o) for o in settings.ALLOWED_ORIGINS):
+            return JSONResponse(
+                status_code=403,
+                content={"error": {"code": "CSRF_REJECTED",
+                                   "message": "Cross-site request rejected."}}
+            )
+    return await call_next(request)
 
 # Security Dependency
 def get_current_user(access_token: str = Cookie(None), db: Session = Depends(get_db)):
@@ -337,11 +354,24 @@ def signup(request: Request, data: SignupRequest, db: Session = Depends(get_db))
 def login(request: Request, data: LoginRequest, db: Session = Depends(get_db)):
     user = get_user_by_email(db, data.email)
     if not user or not verify_password(data.password, user.password_hash):
-        raise HTTPException(401, "Invalid credentials")
+        raise HTTPException(401, detail={"code": "INVALID_CREDENTIALS", "message": "Invalid credentials."})
     if settings.REQUIRE_EMAIL_VERIFICATION and not user.is_verified:
         raise HTTPException(status_code=403, detail="Please verify your email before logging in. Check your inbox.")
 
     token = create_token({"sub": user.email})
+    raw_refresh, hashed_refresh = create_refresh_token()
+    refresh_exp = datetime.now(timezone.utc) + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
+
+    auth_token_record = AuthToken(
+        user_id=user.id,
+        token=secrets.token_urlsafe(32),  # unique placeholder — refresh_token column holds the real secret
+        token_type="refresh",
+        expires_at=refresh_exp,
+        refresh_token=hashed_refresh,
+        refresh_expires_at=refresh_exp,
+    )
+    db.add(auth_token_record)
+    db.commit()
 
     response = JSONResponse(content={"message": "Login successful", "name": user.name})
     response.set_cookie(
@@ -349,7 +379,16 @@ def login(request: Request, data: LoginRequest, db: Session = Depends(get_db)):
         value=token,
         httponly=True,
         **cookie_security_options(),
-        max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60  # keep in sync with config
+        max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+    )
+    response.set_cookie(
+        key="refresh_token",
+        value=raw_refresh,
+        httponly=True,
+        secure=cookie_security_options()["secure"],
+        samesite=cookie_security_options()["samesite"],
+        max_age=settings.REFRESH_TOKEN_EXPIRE_DAYS * 86400,
+        path="/auth",
     )
     return response
 
@@ -421,14 +460,68 @@ def verify_email(token: str, db: Session = Depends(get_db)):
     return {"message": "Email successfully verified"}
 
 @app.post("/logout")
-def logout(current_user: Any = Depends(get_current_user)):
+def logout(current_user: Any = Depends(get_current_user), db: Session = Depends(get_db)):
+    db.query(AuthToken).filter(
+        AuthToken.user_id == current_user.id,
+        AuthToken.token_type == "refresh",
+    ).update({"refresh_token": None, "refresh_expires_at": None})
+    db.commit()
     response = JSONResponse(content={"message": "Logged out successfully"})
-    response.delete_cookie(
-        key="access_token",
-        httponly=True,
-        **cookie_security_options(),
-    )
+    response.delete_cookie(key="access_token", httponly=True, **cookie_security_options())
+    response.delete_cookie(key="refresh_token", path="/auth")
     return response
+
+@app.post("/auth/refresh")
+async def refresh_access_token(
+    refresh_token: str = Cookie(default=None),
+    db: Session = Depends(get_db),
+):
+    if not refresh_token:
+        raise HTTPException(401, detail={"code": "TOKEN_MISSING", "message": "No refresh token."})
+    records = db.query(AuthToken).filter(
+        AuthToken.token_type == "refresh",
+        AuthToken.refresh_expires_at > datetime.now(timezone.utc),
+    ).all()
+    matched = next(
+        (r for r in records if verify_refresh_token(refresh_token, r.refresh_token or "")),
+        None,
+    )
+    if not matched:
+        raise HTTPException(401, detail={"code": "TOKEN_INVALID", "message": "Refresh token invalid or expired."})
+
+    raw_refresh, hashed_refresh = create_refresh_token()
+    matched.refresh_token = hashed_refresh
+    matched.refresh_expires_at = datetime.now(timezone.utc) + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
+    db.commit()
+
+    new_access = create_token({"sub": matched.user.email})
+    resp = JSONResponse({"message": "Token refreshed"})
+    resp.set_cookie(
+        key="access_token", value=new_access,
+        httponly=True, **cookie_security_options(),
+        max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+    )
+    resp.set_cookie(
+        key="refresh_token", value=raw_refresh,
+        httponly=True,
+        secure=cookie_security_options()["secure"],
+        samesite=cookie_security_options()["samesite"],
+        max_age=settings.REFRESH_TOKEN_EXPIRE_DAYS * 86400,
+        path="/auth",
+    )
+    return resp
+
+@app.post("/auth/logout")
+def auth_logout(current_user: Any = Depends(get_current_user), db: Session = Depends(get_db)):
+    db.query(AuthToken).filter(
+        AuthToken.user_id == current_user.id,
+        AuthToken.token_type == "refresh",
+    ).update({"refresh_token": None, "refresh_expires_at": None})
+    db.commit()
+    resp = JSONResponse({"message": "Logged out"})
+    resp.delete_cookie(key="access_token", httponly=True, **cookie_security_options())
+    resp.delete_cookie(key="refresh_token", path="/auth")
+    return resp
 
 @app.get("/me")
 def get_profile(current_user: Any = Depends(get_current_user)):

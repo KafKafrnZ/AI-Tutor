@@ -1,4 +1,5 @@
 import os
+import json as _json
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -48,7 +49,11 @@ class Settings:
     if not DATABASE_URL:
         raise ValueError("CRITICAL: DATABASE_URL environment variable is missing.")
     
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 240  # 4 hours (quick UX improvement per system_flaws_fix_guide FIX-9 Option A; full refresh tokens planned before scale)
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "60"))
+    REFRESH_TOKEN_EXPIRE_DAYS: int = int(os.getenv("REFRESH_TOKEN_EXPIRE_DAYS", "30"))
+    ALLOWED_ORIGINS: list = _json.loads(
+        os.getenv("ALLOWED_ORIGINS", '["http://localhost:3000", "http://localhost:3001"]')
+    )
     ENVIRONMENT: str = os.getenv(
         "ENVIRONMENT",
         "production" if os.getenv("RAILWAY_ENVIRONMENT") else "development",
