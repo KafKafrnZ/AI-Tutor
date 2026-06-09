@@ -51,7 +51,7 @@ logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
 )
-logger = logging.getLogger("ibps_so")
+logger = logging.getLogger("ascend_ai")
 
 _cache: dict = {}
 CACHE_TTL = 300

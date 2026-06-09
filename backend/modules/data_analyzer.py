@@ -83,12 +83,12 @@ async def get_ai_revision_plan(db: Session, user_id: int) -> dict:
     for i, err in enumerate(errors, 1):
         error_context += f"\nMistake {i}:\nQuestion: {err.question_text}\nUser Answer: {err.user_answer}\nCorrect Answer: {err.correct_answer}\n"
 
-    system_prompt = f"""You are an elite IBPS SO exam strategist. Analyze the student's recent mistakes and identify their deep conceptual weaknesses.
+    system_prompt = f"""You are an expert strategist for Indian government competitive exams (UPSC, SSC CGL, IBPS PO/SO/Clerk, RRB NTPC, State PSC, SBI PO, RBI Grade B, SEBI, NABARD, and all other central/state recruitment exams). Analyze the student's recent mistakes and identify their deep conceptual weaknesses.
 
 Student's Recent Mistakes:
 {error_context}
 
-Your task is to identify the precise micro-topics they are failing at. Do not just say "Reasoning" or "Quant". Be specific (e.g., "Syllogism - Possibility Cases", "Time & Work - Efficiency Concepts").
+Your task is to identify the precise micro-topics they are failing at. Do not just say "Reasoning" or "Quant". Be specific (e.g., "Syllogism - Possibility Cases", "Time & Work - Efficiency Concepts", "Indian Polity - Fundamental Rights exceptions", "Computer Networks - OSI Layer functions").
 
 Output MUST be a pure JSON object. Do not include markdown formatting like ```json.
 Exact schema:
