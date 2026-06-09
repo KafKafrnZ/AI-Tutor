@@ -1,3 +1,4 @@
+import os
 from datetime import datetime, timezone, date as date_type
 from sqlalchemy import create_engine, Column, Integer, String, Date, ForeignKey, Float, Boolean, DateTime
 from sqlalchemy.orm import declarative_base, sessionmaker, Session, relationship
@@ -8,8 +9,13 @@ logger = logging.getLogger(__name__)
 
 # Pool kwargs only valid for PostgreSQL/MySQL — SQLite (used in tests) rejects them
 _pg_pool_kwargs = (
-    {"pool_size": 10, "max_overflow": 20, "pool_timeout": 30,
-     "pool_recycle": 1800, "pool_pre_ping": True}
+    {
+        "pool_size": int(os.getenv("DB_POOL_SIZE", "5")),
+        "max_overflow": int(os.getenv("DB_MAX_OVERFLOW", "10")),
+        "pool_timeout": 30,
+        "pool_recycle": 1800,   # recycle connections older than 30 min
+        "pool_pre_ping": True,  # drop stale connections before using (critical on Railway)
+    }
     if not settings.DATABASE_URL.startswith("sqlite")
     else {}
 )
@@ -38,8 +44,10 @@ class AuthToken(Base):
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"))
     token = Column(String, unique=True, index=True)
-    token_type = Column(String) # Will store "verify_email" or "reset_password"
+    token_type = Column(String)  # "verify_email", "reset_password", or "refresh"
     expires_at = Column(DateTime)
+    refresh_token = Column(String(512), nullable=True, index=True)
+    refresh_expires_at = Column(DateTime, nullable=True)
 
     user = relationship("User", back_populates="auth_tokens")
 
@@ -67,23 +75,23 @@ class MasterQuestion(Base):
     test_id = Column(Integer, index=True)
     section = Column(String) # Reasoning, Quant, English, IT
     topic = Column(String) # Sub-topic
-    question_text = Column(String, nullable=False)
-    option_a = Column(String)
-    option_b = Column(String)
-    option_c = Column(String)
-    option_d = Column(String)
-    correct_answer = Column(String)
-    explanation = Column(String)
+    question_text = Column(String(2000), nullable=False)
+    option_a = Column(String(500))
+    option_b = Column(String(500))
+    option_c = Column(String(500))
+    option_d = Column(String(500))
+    correct_answer = Column(String(10))
+    explanation = Column(String(4000))
 
 class ErrorLog(Base):
     __tablename__ = "error_logs"
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"))
-    question_text = Column(String)
-    user_answer = Column(String)
-    correct_answer = Column(String)
-    explanation = Column(String)
+    question_text = Column(String(2000))
+    user_answer = Column(String(500))
+    correct_answer = Column(String(500))
+    explanation = Column(String(2000))
     date_added = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
 class Conversation(Base):
@@ -104,7 +112,7 @@ class MockTestSession(Base):
     id = Column(String(64), primary_key=True)  # URL-safe token, one per test attempt
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     test_id = Column(Integer, nullable=False)
-    expires_at = Column(DateTime, nullable=False)
+    expires_at = Column(DateTime, nullable=False, index=True)
 
 
 def get_db():

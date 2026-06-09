@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import Link from "next/link";
 import { FileText, Clock, ChevronRight, Brain, Target, BookOpen, Loader2, AlertTriangle, type LucideIcon } from "lucide-react";
 import { MouseEvent } from "react";
-import { API_URL } from "@/lib/api";
+import { API_URL, fetchWithRefresh } from "@/lib/api";
 import { fallbackMockTests } from "@/lib/mockFallback";
 import { PageShell } from "@/components/layout/PageShell";
 import { PageHeader } from "@/components/layout/PageHeader";
@@ -22,9 +22,9 @@ interface MockTest {
 }
 
 const difficultyStyles: Record<string, string> = {
-  Hard: "text-rose-400 border-rose-500/20 bg-rose-500/5",
-  Medium: "text-amber-400 border-amber-500/20 bg-amber-500/5",
-  Easy: "text-emerald-400 border-emerald-500/20 bg-emerald-500/5",
+  Hard: "text-accent-mock border-accent-mock/20 bg-accent-mock/5",
+  Medium: "text-accent-practice border-accent-practice/20 bg-accent-practice/5",
+  Easy: "text-accent-progress border-accent-progress/20 bg-accent-progress/5",
 };
 
 const icons: Record<number, LucideIcon> = {
@@ -46,7 +46,7 @@ export default function MockTestsPage() {
   useEffect(() => {
     async function load() {
       try {
-        const res = await fetch(`${API_URL}/mock-tests`, { credentials: "include" });
+        const res = await fetchWithRefresh(`${API_URL}/mock-tests`, { method: "GET" });
         if (!res.ok) {
           throw new Error(`Mock test list returned ${res.status}`);
         }
@@ -56,14 +56,22 @@ export default function MockTestsPage() {
         if (nextTests.length > 0) {
           setTests(nextTests);
           setLoadNotice("");
-        } else {
+        } else if (process.env.NODE_ENV !== "production") {
           setTests(fallbackMockTests);
           setLoadNotice("Showing generated starter mocks because no seeded tests are available yet.");
+        } else {
+          setTests([]);
+          setLoadNotice("No mock tests available yet. Check back soon.");
         }
       } catch (e) {
         console.error("Failed to load mock tests list", e);
-        setTests(fallbackMockTests);
-        setLoadNotice("Backend mock catalog is unavailable, so local starter mocks are shown.");
+        if (process.env.NODE_ENV !== "production") {
+          setTests(fallbackMockTests);
+          setLoadNotice("Backend mock catalog is unavailable, so local starter mocks are shown.");
+        } else {
+          setTests([]);
+          setLoadNotice("No mock tests available yet. Check back soon.");
+        }
       } finally {
         setLoading(false);
       }
@@ -89,7 +97,7 @@ export default function MockTestsPage() {
         />
 
         {loadNotice && (
-          <div className="mb-6 flex items-start gap-3 rounded-2xl border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
+          <div className="mb-6 flex items-start gap-3 rounded-2xl border border-accent-practice/20 bg-accent-practice/10 px-4 py-3 text-sm text-accent-practice">
             <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
             <span>{loadNotice}</span>
           </div>
@@ -118,7 +126,7 @@ export default function MockTestsPage() {
                   <div className="flex items-center gap-4 text-zinc-500 text-sm mb-8 font-medium">
                     <div className="flex items-center gap-1.5"><Clock className="w-4 h-4" /> {dur}</div>
                     <div className="flex items-center gap-1.5"><BookOpen className="w-4 h-4" /> {qstr}</div>
-                    {test.is_fallback && <span className="text-amber-300">Generated</span>}
+                    {test.is_fallback && <span className="text-accent-practice">Generated</span>}
                   </div>
                   <Link href={`/mock-tests/${test.id}`} className="block w-full">
                     <button className="w-full py-4 rounded-xl bg-zinc-950 border border-white/5 text-zinc-300 font-semibold hover:bg-white hover:text-black hover:border-transparent transition-all flex items-center justify-center gap-2 group-hover:shadow-[0_0_20px_rgba(255,255,255,0.1)]">

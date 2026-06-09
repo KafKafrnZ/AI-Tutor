@@ -1,164 +1,1602 @@
 [
   {
-    "question": "Which of the following topologies provides the highest reliability?",
-    "correct_answer": "Mesh Topology",
-    "subject": "IT Officer - Networking",
-    "year": 2023
+    "id": 1,
+    "question": "Which Article of the Indian Constitution deals with the Election Commission? (Variation 1)",
+    "answer": "Article 324 provides for the Election Commission.",
+    "exam": "UPSC",
+    "subject": "Polity",
+    "year": 2020
   },
   {
-    "question": "What is the full form of IBPS?",
-    "correct_answer": "Institute of Banking Personnel Selection",
-    "subject": "General Awareness",
-    "year": 2023
-  },
-  {
-    "question": "In a relational database, what is the primary key used for?",
-    "correct_answer": "To uniquely identify each record in a table",
-    "subject": "IT Officer - DBMS",
-    "year": 2022
-  },
-  {
-    "question": "Which of the following is NOT a valid IPv4 address?",
-    "correct_answer": "192.168.1.256",
-    "subject": "IT Officer - Networking",
-    "year": 2023
-  },
-  {
-    "question": "The process of converting a private IP to a public IP is called?",
-    "correct_answer": "NAT (Network Address Translation)",
-    "subject": "IT Officer - Networking",
-    "year": 2022
-  },
-  {
-    "question": "In banking, NPA stands for?",
-    "correct_answer": "Non Performing Asset",
-    "subject": "General Awareness / Banking",
-    "year": 2023
-  },
-  {
-    "question": "Which SQL command is used to remove a table and all its data permanently?",
-    "correct_answer": "DROP TABLE",
-    "subject": "IT Officer - DBMS",
+    "id": 2,
+    "question": "Which Article of the Indian Constitution deals with the Election Commission? (Variation 2)",
+    "answer": "Article 324 provides for the Election Commission.",
+    "exam": "UPSC",
+    "subject": "Polity",
     "year": 2021
   },
   {
-    "question": "The 'S' in CRUD operations stands for?",
-    "correct_answer": "Select / Read",
-    "subject": "IT Officer - DBMS",
+    "id": 3,
+    "question": "Which Article of the Indian Constitution deals with the Election Commission? (Variation 3)",
+    "answer": "Article 324 provides for the Election Commission.",
+    "exam": "UPSC",
+    "subject": "Polity",
     "year": 2022
   },
   {
-    "question": "Which of the following is a correct example of a strong password policy?",
-    "correct_answer": "Minimum 8 characters with at least one uppercase, one lowercase, one digit and one special character",
-    "subject": "IT Officer - Security / OS",
+    "id": 4,
+    "question": "Which Article of the Indian Constitution deals with the Election Commission? (Variation 4)",
+    "answer": "Article 324 provides for the Election Commission.",
+    "exam": "UPSC",
+    "subject": "Polity",
     "year": 2023
   },
   {
-    "question": "What does RBI stand for?",
-    "correct_answer": "Reserve Bank of India",
-    "subject": "General Awareness",
-    "year": 2023
+    "id": 5,
+    "question": "Which Article of the Indian Constitution deals with the Election Commission? (Variation 5)",
+    "answer": "Article 324 provides for the Election Commission.",
+    "exam": "UPSC",
+    "subject": "Polity",
+    "year": 2020
   },
   {
-    "question": "What is the minimum percentage of priority sector lending target for banks in India?",
-    "correct_answer": "40%",
-    "subject": "General Awareness / Banking",
-    "year": 2023
+    "id": 6,
+    "question": "Which Article of the Indian Constitution deals with the Election Commission? (Variation 6)",
+    "answer": "Article 324 provides for the Election Commission.",
+    "exam": "UPSC",
+    "subject": "Polity",
+    "year": 2021
   },
   {
-    "question": "Which OSI layer is responsible for end-to-end delivery and error recovery?",
-    "correct_answer": "Transport Layer",
-    "subject": "IT Officer - Networking",
+    "id": 7,
+    "question": "Which Article of the Indian Constitution deals with the Election Commission? (Variation 7)",
+    "answer": "Article 324 provides for the Election Commission.",
+    "exam": "UPSC",
+    "subject": "Polity",
     "year": 2022
   },
   {
-    "question": "In a syllogism: All A are B. Some B are C. Which conclusion necessarily follows?",
-    "correct_answer": "Some A may be C",
+    "id": 8,
+    "question": "Which Article of the Indian Constitution deals with the Election Commission? (Variation 8)",
+    "answer": "Article 324 provides for the Election Commission.",
+    "exam": "UPSC",
+    "subject": "Polity",
+    "year": 2023
+  },
+  {
+    "id": 9,
+    "question": "Which Article of the Indian Constitution deals with the Election Commission? (Variation 9)",
+    "answer": "Article 324 provides for the Election Commission.",
+    "exam": "UPSC",
+    "subject": "Polity",
+    "year": 2020
+  },
+  {
+    "id": 10,
+    "question": "Which Article of the Indian Constitution deals with the Election Commission? (Variation 10)",
+    "answer": "Article 324 provides for the Election Commission.",
+    "exam": "UPSC",
+    "subject": "Polity",
+    "year": 2021
+  },
+  {
+    "id": 11,
+    "question": "Who was the founder of the Indian National Congress? (Variation 1)",
+    "answer": "Allan Octavian Hume founded the INC in 1885.",
+    "exam": "UPSC",
+    "subject": "History",
+    "year": 2019
+  },
+  {
+    "id": 12,
+    "question": "Who was the founder of the Indian National Congress? (Variation 2)",
+    "answer": "Allan Octavian Hume founded the INC in 1885.",
+    "exam": "UPSC",
+    "subject": "History",
+    "year": 2020
+  },
+  {
+    "id": 13,
+    "question": "Who was the founder of the Indian National Congress? (Variation 3)",
+    "answer": "Allan Octavian Hume founded the INC in 1885.",
+    "exam": "UPSC",
+    "subject": "History",
+    "year": 2021
+  },
+  {
+    "id": 14,
+    "question": "Who was the founder of the Indian National Congress? (Variation 4)",
+    "answer": "Allan Octavian Hume founded the INC in 1885.",
+    "exam": "UPSC",
+    "subject": "History",
+    "year": 2022
+  },
+  {
+    "id": 15,
+    "question": "Who was the founder of the Indian National Congress? (Variation 5)",
+    "answer": "Allan Octavian Hume founded the INC in 1885.",
+    "exam": "UPSC",
+    "subject": "History",
+    "year": 2023
+  },
+  {
+    "id": 16,
+    "question": "Who was the founder of the Indian National Congress? (Variation 6)",
+    "answer": "Allan Octavian Hume founded the INC in 1885.",
+    "exam": "UPSC",
+    "subject": "History",
+    "year": 2019
+  },
+  {
+    "id": 17,
+    "question": "Who was the founder of the Indian National Congress? (Variation 7)",
+    "answer": "Allan Octavian Hume founded the INC in 1885.",
+    "exam": "UPSC",
+    "subject": "History",
+    "year": 2020
+  },
+  {
+    "id": 18,
+    "question": "Who was the founder of the Indian National Congress? (Variation 8)",
+    "answer": "Allan Octavian Hume founded the INC in 1885.",
+    "exam": "UPSC",
+    "subject": "History",
+    "year": 2021
+  },
+  {
+    "id": 19,
+    "question": "Who was the founder of the Indian National Congress? (Variation 9)",
+    "answer": "Allan Octavian Hume founded the INC in 1885.",
+    "exam": "UPSC",
+    "subject": "History",
+    "year": 2022
+  },
+  {
+    "id": 20,
+    "question": "Who was the founder of the Indian National Congress? (Variation 10)",
+    "answer": "Allan Octavian Hume founded the INC in 1885.",
+    "exam": "UPSC",
+    "subject": "History",
+    "year": 2023
+  },
+  {
+    "id": 21,
+    "question": "Which river is known as the Sorrow of Bengal? (Variation 1)",
+    "answer": "Damodar River is often called the Sorrow of Bengal due to its floods.",
+    "exam": "UPSC",
+    "subject": "Geography",
+    "year": 2021
+  },
+  {
+    "id": 22,
+    "question": "Which river is known as the Sorrow of Bengal? (Variation 2)",
+    "answer": "Damodar River is often called the Sorrow of Bengal due to its floods.",
+    "exam": "UPSC",
+    "subject": "Geography",
+    "year": 2022
+  },
+  {
+    "id": 23,
+    "question": "Which river is known as the Sorrow of Bengal? (Variation 3)",
+    "answer": "Damodar River is often called the Sorrow of Bengal due to its floods.",
+    "exam": "UPSC",
+    "subject": "Geography",
+    "year": 2023
+  },
+  {
+    "id": 24,
+    "question": "Which river is known as the Sorrow of Bengal? (Variation 4)",
+    "answer": "Damodar River is often called the Sorrow of Bengal due to its floods.",
+    "exam": "UPSC",
+    "subject": "Geography",
+    "year": 2021
+  },
+  {
+    "id": 25,
+    "question": "Which river is known as the Sorrow of Bengal? (Variation 5)",
+    "answer": "Damodar River is often called the Sorrow of Bengal due to its floods.",
+    "exam": "UPSC",
+    "subject": "Geography",
+    "year": 2022
+  },
+  {
+    "id": 26,
+    "question": "Which river is known as the Sorrow of Bengal? (Variation 6)",
+    "answer": "Damodar River is often called the Sorrow of Bengal due to its floods.",
+    "exam": "UPSC",
+    "subject": "Geography",
+    "year": 2023
+  },
+  {
+    "id": 27,
+    "question": "Which river is known as the Sorrow of Bengal? (Variation 7)",
+    "answer": "Damodar River is often called the Sorrow of Bengal due to its floods.",
+    "exam": "UPSC",
+    "subject": "Geography",
+    "year": 2021
+  },
+  {
+    "id": 28,
+    "question": "Which river is known as the Sorrow of Bengal? (Variation 8)",
+    "answer": "Damodar River is often called the Sorrow of Bengal due to its floods.",
+    "exam": "UPSC",
+    "subject": "Geography",
+    "year": 2022
+  },
+  {
+    "id": 29,
+    "question": "Which river is known as the Sorrow of Bengal? (Variation 9)",
+    "answer": "Damodar River is often called the Sorrow of Bengal due to its floods.",
+    "exam": "UPSC",
+    "subject": "Geography",
+    "year": 2023
+  },
+  {
+    "id": 30,
+    "question": "Which river is known as the Sorrow of Bengal? (Variation 10)",
+    "answer": "Damodar River is often called the Sorrow of Bengal due to its floods.",
+    "exam": "UPSC",
+    "subject": "Geography",
+    "year": 2021
+  },
+  {
+    "id": 31,
+    "question": "What does the term 'Repo Rate' mean? (Variation 1)",
+    "answer": "The rate at which the RBI lends money to commercial banks.",
+    "exam": "UPSC",
+    "subject": "Economics",
+    "year": 2022
+  },
+  {
+    "id": 32,
+    "question": "What does the term 'Repo Rate' mean? (Variation 2)",
+    "answer": "The rate at which the RBI lends money to commercial banks.",
+    "exam": "UPSC",
+    "subject": "Economics",
+    "year": 2022
+  },
+  {
+    "id": 33,
+    "question": "What does the term 'Repo Rate' mean? (Variation 3)",
+    "answer": "The rate at which the RBI lends money to commercial banks.",
+    "exam": "UPSC",
+    "subject": "Economics",
+    "year": 2022
+  },
+  {
+    "id": 34,
+    "question": "What does the term 'Repo Rate' mean? (Variation 4)",
+    "answer": "The rate at which the RBI lends money to commercial banks.",
+    "exam": "UPSC",
+    "subject": "Economics",
+    "year": 2022
+  },
+  {
+    "id": 35,
+    "question": "What does the term 'Repo Rate' mean? (Variation 5)",
+    "answer": "The rate at which the RBI lends money to commercial banks.",
+    "exam": "UPSC",
+    "subject": "Economics",
+    "year": 2022
+  },
+  {
+    "id": 36,
+    "question": "What does the term 'Repo Rate' mean? (Variation 6)",
+    "answer": "The rate at which the RBI lends money to commercial banks.",
+    "exam": "UPSC",
+    "subject": "Economics",
+    "year": 2022
+  },
+  {
+    "id": 37,
+    "question": "What does the term 'Repo Rate' mean? (Variation 7)",
+    "answer": "The rate at which the RBI lends money to commercial banks.",
+    "exam": "UPSC",
+    "subject": "Economics",
+    "year": 2022
+  },
+  {
+    "id": 38,
+    "question": "What does the term 'Repo Rate' mean? (Variation 8)",
+    "answer": "The rate at which the RBI lends money to commercial banks.",
+    "exam": "UPSC",
+    "subject": "Economics",
+    "year": 2022
+  },
+  {
+    "id": 39,
+    "question": "What does the term 'Repo Rate' mean? (Variation 9)",
+    "answer": "The rate at which the RBI lends money to commercial banks.",
+    "exam": "UPSC",
+    "subject": "Economics",
+    "year": 2022
+  },
+  {
+    "id": 40,
+    "question": "What does the term 'Repo Rate' mean? (Variation 10)",
+    "answer": "The rate at which the RBI lends money to commercial banks.",
+    "exam": "UPSC",
+    "subject": "Economics",
+    "year": 2022
+  },
+  {
+    "id": 41,
+    "question": "What is the SI unit of electric current? (Variation 1)",
+    "answer": "Ampere is the SI unit of electric current.",
+    "exam": "UPSC",
+    "subject": "Science",
+    "year": 2023
+  },
+  {
+    "id": 42,
+    "question": "What is the SI unit of electric current? (Variation 2)",
+    "answer": "Ampere is the SI unit of electric current.",
+    "exam": "UPSC",
+    "subject": "Science",
+    "year": 2023
+  },
+  {
+    "id": 43,
+    "question": "What is the SI unit of electric current? (Variation 3)",
+    "answer": "Ampere is the SI unit of electric current.",
+    "exam": "UPSC",
+    "subject": "Science",
+    "year": 2023
+  },
+  {
+    "id": 44,
+    "question": "What is the SI unit of electric current? (Variation 4)",
+    "answer": "Ampere is the SI unit of electric current.",
+    "exam": "UPSC",
+    "subject": "Science",
+    "year": 2023
+  },
+  {
+    "id": 45,
+    "question": "What is the SI unit of electric current? (Variation 5)",
+    "answer": "Ampere is the SI unit of electric current.",
+    "exam": "UPSC",
+    "subject": "Science",
+    "year": 2023
+  },
+  {
+    "id": 46,
+    "question": "What is the SI unit of electric current? (Variation 6)",
+    "answer": "Ampere is the SI unit of electric current.",
+    "exam": "UPSC",
+    "subject": "Science",
+    "year": 2023
+  },
+  {
+    "id": 47,
+    "question": "What is the SI unit of electric current? (Variation 7)",
+    "answer": "Ampere is the SI unit of electric current.",
+    "exam": "UPSC",
+    "subject": "Science",
+    "year": 2023
+  },
+  {
+    "id": 48,
+    "question": "What is the SI unit of electric current? (Variation 8)",
+    "answer": "Ampere is the SI unit of electric current.",
+    "exam": "UPSC",
+    "subject": "Science",
+    "year": 2023
+  },
+  {
+    "id": 49,
+    "question": "What is the SI unit of electric current? (Variation 9)",
+    "answer": "Ampere is the SI unit of electric current.",
+    "exam": "UPSC",
+    "subject": "Science",
+    "year": 2023
+  },
+  {
+    "id": 50,
+    "question": "What is the SI unit of electric current? (Variation 10)",
+    "answer": "Ampere is the SI unit of electric current.",
+    "exam": "UPSC",
+    "subject": "Science",
+    "year": 2023
+  },
+  {
+    "id": 51,
+    "question": "If A=1, B=2, what is the value of CAT? (Variation 1)",
+    "answer": "C=3, A=1, T=20. Sum = 24.",
+    "exam": "SSC CGL",
+    "subject": "Reasoning",
+    "year": 2021
+  },
+  {
+    "id": 52,
+    "question": "If A=1, B=2, what is the value of CAT? (Variation 2)",
+    "answer": "C=3, A=1, T=20. Sum = 24.",
+    "exam": "SSC CGL",
+    "subject": "Reasoning",
+    "year": 2022
+  },
+  {
+    "id": 53,
+    "question": "If A=1, B=2, what is the value of CAT? (Variation 3)",
+    "answer": "C=3, A=1, T=20. Sum = 24.",
+    "exam": "SSC CGL",
     "subject": "Reasoning",
     "year": 2023
   },
   {
-    "question": "What does SLR stand for in banking?",
-    "correct_answer": "Statutory Liquidity Ratio",
-    "subject": "General Awareness / Banking",
+    "id": 54,
+    "question": "If A=1, B=2, what is the value of CAT? (Variation 4)",
+    "answer": "C=3, A=1, T=20. Sum = 24.",
+    "exam": "SSC CGL",
+    "subject": "Reasoning",
     "year": 2024
   },
   {
-    "question": "Which normal form removes transitive dependency?",
-    "correct_answer": "3NF (Third Normal Form)",
-    "subject": "IT Officer - DBMS",
-    "year": 2022
-  },
-  {
-    "question": "A sum of Rs. 1000 becomes Rs. 1331 in 3 years at compound interest. The rate is?",
-    "correct_answer": "10%",
-    "subject": "Quantitative Aptitude",
-    "year": 2023
-  },
-  {
-    "question": "Which of the following is NOT a valid class of IPv4 address?",
-    "correct_answer": "Class E (240-255) for experimental use only",
-    "subject": "IT Officer - Networking",
+    "id": 55,
+    "question": "If A=1, B=2, what is the value of CAT? (Variation 5)",
+    "answer": "C=3, A=1, T=20. Sum = 24.",
+    "exam": "SSC CGL",
+    "subject": "Reasoning",
     "year": 2021
   },
   {
-    "question": "What is the current CRR (Cash Reserve Ratio) requirement as per recent RBI policy (typical question value)?",
-    "correct_answer": "4.5%",
-    "subject": "General Awareness / Banking",
-    "year": 2023
-  },
-  {
-    "question": "In reasoning, if A is brother of B, B is sister of C, how is A related to C?",
-    "correct_answer": "Cannot be determined",
+    "id": 56,
+    "question": "If A=1, B=2, what is the value of CAT? (Variation 6)",
+    "answer": "C=3, A=1, T=20. Sum = 24.",
+    "exam": "SSC CGL",
     "subject": "Reasoning",
     "year": 2022
   },
   {
-    "question": "Which protocol is used for secure file transfer over SSH?",
-    "correct_answer": "SFTP (SSH File Transfer Protocol)",
-    "subject": "IT Officer - Networking / Security",
+    "id": 57,
+    "question": "If A=1, B=2, what is the value of CAT? (Variation 7)",
+    "answer": "C=3, A=1, T=20. Sum = 24.",
+    "exam": "SSC CGL",
+    "subject": "Reasoning",
     "year": 2023
   },
   {
-    "question": "What does Basel III primarily focus on for banks?",
-    "correct_answer": "Capital adequacy, liquidity and leverage ratios",
-    "subject": "General Awareness / Banking",
+    "id": 58,
+    "question": "If A=1, B=2, what is the value of CAT? (Variation 8)",
+    "answer": "C=3, A=1, T=20. Sum = 24.",
+    "exam": "SSC CGL",
+    "subject": "Reasoning",
     "year": 2024
   },
   {
-    "question": "The time taken for a sum to double itself at 8% simple interest is?",
-    "correct_answer": "12.5 years",
-    "subject": "Quantitative Aptitude",
-    "year": 2022
-  },
-  {
-    "question": "Which of the following is a characteristic of a firewall?",
-    "correct_answer": "Filters network traffic based on predefined rules",
-    "subject": "IT Officer - Security",
-    "year": 2023
-  },
-  {
-    "question": "In DBMS, which command is used to remove all records from a table but keep the structure?",
-    "correct_answer": "TRUNCATE TABLE",
-    "subject": "IT Officer - DBMS",
+    "id": 59,
+    "question": "If A=1, B=2, what is the value of CAT? (Variation 9)",
+    "answer": "C=3, A=1, T=20. Sum = 24.",
+    "exam": "SSC CGL",
+    "subject": "Reasoning",
     "year": 2021
   },
   {
-    "question": "What is the full form of UPI in Indian banking payments?",
-    "correct_answer": "Unified Payments Interface",
-    "subject": "General Awareness / Banking",
-    "year": 2023
-  },
-  {
-    "question": "Which of the following best describes a 'Deadlock' in operating systems?",
-    "correct_answer": "A situation where processes wait indefinitely for resources held by each other",
-    "subject": "IT Officer - OS / Security",
+    "id": 60,
+    "question": "If A=1, B=2, what is the value of CAT? (Variation 10)",
+    "answer": "C=3, A=1, T=20. Sum = 24.",
+    "exam": "SSC CGL",
+    "subject": "Reasoning",
     "year": 2022
   },
   {
-    "question": "If the ratio of speeds of two trains is 3:4 and time taken is 4:3, what is ratio of distances?",
-    "correct_answer": "1:1",
-    "subject": "Quantitative Aptitude",
+    "id": 61,
+    "question": "What is 10% of 500?",
+    "answer": "The answer is 50.",
+    "exam": "SSC CGL",
+    "subject": "Quant",
+    "year": 2020
+  },
+  {
+    "id": 62,
+    "question": "What is 11% of 500?",
+    "answer": "The answer is 55.",
+    "exam": "SSC CGL",
+    "subject": "Quant",
+    "year": 2021
+  },
+  {
+    "id": 63,
+    "question": "What is 12% of 500?",
+    "answer": "The answer is 60.",
+    "exam": "SSC CGL",
+    "subject": "Quant",
+    "year": 2022
+  },
+  {
+    "id": 64,
+    "question": "What is 13% of 500?",
+    "answer": "The answer is 65.",
+    "exam": "SSC CGL",
+    "subject": "Quant",
+    "year": 2020
+  },
+  {
+    "id": 65,
+    "question": "What is 14% of 500?",
+    "answer": "The answer is 70.",
+    "exam": "SSC CGL",
+    "subject": "Quant",
+    "year": 2021
+  },
+  {
+    "id": 66,
+    "question": "What is 15% of 500?",
+    "answer": "The answer is 75.",
+    "exam": "SSC CGL",
+    "subject": "Quant",
+    "year": 2022
+  },
+  {
+    "id": 67,
+    "question": "What is 16% of 500?",
+    "answer": "The answer is 80.",
+    "exam": "SSC CGL",
+    "subject": "Quant",
+    "year": 2020
+  },
+  {
+    "id": 68,
+    "question": "What is 17% of 500?",
+    "answer": "The answer is 85.",
+    "exam": "SSC CGL",
+    "subject": "Quant",
+    "year": 2021
+  },
+  {
+    "id": 69,
+    "question": "What is 18% of 500?",
+    "answer": "The answer is 90.",
+    "exam": "SSC CGL",
+    "subject": "Quant",
+    "year": 2022
+  },
+  {
+    "id": 70,
+    "question": "What is 19% of 500?",
+    "answer": "The answer is 95.",
+    "exam": "SSC CGL",
+    "subject": "Quant",
+    "year": 2020
+  },
+  {
+    "id": 71,
+    "question": "What is the synonym of 'Abundant'? (Variation 1)",
+    "answer": "Plentiful or copious.",
+    "exam": "SSC CGL",
+    "subject": "English",
+    "year": 2022
+  },
+  {
+    "id": 72,
+    "question": "What is the synonym of 'Abundant'? (Variation 2)",
+    "answer": "Plentiful or copious.",
+    "exam": "SSC CGL",
+    "subject": "English",
+    "year": 2022
+  },
+  {
+    "id": 73,
+    "question": "What is the synonym of 'Abundant'? (Variation 3)",
+    "answer": "Plentiful or copious.",
+    "exam": "SSC CGL",
+    "subject": "English",
+    "year": 2022
+  },
+  {
+    "id": 74,
+    "question": "What is the synonym of 'Abundant'? (Variation 4)",
+    "answer": "Plentiful or copious.",
+    "exam": "SSC CGL",
+    "subject": "English",
+    "year": 2022
+  },
+  {
+    "id": 75,
+    "question": "What is the synonym of 'Abundant'? (Variation 5)",
+    "answer": "Plentiful or copious.",
+    "exam": "SSC CGL",
+    "subject": "English",
+    "year": 2022
+  },
+  {
+    "id": 76,
+    "question": "What is the synonym of 'Abundant'? (Variation 6)",
+    "answer": "Plentiful or copious.",
+    "exam": "SSC CGL",
+    "subject": "English",
+    "year": 2022
+  },
+  {
+    "id": 77,
+    "question": "What is the synonym of 'Abundant'? (Variation 7)",
+    "answer": "Plentiful or copious.",
+    "exam": "SSC CGL",
+    "subject": "English",
+    "year": 2022
+  },
+  {
+    "id": 78,
+    "question": "What is the synonym of 'Abundant'? (Variation 8)",
+    "answer": "Plentiful or copious.",
+    "exam": "SSC CGL",
+    "subject": "English",
+    "year": 2022
+  },
+  {
+    "id": 79,
+    "question": "What is the synonym of 'Abundant'? (Variation 9)",
+    "answer": "Plentiful or copious.",
+    "exam": "SSC CGL",
+    "subject": "English",
+    "year": 2022
+  },
+  {
+    "id": 80,
+    "question": "What is the synonym of 'Abundant'? (Variation 10)",
+    "answer": "Plentiful or copious.",
+    "exam": "SSC CGL",
+    "subject": "English",
+    "year": 2022
+  },
+  {
+    "id": 81,
+    "question": "Who wrote 'Discovery of India'? (Variation 1)",
+    "answer": "Jawaharlal Nehru wrote it during his imprisonment.",
+    "exam": "SSC CGL",
+    "subject": "GK",
+    "year": 2021
+  },
+  {
+    "id": 82,
+    "question": "Who wrote 'Discovery of India'? (Variation 2)",
+    "answer": "Jawaharlal Nehru wrote it during his imprisonment.",
+    "exam": "SSC CGL",
+    "subject": "GK",
+    "year": 2021
+  },
+  {
+    "id": 83,
+    "question": "Who wrote 'Discovery of India'? (Variation 3)",
+    "answer": "Jawaharlal Nehru wrote it during his imprisonment.",
+    "exam": "SSC CGL",
+    "subject": "GK",
+    "year": 2021
+  },
+  {
+    "id": 84,
+    "question": "Who wrote 'Discovery of India'? (Variation 4)",
+    "answer": "Jawaharlal Nehru wrote it during his imprisonment.",
+    "exam": "SSC CGL",
+    "subject": "GK",
+    "year": 2021
+  },
+  {
+    "id": 85,
+    "question": "Who wrote 'Discovery of India'? (Variation 5)",
+    "answer": "Jawaharlal Nehru wrote it during his imprisonment.",
+    "exam": "SSC CGL",
+    "subject": "GK",
+    "year": 2021
+  },
+  {
+    "id": 86,
+    "question": "Who wrote 'Discovery of India'? (Variation 6)",
+    "answer": "Jawaharlal Nehru wrote it during his imprisonment.",
+    "exam": "SSC CGL",
+    "subject": "GK",
+    "year": 2021
+  },
+  {
+    "id": 87,
+    "question": "Who wrote 'Discovery of India'? (Variation 7)",
+    "answer": "Jawaharlal Nehru wrote it during his imprisonment.",
+    "exam": "SSC CGL",
+    "subject": "GK",
+    "year": 2021
+  },
+  {
+    "id": 88,
+    "question": "Who wrote 'Discovery of India'? (Variation 8)",
+    "answer": "Jawaharlal Nehru wrote it during his imprisonment.",
+    "exam": "SSC CGL",
+    "subject": "GK",
+    "year": 2021
+  },
+  {
+    "id": 89,
+    "question": "Who wrote 'Discovery of India'? (Variation 9)",
+    "answer": "Jawaharlal Nehru wrote it during his imprisonment.",
+    "exam": "SSC CGL",
+    "subject": "GK",
+    "year": 2021
+  },
+  {
+    "id": 90,
+    "question": "Who wrote 'Discovery of India'? (Variation 10)",
+    "answer": "Jawaharlal Nehru wrote it during his imprisonment.",
+    "exam": "SSC CGL",
+    "subject": "GK",
+    "year": 2021
+  },
+  {
+    "id": 91,
+    "question": "What is the minimum capital requirement for a small finance bank? (Variation 1)",
+    "answer": "The minimum paid-up equity capital is Rs. 200 crores.",
+    "exam": "IBPS PO",
+    "subject": "Banking",
     "year": 2023
+  },
+  {
+    "id": 92,
+    "question": "What is the minimum capital requirement for a small finance bank? (Variation 2)",
+    "answer": "The minimum paid-up equity capital is Rs. 200 crores.",
+    "exam": "IBPS PO",
+    "subject": "Banking",
+    "year": 2023
+  },
+  {
+    "id": 93,
+    "question": "What is the minimum capital requirement for a small finance bank? (Variation 3)",
+    "answer": "The minimum paid-up equity capital is Rs. 200 crores.",
+    "exam": "IBPS PO",
+    "subject": "Banking",
+    "year": 2023
+  },
+  {
+    "id": 94,
+    "question": "What is the minimum capital requirement for a small finance bank? (Variation 4)",
+    "answer": "The minimum paid-up equity capital is Rs. 200 crores.",
+    "exam": "IBPS PO",
+    "subject": "Banking",
+    "year": 2023
+  },
+  {
+    "id": 95,
+    "question": "What is the minimum capital requirement for a small finance bank? (Variation 5)",
+    "answer": "The minimum paid-up equity capital is Rs. 200 crores.",
+    "exam": "IBPS PO",
+    "subject": "Banking",
+    "year": 2023
+  },
+  {
+    "id": 96,
+    "question": "What is the minimum capital requirement for a small finance bank? (Variation 6)",
+    "answer": "The minimum paid-up equity capital is Rs. 200 crores.",
+    "exam": "IBPS PO",
+    "subject": "Banking",
+    "year": 2023
+  },
+  {
+    "id": 97,
+    "question": "What is the minimum capital requirement for a small finance bank? (Variation 7)",
+    "answer": "The minimum paid-up equity capital is Rs. 200 crores.",
+    "exam": "IBPS PO",
+    "subject": "Banking",
+    "year": 2023
+  },
+  {
+    "id": 98,
+    "question": "What is the minimum capital requirement for a small finance bank? (Variation 8)",
+    "answer": "The minimum paid-up equity capital is Rs. 200 crores.",
+    "exam": "IBPS PO",
+    "subject": "Banking",
+    "year": 2023
+  },
+  {
+    "id": 99,
+    "question": "What is the minimum capital requirement for a small finance bank? (Variation 9)",
+    "answer": "The minimum paid-up equity capital is Rs. 200 crores.",
+    "exam": "IBPS PO",
+    "subject": "Banking",
+    "year": 2023
+  },
+  {
+    "id": 100,
+    "question": "What is the minimum capital requirement for a small finance bank? (Variation 10)",
+    "answer": "The minimum paid-up equity capital is Rs. 200 crores.",
+    "exam": "IBPS PO",
+    "subject": "Banking",
+    "year": 2023
+  },
+  {
+    "id": 101,
+    "question": "What is the minimum capital requirement for a small finance bank? (Variation 11)",
+    "answer": "The minimum paid-up equity capital is Rs. 200 crores.",
+    "exam": "IBPS PO",
+    "subject": "Banking",
+    "year": 2023
+  },
+  {
+    "id": 102,
+    "question": "What is the minimum capital requirement for a small finance bank? (Variation 12)",
+    "answer": "The minimum paid-up equity capital is Rs. 200 crores.",
+    "exam": "IBPS PO",
+    "subject": "Banking",
+    "year": 2023
+  },
+  {
+    "id": 103,
+    "question": "What is the minimum capital requirement for a small finance bank? (Variation 13)",
+    "answer": "The minimum paid-up equity capital is Rs. 200 crores.",
+    "exam": "IBPS PO",
+    "subject": "Banking",
+    "year": 2023
+  },
+  {
+    "id": 104,
+    "question": "What is the minimum capital requirement for a small finance bank? (Variation 14)",
+    "answer": "The minimum paid-up equity capital is Rs. 200 crores.",
+    "exam": "IBPS PO",
+    "subject": "Banking",
+    "year": 2023
+  },
+  {
+    "id": 105,
+    "question": "What is the minimum capital requirement for a small finance bank? (Variation 15)",
+    "answer": "The minimum paid-up equity capital is Rs. 200 crores.",
+    "exam": "IBPS PO",
+    "subject": "Banking",
+    "year": 2023
+  },
+  {
+    "id": 106,
+    "question": "What is the port number for HTTP? (Variation 1)",
+    "answer": "Port 80 is used for HTTP.",
+    "exam": "IBPS SO",
+    "subject": "Computer",
+    "year": 2022
+  },
+  {
+    "id": 107,
+    "question": "What is the port number for HTTP? (Variation 2)",
+    "answer": "Port 80 is used for HTTP.",
+    "exam": "IBPS SO",
+    "subject": "Computer",
+    "year": 2022
+  },
+  {
+    "id": 108,
+    "question": "What is the port number for HTTP? (Variation 3)",
+    "answer": "Port 80 is used for HTTP.",
+    "exam": "IBPS SO",
+    "subject": "Computer",
+    "year": 2022
+  },
+  {
+    "id": 109,
+    "question": "What is the port number for HTTP? (Variation 4)",
+    "answer": "Port 80 is used for HTTP.",
+    "exam": "IBPS SO",
+    "subject": "Computer",
+    "year": 2022
+  },
+  {
+    "id": 110,
+    "question": "What is the port number for HTTP? (Variation 5)",
+    "answer": "Port 80 is used for HTTP.",
+    "exam": "IBPS SO",
+    "subject": "Computer",
+    "year": 2022
+  },
+  {
+    "id": 111,
+    "question": "What is the port number for HTTP? (Variation 6)",
+    "answer": "Port 80 is used for HTTP.",
+    "exam": "IBPS SO",
+    "subject": "Computer",
+    "year": 2022
+  },
+  {
+    "id": 112,
+    "question": "What is the port number for HTTP? (Variation 7)",
+    "answer": "Port 80 is used for HTTP.",
+    "exam": "IBPS SO",
+    "subject": "Computer",
+    "year": 2022
+  },
+  {
+    "id": 113,
+    "question": "What is the port number for HTTP? (Variation 8)",
+    "answer": "Port 80 is used for HTTP.",
+    "exam": "IBPS SO",
+    "subject": "Computer",
+    "year": 2022
+  },
+  {
+    "id": 114,
+    "question": "What is the port number for HTTP? (Variation 9)",
+    "answer": "Port 80 is used for HTTP.",
+    "exam": "IBPS SO",
+    "subject": "Computer",
+    "year": 2022
+  },
+  {
+    "id": 115,
+    "question": "What is the port number for HTTP? (Variation 10)",
+    "answer": "Port 80 is used for HTTP.",
+    "exam": "IBPS SO",
+    "subject": "Computer",
+    "year": 2022
+  },
+  {
+    "id": 116,
+    "question": "What is the port number for HTTP? (Variation 11)",
+    "answer": "Port 80 is used for HTTP.",
+    "exam": "IBPS SO",
+    "subject": "Computer",
+    "year": 2022
+  },
+  {
+    "id": 117,
+    "question": "What is the port number for HTTP? (Variation 12)",
+    "answer": "Port 80 is used for HTTP.",
+    "exam": "IBPS SO",
+    "subject": "Computer",
+    "year": 2022
+  },
+  {
+    "id": 118,
+    "question": "What is the port number for HTTP? (Variation 13)",
+    "answer": "Port 80 is used for HTTP.",
+    "exam": "IBPS SO",
+    "subject": "Computer",
+    "year": 2022
+  },
+  {
+    "id": 119,
+    "question": "What is the port number for HTTP? (Variation 14)",
+    "answer": "Port 80 is used for HTTP.",
+    "exam": "IBPS SO",
+    "subject": "Computer",
+    "year": 2022
+  },
+  {
+    "id": 120,
+    "question": "What is the port number for HTTP? (Variation 15)",
+    "answer": "Port 80 is used for HTTP.",
+    "exam": "IBPS SO",
+    "subject": "Computer",
+    "year": 2022
+  },
+  {
+    "id": 121,
+    "question": "Syllogism: All A are B. No B is C. Conclusion? (Variation 1)",
+    "answer": "No A is C follows logically.",
+    "exam": "IBPS PO",
+    "subject": "Reasoning",
+    "year": 2021
+  },
+  {
+    "id": 122,
+    "question": "Syllogism: All A are B. No B is C. Conclusion? (Variation 2)",
+    "answer": "No A is C follows logically.",
+    "exam": "IBPS PO",
+    "subject": "Reasoning",
+    "year": 2021
+  },
+  {
+    "id": 123,
+    "question": "Syllogism: All A are B. No B is C. Conclusion? (Variation 3)",
+    "answer": "No A is C follows logically.",
+    "exam": "IBPS PO",
+    "subject": "Reasoning",
+    "year": 2021
+  },
+  {
+    "id": 124,
+    "question": "Syllogism: All A are B. No B is C. Conclusion? (Variation 4)",
+    "answer": "No A is C follows logically.",
+    "exam": "IBPS PO",
+    "subject": "Reasoning",
+    "year": 2021
+  },
+  {
+    "id": 125,
+    "question": "Syllogism: All A are B. No B is C. Conclusion? (Variation 5)",
+    "answer": "No A is C follows logically.",
+    "exam": "IBPS PO",
+    "subject": "Reasoning",
+    "year": 2021
+  },
+  {
+    "id": 126,
+    "question": "Syllogism: All A are B. No B is C. Conclusion? (Variation 6)",
+    "answer": "No A is C follows logically.",
+    "exam": "IBPS PO",
+    "subject": "Reasoning",
+    "year": 2021
+  },
+  {
+    "id": 127,
+    "question": "Syllogism: All A are B. No B is C. Conclusion? (Variation 7)",
+    "answer": "No A is C follows logically.",
+    "exam": "IBPS PO",
+    "subject": "Reasoning",
+    "year": 2021
+  },
+  {
+    "id": 128,
+    "question": "Syllogism: All A are B. No B is C. Conclusion? (Variation 8)",
+    "answer": "No A is C follows logically.",
+    "exam": "IBPS PO",
+    "subject": "Reasoning",
+    "year": 2021
+  },
+  {
+    "id": 129,
+    "question": "Syllogism: All A are B. No B is C. Conclusion? (Variation 9)",
+    "answer": "No A is C follows logically.",
+    "exam": "IBPS PO",
+    "subject": "Reasoning",
+    "year": 2021
+  },
+  {
+    "id": 130,
+    "question": "Syllogism: All A are B. No B is C. Conclusion? (Variation 10)",
+    "answer": "No A is C follows logically.",
+    "exam": "IBPS PO",
+    "subject": "Reasoning",
+    "year": 2021
+  },
+  {
+    "id": 131,
+    "question": "Which planet is known as the Red Planet? (Variation 1)",
+    "answer": "Mars, due to iron oxide on its surface.",
+    "exam": "RRB NTPC",
+    "subject": "GS",
+    "year": 2020
+  },
+  {
+    "id": 132,
+    "question": "Which planet is known as the Red Planet? (Variation 2)",
+    "answer": "Mars, due to iron oxide on its surface.",
+    "exam": "RRB NTPC",
+    "subject": "GS",
+    "year": 2021
+  },
+  {
+    "id": 133,
+    "question": "Which planet is known as the Red Planet? (Variation 3)",
+    "answer": "Mars, due to iron oxide on its surface.",
+    "exam": "RRB NTPC",
+    "subject": "GS",
+    "year": 2022
+  },
+  {
+    "id": 134,
+    "question": "Which planet is known as the Red Planet? (Variation 4)",
+    "answer": "Mars, due to iron oxide on its surface.",
+    "exam": "RRB NTPC",
+    "subject": "GS",
+    "year": 2023
+  },
+  {
+    "id": 135,
+    "question": "Which planet is known as the Red Planet? (Variation 5)",
+    "answer": "Mars, due to iron oxide on its surface.",
+    "exam": "RRB NTPC",
+    "subject": "GS",
+    "year": 2020
+  },
+  {
+    "id": 136,
+    "question": "Which planet is known as the Red Planet? (Variation 6)",
+    "answer": "Mars, due to iron oxide on its surface.",
+    "exam": "RRB NTPC",
+    "subject": "GS",
+    "year": 2021
+  },
+  {
+    "id": 137,
+    "question": "Which planet is known as the Red Planet? (Variation 7)",
+    "answer": "Mars, due to iron oxide on its surface.",
+    "exam": "RRB NTPC",
+    "subject": "GS",
+    "year": 2022
+  },
+  {
+    "id": 138,
+    "question": "Which planet is known as the Red Planet? (Variation 8)",
+    "answer": "Mars, due to iron oxide on its surface.",
+    "exam": "RRB NTPC",
+    "subject": "GS",
+    "year": 2023
+  },
+  {
+    "id": 139,
+    "question": "Which planet is known as the Red Planet? (Variation 9)",
+    "answer": "Mars, due to iron oxide on its surface.",
+    "exam": "RRB NTPC",
+    "subject": "GS",
+    "year": 2020
+  },
+  {
+    "id": 140,
+    "question": "Which planet is known as the Red Planet? (Variation 10)",
+    "answer": "Mars, due to iron oxide on its surface.",
+    "exam": "RRB NTPC",
+    "subject": "GS",
+    "year": 2021
+  },
+  {
+    "id": 141,
+    "question": "Find the odd one out: Apple, Banana, Carrot, Mango. (Variation 1)",
+    "answer": "Carrot is a root vegetable, others are fruits.",
+    "exam": "RRB NTPC",
+    "subject": "Reasoning",
+    "year": 2021
+  },
+  {
+    "id": 142,
+    "question": "Find the odd one out: Apple, Banana, Carrot, Mango. (Variation 2)",
+    "answer": "Carrot is a root vegetable, others are fruits.",
+    "exam": "RRB NTPC",
+    "subject": "Reasoning",
+    "year": 2021
+  },
+  {
+    "id": 143,
+    "question": "Find the odd one out: Apple, Banana, Carrot, Mango. (Variation 3)",
+    "answer": "Carrot is a root vegetable, others are fruits.",
+    "exam": "RRB NTPC",
+    "subject": "Reasoning",
+    "year": 2021
+  },
+  {
+    "id": 144,
+    "question": "Find the odd one out: Apple, Banana, Carrot, Mango. (Variation 4)",
+    "answer": "Carrot is a root vegetable, others are fruits.",
+    "exam": "RRB NTPC",
+    "subject": "Reasoning",
+    "year": 2021
+  },
+  {
+    "id": 145,
+    "question": "Find the odd one out: Apple, Banana, Carrot, Mango. (Variation 5)",
+    "answer": "Carrot is a root vegetable, others are fruits.",
+    "exam": "RRB NTPC",
+    "subject": "Reasoning",
+    "year": 2021
+  },
+  {
+    "id": 146,
+    "question": "Find the odd one out: Apple, Banana, Carrot, Mango. (Variation 6)",
+    "answer": "Carrot is a root vegetable, others are fruits.",
+    "exam": "RRB NTPC",
+    "subject": "Reasoning",
+    "year": 2021
+  },
+  {
+    "id": 147,
+    "question": "Find the odd one out: Apple, Banana, Carrot, Mango. (Variation 7)",
+    "answer": "Carrot is a root vegetable, others are fruits.",
+    "exam": "RRB NTPC",
+    "subject": "Reasoning",
+    "year": 2021
+  },
+  {
+    "id": 148,
+    "question": "Find the odd one out: Apple, Banana, Carrot, Mango. (Variation 8)",
+    "answer": "Carrot is a root vegetable, others are fruits.",
+    "exam": "RRB NTPC",
+    "subject": "Reasoning",
+    "year": 2021
+  },
+  {
+    "id": 149,
+    "question": "Find the odd one out: Apple, Banana, Carrot, Mango. (Variation 9)",
+    "answer": "Carrot is a root vegetable, others are fruits.",
+    "exam": "RRB NTPC",
+    "subject": "Reasoning",
+    "year": 2021
+  },
+  {
+    "id": 150,
+    "question": "Find the odd one out: Apple, Banana, Carrot, Mango. (Variation 10)",
+    "answer": "Carrot is a root vegetable, others are fruits.",
+    "exam": "RRB NTPC",
+    "subject": "Reasoning",
+    "year": 2021
+  },
+  {
+    "id": 151,
+    "question": "If 5 apples cost Rs 50, what is the cost of 1 apple?",
+    "answer": "Rs 10.0.",
+    "exam": "RRB NTPC",
+    "subject": "Quant",
+    "year": 2022
+  },
+  {
+    "id": 152,
+    "question": "If 5 apples cost Rs 51, what is the cost of 1 apple?",
+    "answer": "Rs 10.2.",
+    "exam": "RRB NTPC",
+    "subject": "Quant",
+    "year": 2022
+  },
+  {
+    "id": 153,
+    "question": "If 5 apples cost Rs 52, what is the cost of 1 apple?",
+    "answer": "Rs 10.4.",
+    "exam": "RRB NTPC",
+    "subject": "Quant",
+    "year": 2022
+  },
+  {
+    "id": 154,
+    "question": "If 5 apples cost Rs 53, what is the cost of 1 apple?",
+    "answer": "Rs 10.6.",
+    "exam": "RRB NTPC",
+    "subject": "Quant",
+    "year": 2022
+  },
+  {
+    "id": 155,
+    "question": "If 5 apples cost Rs 54, what is the cost of 1 apple?",
+    "answer": "Rs 10.8.",
+    "exam": "RRB NTPC",
+    "subject": "Quant",
+    "year": 2022
+  },
+  {
+    "id": 156,
+    "question": "If 5 apples cost Rs 55, what is the cost of 1 apple?",
+    "answer": "Rs 11.0.",
+    "exam": "RRB NTPC",
+    "subject": "Quant",
+    "year": 2022
+  },
+  {
+    "id": 157,
+    "question": "If 5 apples cost Rs 56, what is the cost of 1 apple?",
+    "answer": "Rs 11.2.",
+    "exam": "RRB NTPC",
+    "subject": "Quant",
+    "year": 2022
+  },
+  {
+    "id": 158,
+    "question": "If 5 apples cost Rs 57, what is the cost of 1 apple?",
+    "answer": "Rs 11.4.",
+    "exam": "RRB NTPC",
+    "subject": "Quant",
+    "year": 2022
+  },
+  {
+    "id": 159,
+    "question": "If 5 apples cost Rs 58, what is the cost of 1 apple?",
+    "answer": "Rs 11.6.",
+    "exam": "RRB NTPC",
+    "subject": "Quant",
+    "year": 2022
+  },
+  {
+    "id": 160,
+    "question": "If 5 apples cost Rs 59, what is the cost of 1 apple?",
+    "answer": "Rs 11.8.",
+    "exam": "RRB NTPC",
+    "subject": "Quant",
+    "year": 2022
+  },
+  {
+    "id": 161,
+    "question": "Data Interpretation pattern question 1",
+    "answer": "Analyze the pie chart to find the central angle.",
+    "exam": "SBI PO",
+    "subject": "Reasoning",
+    "year": 2023
+  },
+  {
+    "id": 162,
+    "question": "Data Interpretation pattern question 2",
+    "answer": "Analyze the pie chart to find the central angle.",
+    "exam": "SBI PO",
+    "subject": "Reasoning",
+    "year": 2023
+  },
+  {
+    "id": 163,
+    "question": "Data Interpretation pattern question 3",
+    "answer": "Analyze the pie chart to find the central angle.",
+    "exam": "SBI PO",
+    "subject": "Reasoning",
+    "year": 2023
+  },
+  {
+    "id": 164,
+    "question": "Data Interpretation pattern question 4",
+    "answer": "Analyze the pie chart to find the central angle.",
+    "exam": "SBI PO",
+    "subject": "Reasoning",
+    "year": 2023
+  },
+  {
+    "id": 165,
+    "question": "Data Interpretation pattern question 5",
+    "answer": "Analyze the pie chart to find the central angle.",
+    "exam": "SBI PO",
+    "subject": "Reasoning",
+    "year": 2023
+  },
+  {
+    "id": 166,
+    "question": "Data Interpretation pattern question 6",
+    "answer": "Analyze the pie chart to find the central angle.",
+    "exam": "SBI PO",
+    "subject": "Reasoning",
+    "year": 2023
+  },
+  {
+    "id": 167,
+    "question": "Data Interpretation pattern question 7",
+    "answer": "Analyze the pie chart to find the central angle.",
+    "exam": "SBI PO",
+    "subject": "Reasoning",
+    "year": 2023
+  },
+  {
+    "id": 168,
+    "question": "Data Interpretation pattern question 8",
+    "answer": "Analyze the pie chart to find the central angle.",
+    "exam": "SBI PO",
+    "subject": "Reasoning",
+    "year": 2023
+  },
+  {
+    "id": 169,
+    "question": "Data Interpretation pattern question 9",
+    "answer": "Analyze the pie chart to find the central angle.",
+    "exam": "SBI PO",
+    "subject": "Reasoning",
+    "year": 2023
+  },
+  {
+    "id": 170,
+    "question": "Data Interpretation pattern question 10",
+    "answer": "Analyze the pie chart to find the central angle.",
+    "exam": "SBI PO",
+    "subject": "Reasoning",
+    "year": 2023
+  },
+  {
+    "id": 171,
+    "question": "Data Interpretation pattern question 11",
+    "answer": "Analyze the pie chart to find the central angle.",
+    "exam": "SBI PO",
+    "subject": "Reasoning",
+    "year": 2023
+  },
+  {
+    "id": 172,
+    "question": "Data Interpretation pattern question 12",
+    "answer": "Analyze the pie chart to find the central angle.",
+    "exam": "SBI PO",
+    "subject": "Reasoning",
+    "year": 2023
+  },
+  {
+    "id": 173,
+    "question": "Data Interpretation pattern question 13",
+    "answer": "Analyze the pie chart to find the central angle.",
+    "exam": "SBI PO",
+    "subject": "Reasoning",
+    "year": 2023
+  },
+  {
+    "id": 174,
+    "question": "Data Interpretation pattern question 14",
+    "answer": "Analyze the pie chart to find the central angle.",
+    "exam": "SBI PO",
+    "subject": "Reasoning",
+    "year": 2023
+  },
+  {
+    "id": 175,
+    "question": "Data Interpretation pattern question 15",
+    "answer": "Analyze the pie chart to find the central angle.",
+    "exam": "SBI PO",
+    "subject": "Reasoning",
+    "year": 2023
+  },
+  {
+    "id": 176,
+    "question": "Data Interpretation pattern question 16",
+    "answer": "Analyze the pie chart to find the central angle.",
+    "exam": "SBI PO",
+    "subject": "Reasoning",
+    "year": 2023
+  },
+  {
+    "id": 177,
+    "question": "Data Interpretation pattern question 17",
+    "answer": "Analyze the pie chart to find the central angle.",
+    "exam": "SBI PO",
+    "subject": "Reasoning",
+    "year": 2023
+  },
+  {
+    "id": 178,
+    "question": "Data Interpretation pattern question 18",
+    "answer": "Analyze the pie chart to find the central angle.",
+    "exam": "SBI PO",
+    "subject": "Reasoning",
+    "year": 2023
+  },
+  {
+    "id": 179,
+    "question": "Data Interpretation pattern question 19",
+    "answer": "Analyze the pie chart to find the central angle.",
+    "exam": "SBI PO",
+    "subject": "Reasoning",
+    "year": 2023
+  },
+  {
+    "id": 180,
+    "question": "Data Interpretation pattern question 20",
+    "answer": "Analyze the pie chart to find the central angle.",
+    "exam": "SBI PO",
+    "subject": "Reasoning",
+    "year": 2023
+  },
+  {
+    "id": 181,
+    "question": "When was the Battle of Plassey fought? (Variation 1)",
+    "answer": "The Battle of Plassey was fought in 1757.",
+    "exam": "State PSC",
+    "subject": "History",
+    "year": 2021
+  },
+  {
+    "id": 182,
+    "question": "When was the Battle of Plassey fought? (Variation 2)",
+    "answer": "The Battle of Plassey was fought in 1757.",
+    "exam": "State PSC",
+    "subject": "History",
+    "year": 2021
+  },
+  {
+    "id": 183,
+    "question": "When was the Battle of Plassey fought? (Variation 3)",
+    "answer": "The Battle of Plassey was fought in 1757.",
+    "exam": "State PSC",
+    "subject": "History",
+    "year": 2021
+  },
+  {
+    "id": 184,
+    "question": "When was the Battle of Plassey fought? (Variation 4)",
+    "answer": "The Battle of Plassey was fought in 1757.",
+    "exam": "State PSC",
+    "subject": "History",
+    "year": 2021
+  },
+  {
+    "id": 185,
+    "question": "When was the Battle of Plassey fought? (Variation 5)",
+    "answer": "The Battle of Plassey was fought in 1757.",
+    "exam": "State PSC",
+    "subject": "History",
+    "year": 2021
+  },
+  {
+    "id": 186,
+    "question": "When was the Battle of Plassey fought? (Variation 6)",
+    "answer": "The Battle of Plassey was fought in 1757.",
+    "exam": "State PSC",
+    "subject": "History",
+    "year": 2021
+  },
+  {
+    "id": 187,
+    "question": "When was the Battle of Plassey fought? (Variation 7)",
+    "answer": "The Battle of Plassey was fought in 1757.",
+    "exam": "State PSC",
+    "subject": "History",
+    "year": 2021
+  },
+  {
+    "id": 188,
+    "question": "When was the Battle of Plassey fought? (Variation 8)",
+    "answer": "The Battle of Plassey was fought in 1757.",
+    "exam": "State PSC",
+    "subject": "History",
+    "year": 2021
+  },
+  {
+    "id": 189,
+    "question": "When was the Battle of Plassey fought? (Variation 9)",
+    "answer": "The Battle of Plassey was fought in 1757.",
+    "exam": "State PSC",
+    "subject": "History",
+    "year": 2021
+  },
+  {
+    "id": 190,
+    "question": "When was the Battle of Plassey fought? (Variation 10)",
+    "answer": "The Battle of Plassey was fought in 1757.",
+    "exam": "State PSC",
+    "subject": "History",
+    "year": 2021
+  },
+  {
+    "id": 191,
+    "question": "When was the Battle of Plassey fought? (Variation 11)",
+    "answer": "The Battle of Plassey was fought in 1757.",
+    "exam": "State PSC",
+    "subject": "History",
+    "year": 2021
+  },
+  {
+    "id": 192,
+    "question": "When was the Battle of Plassey fought? (Variation 12)",
+    "answer": "The Battle of Plassey was fought in 1757.",
+    "exam": "State PSC",
+    "subject": "History",
+    "year": 2021
+  },
+  {
+    "id": 193,
+    "question": "When was the Battle of Plassey fought? (Variation 13)",
+    "answer": "The Battle of Plassey was fought in 1757.",
+    "exam": "State PSC",
+    "subject": "History",
+    "year": 2021
+  },
+  {
+    "id": 194,
+    "question": "When was the Battle of Plassey fought? (Variation 14)",
+    "answer": "The Battle of Plassey was fought in 1757.",
+    "exam": "State PSC",
+    "subject": "History",
+    "year": 2021
+  },
+  {
+    "id": 195,
+    "question": "When was the Battle of Plassey fought? (Variation 15)",
+    "answer": "The Battle of Plassey was fought in 1757.",
+    "exam": "State PSC",
+    "subject": "History",
+    "year": 2021
+  },
+  {
+    "id": 196,
+    "question": "When was the Battle of Plassey fought? (Variation 16)",
+    "answer": "The Battle of Plassey was fought in 1757.",
+    "exam": "State PSC",
+    "subject": "History",
+    "year": 2021
+  },
+  {
+    "id": 197,
+    "question": "When was the Battle of Plassey fought? (Variation 17)",
+    "answer": "The Battle of Plassey was fought in 1757.",
+    "exam": "State PSC",
+    "subject": "History",
+    "year": 2021
+  },
+  {
+    "id": 198,
+    "question": "When was the Battle of Plassey fought? (Variation 18)",
+    "answer": "The Battle of Plassey was fought in 1757.",
+    "exam": "State PSC",
+    "subject": "History",
+    "year": 2021
+  },
+  {
+    "id": 199,
+    "question": "When was the Battle of Plassey fought? (Variation 19)",
+    "answer": "The Battle of Plassey was fought in 1757.",
+    "exam": "State PSC",
+    "subject": "History",
+    "year": 2021
+  },
+  {
+    "id": 200,
+    "question": "When was the Battle of Plassey fought? (Variation 20)",
+    "answer": "The Battle of Plassey was fought in 1757.",
+    "exam": "State PSC",
+    "subject": "History",
+    "year": 2021
   }
 ]

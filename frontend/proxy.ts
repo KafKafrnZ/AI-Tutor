@@ -1,7 +1,10 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
-const PROTECTED_ROUTES = ['/dashboard', '/tutor', '/practice', '/mock-tests', '/progress', '/error-log']
+const PROTECTED_ROUTES = [
+  '/dashboard', '/tutor', '/practice', '/mock-tests',
+  '/progress', '/error-log', '/explore'
+]
 const AUTH_ROUTES = ['/login', '/signup', '/']
 
 function isTokenExpired(token: string): boolean {
@@ -39,7 +42,8 @@ export const config = {
     '/mock-tests/:path*', // FIX-2: Changed "path* to :path*
     '/progress/:path*', 
     '/error-log/:path*',
-    '/login', 
+    '/explore/:path*',
+    '/login',
     '/signup',
     '/'
   ]

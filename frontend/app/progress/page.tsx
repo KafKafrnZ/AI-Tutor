@@ -17,7 +17,7 @@ import {
   Bar,
   Cell,
 } from "recharts";
-import { API_URL } from "@/lib/api";
+import { API_URL, fetchWithRefresh } from "@/lib/api";
 import { SkeletonCard, Skeleton } from "@/components/ui/Skeleton";
 import { PageShell } from "@/components/layout/PageShell";
 import { PageHeader } from "@/components/layout/PageHeader";
@@ -51,11 +51,9 @@ export default function ProgressPage() {
     setIsLoading(true);
     setFetchError(false);
     try {
-      const response = await fetch(`${API_URL}/stats`, {
+      const response = await fetchWithRefresh(`${API_URL}/stats`, {
         method: "GET",
-        credentials: "include",
       });
-      if (response.status === 401) { setAuthError(true); return; }
       if (response.ok) {
         setStats(await response.json());
       } else {

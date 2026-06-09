@@ -92,3 +92,18 @@ jobs:
               : `${triggering} passed — other CI not required for this change`;
 
             await postStatus('success', description);
+
+  deploy-gate-check:
+    needs: [gate]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check all CI gates passed
+        run: |
+          if [[ "${{ needs.frontend-ci.result }}" == "failure" ]]; then
+            echo "Frontend CI failed"; exit 1
+          fi
+          if [[ "${{ needs.backend-ci.result }}" == "failure" ]]; then
+            echo "Backend CI failed"; exit 1
+          fi
+          echo "All CI gates passed"

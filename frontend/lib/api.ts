@@ -44,6 +44,20 @@ export async function readApiError(response: Response, fallback: string): Promis
   }
 }
 
+export async function fetchWithRefresh(url: string, options: RequestInit): Promise<Response> {
+  let res = await fetch(url, { ...options, credentials: "include" })
+  if (res.status === 401) {
+    const refresh = await fetch(`${API_URL}/auth/refresh`, { method: "POST", credentials: "include" })
+    if (refresh.ok) {
+      res = await fetch(url, { ...options, credentials: "include" })
+    } else {
+      window.location.href = "/login"
+      throw new Error("SESSION_EXPIRED")
+    }
+  }
+  return res
+}
+
 export function apiConnectionErrorMessage(): string {
   if (API_URL.startsWith("http://127.0.0.1") || API_URL.startsWith("http://localhost")) {
     return "Cannot connect to the local FastAPI server. Make sure it is running on port 8000.";

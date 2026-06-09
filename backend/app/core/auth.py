@@ -1,4 +1,6 @@
 import bcrypt
+import hashlib
+import secrets as _secrets
 import jwt
 from jwt.exceptions import InvalidTokenError
 from datetime import datetime, timedelta, timezone
@@ -31,3 +33,12 @@ def verify_token(token: str) -> dict | None:
         return payload
     except InvalidTokenError:
         return None
+
+def create_refresh_token() -> tuple[str, str]:
+    """Returns (raw_token, hashed_token). Store the hash; send raw to the client."""
+    raw = _secrets.token_hex(64)
+    hashed = hashlib.sha256(raw.encode()).hexdigest()
+    return raw, hashed
+
+def verify_refresh_token(raw: str, hashed: str) -> bool:
+    return hashlib.sha256(raw.encode()).hexdigest() == hashed

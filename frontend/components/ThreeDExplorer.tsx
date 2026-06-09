@@ -25,7 +25,21 @@ const GRAPH_DATA = {
   ],
 };
 
-function Node({ data, onClick, hoveredNode, setHoveredNode }: any) {
+type GraphNode = (typeof GRAPH_DATA.nodes)[number];
+
+type GraphLine = {
+  id: string;
+  points: THREE.Vector3[];
+};
+
+type NodeProps = {
+  data: GraphNode;
+  onClick: (node: GraphNode) => void;
+  hoveredNode: string | null;
+  setHoveredNode: (nodeId: string | null) => void;
+};
+
+function Node({ data, onClick, hoveredNode, setHoveredNode }: NodeProps) {
   const meshRef = useRef<THREE.Mesh>(null);
   const isHovered = hoveredNode === data.id;
 
@@ -110,12 +124,12 @@ function Edges() {
         };
       }
       return null;
-    }).filter(Boolean);
+    }).filter((line): line is GraphLine => line !== null);
   }, []);
 
   return (
     <>
-      {lines.map((line: any) => (
+      {lines.map((line) => (
         <Line
           key={line.id}
           points={line.points}
@@ -134,9 +148,9 @@ function ParticleSystem() {
   const positions = useMemo(() => {
     const p = new Float32Array(count * 3);
     for (let i = 0; i < count; i++) {
-      p[i * 3] = (Math.random() - 0.5) * 20;
-      p[i * 3 + 1] = (Math.random() - 0.5) * 20;
-      p[i * 3 + 2] = (Math.random() - 0.5) * 20;
+      p[i * 3] = (((i * 37) % 101) / 100 - 0.5) * 20;
+      p[i * 3 + 1] = (((i * 53) % 103) / 102 - 0.5) * 20;
+      p[i * 3 + 2] = (((i * 71) % 107) / 106 - 0.5) * 20;
     }
     return p;
   }, []);
@@ -177,7 +191,7 @@ export default function ThreeDExplorer() {
     return () => window.removeEventListener("resize", checkFallback);
   }, []);
 
-  const handleNodeClick = (node: any) => {
+  const handleNodeClick = (node: GraphNode) => {
     console.log("Selected node:", node);
     // Future: dispatch to Zustand store
   };
@@ -191,13 +205,13 @@ export default function ThreeDExplorer() {
         <div className="flex flex-col gap-6">
           {GRAPH_DATA.nodes.filter(n => n.type === 'root').map(rootNode => (
             <div key={rootNode.id} className="p-5 bg-zinc-900/50 border border-white/10 rounded-2xl shadow-lg">
-              <h3 className="text-violet-400 font-bold mb-4 text-lg">{rootNode.label}</h3>
+              <h3 className="text-accent font-bold mb-4 text-lg">{rootNode.label}</h3>
               <div className="flex flex-wrap gap-2">
                 {GRAPH_DATA.nodes.filter(n => n.type !== 'root').map(node => (
                   <button 
                     key={node.id} 
                     onClick={() => handleNodeClick(node)}
-                    className="px-3 py-1.5 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 text-sm font-semibold rounded-full border border-cyan-500/20 transition-colors"
+                    className="px-3 py-1.5 bg-primary/10 hover:bg-primary/20 text-primary text-sm font-semibold rounded-full border border-primary/20 transition-colors"
                   >
                     {node.label}
                   </button>

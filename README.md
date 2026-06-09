@@ -1,7 +1,7 @@
 # Ascend AI Tutor 🚀
-An immersive, production-grade AI Tutoring application designed specifically for Indian Government & Banking Exams (IBPS SO, UPSC, State PSC). 
+An immersive, production-grade AI Tutoring application designed specifically for Indian government exams (UPSC, SSC CGL, IBPS PO/SO/Clerk, RRB NTPC, State PSC). 
 
-## 🌟 The "Wow Factor" Features
+## 🌟 Features
 
 1. **3D Knowledge Universe**
    - Built with `@react-three/fiber` and `@react-three/drei`.
@@ -13,9 +13,8 @@ An immersive, production-grade AI Tutoring application designed specifically for
    - Beautiful, `framer-motion` powered microphone animations (concentric pulsing glow rings).
    - Zero additional API costs. Talk directly to your AI Tutor.
 
-3. **LangGraph Agentic RAG (Backend)**
-   - Moving beyond standard "dumb" RAG, this repository features scaffolding for **LangGraph** driven agentic workflows.
-   - Nodes for `retrieve`, `generate`, and `evaluate` ensure that the AI cross-checks its own answers against hallucination before returning a response.
+3. **RAG-Augmented LLM Pipeline (Backend)**
+   - Features a robust RAG-augmented LLM pipeline: user question → ChromaDB retrieval → context injection → Llama 3.3 stream.
 
 4. **Progressive Web App (PWA)**
    - Installable on mobile devices via Chrome/Safari.
@@ -29,28 +28,37 @@ An immersive, production-grade AI Tutoring application designed specifically for
 
 ## 🛠 Tech Stack
 - **Frontend**: Next.js 16 (App Router), React 19, Tailwind CSS v4, Zustand, Framer Motion, React Three Fiber.
-- **Backend**: FastAPI, LangChain, LangGraph, SQLAlchemy, PostgreSQL, SSE (Server-Sent Events) for real-time streaming.
-- **AI Models**: Designed to interoperate with Llama 3, Groq, and Gemini.
+- **Backend**: FastAPI, SQLAlchemy, PostgreSQL, Alembic, ChromaDB + fastembed (RAG), Redis, structlog, slowapi, Sentry.
+- **AI Models**: Llama 3.3 via Groq API — streamed responses with SSE.
+
+---
+
+## ⚙️ Architecture
+- **RAG Pipeline**: Retrieves factual content from a structured exam corpus (`pyqs.json` — UPSC, SSC CGL, IBPS PO/SO/Clerk, RRB NTPC, State PSC) via ChromaDB semantic search + fastembed embeddings.
+- **Response Generation**: Llama 3.3 via Groq API generates streamed responses grounded in the retrieved context.
+- **Auth**: httpOnly JWT cookies with 1-hour access tokens + 30-day refresh token rotation. CSRF protection via Origin/Referer validation.
+- **Error Handling**: Sentry integration on both frontend (`global-error.tsx`) and backend (`general_exception_handler`). Structured JSON logging with X-Request-ID correlation.
+
+---
+
+## 📦 License
+
+[MIT](LICENSE)
 
 ---
 
 ## 🚀 Getting Started
 
-### Frontend Setup
-```bash
-cd frontend
-npm install
-npm run dev
-```
+To spin up the entire stack locally using Docker:
 
-### Backend Setup
 ```bash
-cd backend
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-pip install -r requirements.txt
-uvicorn app.main:app --reload
+cp frontend/.env.example frontend/.env.local
+cp backend/.env.example backend/.env
+docker compose up --build
 ```
+This boots up the PostgreSQL database, the ChromaDB vector store, the FastAPI backend (and auto-ingests the `pyqs.json` data), and the Next.js frontend.
 
-## 📜 Architecture Updates
-This repository has had its technical debt resolved (Phase 0), UI/UX overhauled (Phase 1), advanced LangGraph scaffolding added (Phase 2), and PWA/Documentation polished (Phase 3). 
+---
+
+## 🚀 Deploy
+See [DEPLOY.md](DEPLOY.md) for detailed instructions on deploying the application to Railway and Vercel.

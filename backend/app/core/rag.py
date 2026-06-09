@@ -152,17 +152,24 @@ def _get_embedding_function():
     return _embedding_function
 
 
+def get_chroma_client():
+    """Return the shared Chroma persistent client (creates on first use)."""
+    global _client
+    if _client is None:
+        from chromadb import PersistentClient
+
+        chroma_path = validate_chroma_persistence_config()
+        chroma_path.mkdir(parents=True, exist_ok=True)
+        _client = PersistentClient(path=str(chroma_path))
+    return _client
+
+
 def _get_collection():
     global _client, _collection
     if _collection is not None:
         return _collection
 
-    from chromadb import PersistentClient
-
-    chroma_path = validate_chroma_persistence_config()
-    chroma_path.mkdir(parents=True, exist_ok=True)
-
-    _client = PersistentClient(path=str(chroma_path))
+    _client = get_chroma_client()
     _collection = _client.get_or_create_collection(
         name=settings.RAG_COLLECTION_NAME,
         metadata={"hnsw:space": "cosine"},

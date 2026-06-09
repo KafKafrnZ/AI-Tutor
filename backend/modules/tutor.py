@@ -13,9 +13,7 @@ logger = logging.getLogger(__name__)
 class LLMServiceError(RuntimeError):
     """Raised when the configured model provider cannot produce a valid response."""
 
-# Agent-loop guard for future multi-step tutor chains. The current path is a
-# single bounded call, but this keeps the production limit in one obvious place.
-MAX_AGENT_ROUNDS = int(os.getenv("MAX_AGENT_ROUNDS", "5"))
+
 MAX_HISTORY_MSGS = int(os.getenv("MAX_HISTORY_MSGS", "20"))
 RAG_CONTEXT_CHUNKS = int(os.getenv("RAG_CONTEXT_CHUNKS", "8"))
 TUTOR_CONTEXT_MAX_TOKENS = int(os.getenv("TUTOR_CONTEXT_MAX_TOKENS", "6000"))

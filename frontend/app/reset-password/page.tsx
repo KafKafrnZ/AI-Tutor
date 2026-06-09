@@ -74,15 +74,16 @@ function ResetPasswordForm() {
 
       {success ? (
         <div className="text-center space-y-2">
-          <p className="text-emerald-400 font-medium">Password updated successfully!</p>
+          <p role="alert" aria-live="polite" className="text-emerald-400 font-medium">Password updated successfully!</p>
           <p className="text-zinc-500 text-sm">Redirecting you to login…</p>
         </div>
       ) : (
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-zinc-300 mb-1.5">New Password</label>
+            <label htmlFor="reset-password" className="block text-sm font-medium text-zinc-300 mb-1.5">New Password</label>
             <div className="relative">
               <input
+                id="reset-password"
                 type={showPassword ? "text" : "password"}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -101,9 +102,10 @@ function ResetPasswordForm() {
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium text-zinc-300 mb-1.5">Confirm Password</label>
+            <label htmlFor="reset-confirm" className="block text-sm font-medium text-zinc-300 mb-1.5">Confirm Password</label>
             <div className="relative">
               <input
+                id="reset-confirm"
                 type={showConfirm ? "text" : "password"}
                 value={confirm}
                 onChange={(e) => setConfirm(e.target.value)}
@@ -122,7 +124,7 @@ function ResetPasswordForm() {
             </div>
           </div>
 
-          {error && <p className="text-rose-400 text-sm">{error}</p>}
+          {error && <p role="alert" aria-live="polite" className="text-rose-400 text-sm">{error}</p>}
 
           <button
             type="submit"

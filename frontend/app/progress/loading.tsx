@@ -1,18 +1,15 @@
-import { SkeletonCard, SkeletonRow } from "@/components/ui/Skeleton";
+import { Skeleton, SkeletonCard } from "@/components/ui/Skeleton";
 
 export default function ProgressLoading() {
   return (
-    <div className="p-4 md:p-8 space-y-6">
-      <div className="h-8 w-36 animate-pulse rounded-xl bg-white/5" />
+    <div className="max-w-5xl mx-auto px-6 py-8 space-y-8">
+      <Skeleton className="h-8 w-36" />
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <SkeletonCard key={i} />
-        ))}
+        {[1, 2, 3, 4].map((i) => <SkeletonCard key={i} />)}
       </div>
-      <div className="space-y-3">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <SkeletonRow key={i} />
-        ))}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <Skeleton className="h-64 rounded-3xl" />
+        <Skeleton className="h-64 rounded-3xl" />
       </div>
     </div>
   );

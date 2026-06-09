@@ -15,6 +15,7 @@ const HOP_BY_HOP_HEADERS = new Set([
   "connection",
   "content-encoding",
   "content-length",
+  "expect",           // undici (Node.js fetch) doesn't support Expect: 100-continue
   "keep-alive",
   "proxy-authenticate",
   "proxy-authorization",
