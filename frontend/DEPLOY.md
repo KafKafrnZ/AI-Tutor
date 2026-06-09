@@ -5,7 +5,7 @@ Set these in: Vercel → Project → Settings → Environment Variables
 
 | Variable | Value |
 |---|---|
-| `BACKEND_API_URL` | `https://ai-tutor-production-43fe.up.railway.app` |
+| `BACKEND_API_URL` | `https://your-railway-app.up.railway.app` |
 
 Note: `NEXT_PUBLIC_API_URL=/api` is already in `.env.production` — do not add it to Vercel dashboard.
 
@@ -17,9 +17,12 @@ Set these in: Railway → ai-tutor service → Variables
 | `DATABASE_URL` | (Railway PostgreSQL connection string) |
 | `JWT_SECRET` | (generate: `openssl rand -hex 32`) |
 | `LLM_API_KEY` | (your Groq API key) |
-| `BACKEND_CORS_ORIGINS` | `https://ai-tutor-ten-chi.vercel.app,https://ai-tutor-5ingularity-s-projects.vercel.app,http://localhost:3000` |
+| `BACKEND_CORS_ORIGINS` | `https://your-vercel-app.vercel.app,http://localhost:3000` |
 | `ENVIRONMENT` | `production` |
 | `REDIS_URL` | (optional — Railway Redis addon URL if used) |
+
+## Local Setup
+Copy `.env.example` to `.env.local` and fill in `LLM_API_KEY`, `JWT_SECRET`.
 
 ## Verify Deployment
 1. Visit your Vercel URL — landing page should load.

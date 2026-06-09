@@ -1,12 +1,15 @@
 import os
 import uuid
 from unittest.mock import MagicMock
-# Set before any project imports — Settings reads env at class body level
+
 os.environ.setdefault("JWT_SECRET", "test-only-secret-key-not-for-production-use")
 os.environ.setdefault("DATABASE_URL", "sqlite:///:memory:")
 os.environ.setdefault("ENVIRONMENT", "development")
 os.environ.setdefault("GROQ_API_KEY", "test-key-not-real")
+os.environ.setdefault("LLM_API_KEY", "test-key-not-real")
 os.environ.setdefault("REQUIRE_EMAIL_VERIFICATION", "true")
+os.environ.setdefault("ALLOW_FALLBACK_QUESTIONS", "true")
+os.environ.setdefault("RAG_REQUIRE_PERSISTENT_CHROMA", "false")
 
 import pytest
 from fastapi.testclient import TestClient
@@ -15,18 +18,14 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from app.models.database import Base, get_db
-from app.main import app, limiter
+from app.main import app
+from app.core.dependencies import limiter
 
-# --- Disable rate limiting in tests ---
-# slowapi checks limits via limiter._limiter.hit() (FixedWindowRateLimiter).
-# Replacing _storage alone doesn't work because _limiter holds its own storage ref.
-# Mock _limiter.hit directly so every request is always "under limit".
 _mock_limiter = MagicMock()
-_mock_limiter.hit.return_value = True   # always under limit → no 429s
+_mock_limiter.hit.return_value = True
 _mock_limiter.test.return_value = True
 limiter._limiter = _mock_limiter
 
-# In-memory SQLite with StaticPool: single shared connection, no file locking
 _engine = create_engine(
     "sqlite:///:memory:",
     connect_args={"check_same_thread": False},
@@ -44,7 +43,6 @@ def override_get_db():
 
 
 def make_db_session():
-    """Direct DB session for test fixture setup — bypasses FastAPI DI."""
     return _TestingSession()
 
 
@@ -58,7 +56,6 @@ def setup_test_db():
     Base.metadata.drop_all(bind=_engine)
 
 
-# Function-scoped: each test gets a fresh client (empty cookies, no state leakage)
 @pytest.fixture
 def client():
     with TestClient(app, raise_server_exceptions=False) as c:

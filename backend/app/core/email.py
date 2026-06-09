@@ -7,6 +7,8 @@ from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
+# To retrieve the token in dev: SELECT token FROM auth_tokens WHERE user_id = <id>;
+
 
 def _smtp_configured() -> bool:
     return bool(settings.EMAIL_HOST and settings.EMAIL_USER and settings.EMAIL_PASSWORD)
@@ -64,7 +66,10 @@ def _base_template(title: str, body_html: str) -> str:
 def send_verification_email(to: str, token: str) -> None:
     url = f"{settings.FRONTEND_URL}/verify-email?token={token}"
     if not _smtp_configured():
-        logger.info("VERIFY EMAIL TOKEN for %s: %s", to, url)
+        logger.info(
+            "dev_email_skipped recipient=%s action=verification note=SMTP not configured. Token NOT logged for security.",
+            to,
+        )
         return
     html = _base_template(
         "Verify your email address",
@@ -89,7 +94,10 @@ def send_verification_email(to: str, token: str) -> None:
 def send_reset_email(to: str, token: str) -> None:
     url = f"{settings.FRONTEND_URL}/reset-password?token={token}"
     if not _smtp_configured():
-        logger.info("PASSWORD RESET TOKEN FOR %s: %s", to, url)
+        logger.info(
+            "dev_email_skipped recipient=%s action=password_reset note=SMTP not configured. Token NOT logged for security.",
+            to,
+        )
         return
     html = _base_template(
         "Reset your password",

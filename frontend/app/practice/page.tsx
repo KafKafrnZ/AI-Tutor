@@ -101,8 +101,7 @@ export default function PracticePage() {
   };
 
   return (
-    // Changed to h-screen and transparent background
-    <div className="h-screen flex flex-col bg-transparent relative overflow-hidden">
+    <div className="h-dvh flex flex-col bg-transparent relative overflow-hidden">
       
       {/* THE 3D BACKGROUND (Zoomed in heavily for the Practice Page) */}
       <BlackholeBackground scale={3.5} cameraPosition={[0, 0, 8]} opacity={0.7} />
@@ -207,14 +206,18 @@ export default function PracticePage() {
                           }
 
                           return (
-                            <div 
-                              key={idx} onClick={() => handleOptionSelect(currentIdx, opt)}
-                              className={`p-5 border rounded-2xl transition-all duration-300 flex justify-between items-center ${style}`}
+                            <button
+                              type="button"
+                              key={idx}
+                              onClick={() => handleOptionSelect(currentIdx, opt)}
+                              disabled={isAnswered}
+                              aria-pressed={isThisOptionSelected}
+                              className={`p-5 border rounded-2xl transition-all duration-300 flex justify-between items-center text-left focus:outline-none focus:ring-2 focus:ring-accent/50 ${style}`}
                             >
                               <span className="font-medium drop-shadow-sm">{opt}</span>
                               {isAnswered && isCorrectAnswer && <CheckCircle2 className="w-6 h-6 text-emerald-400 shrink-0 drop-shadow-md" />}
                               {isAnswered && isThisOptionSelected && !isCorrectAnswer && <XCircle className="w-6 h-6 text-rose-400 shrink-0 drop-shadow-md" />}
-                            </div>
+                            </button>
                           );
                         })
                       ) : (

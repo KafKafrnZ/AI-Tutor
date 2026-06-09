@@ -9,7 +9,9 @@ import { useSearchParams } from "next/navigation";
 import { useAppStore } from "@/store/useAppStore";
 import VideoBackground from "@/components/VideoBackground";
 import { API_URL } from "@/lib/api";
+import { parseSseLine } from "@/lib/sse";
 import VoiceInput from "@/components/VoiceInput";
+import TutorLoading from "./loading";
 
 const MIN_AGENT_DISPLAY_MS = 1800;
 const REVEAL_TICK_MS = 22;
@@ -65,39 +67,6 @@ const markdownComponents: Components = {
   },
 };
 
-function readSsePayload(line: string): string | null {
-  const normalizedLine = line.endsWith("\r") ? line.slice(0, -1) : line;
-
-  if (normalizedLine.startsWith("data: ")) {
-    return normalizedLine.slice(6);
-  }
-
-  if (normalizedLine.startsWith("data:")) {
-    return normalizedLine.slice(5);
-  }
-
-  return null;
-}
-
-function parseSseToken(payload: string): string {
-  try {
-    const parsed: unknown = JSON.parse(payload);
-
-    if (typeof parsed === "string") {
-      return parsed;
-    }
-
-    if (parsed && typeof parsed === "object" && "data" in parsed) {
-      const data = (parsed as { data?: unknown }).data;
-      return typeof data === "string" ? data : "";
-    }
-  } catch {
-    return payload;
-  }
-
-  return "";
-}
-
 const MarkdownMessage = ({ content }: { content: string }) => {
   return (
     <div className="text-[15px] leading-7 break-words text-zinc-200">
@@ -115,6 +84,8 @@ function TutorPageInner() {
   const [isFocused, setIsFocused] = useState(false);
   const [streamingContent, setStreamingContent] = useState("");
   const [historyLoaded, setHistoryLoaded] = useState(false);
+  const [streamError, setStreamError] = useState("");
+  const [interruptedQuestion, setInterruptedQuestion] = useState("");
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const streamingFullRef = useRef(""); // for skip / finalize
@@ -126,6 +97,8 @@ function TutorPageInner() {
   const streamAbortRef = useRef<AbortController | null>(null);
   const streamFinalizedRef = useRef(false);
   const agentTimersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+  const retryCount = useRef(0);
+  const lastQuestion = useRef("");
   const [agentStep, setAgentStep] = useState(0);
 
   const isChatStarted = tutorMessages.length > 0 || streamingContent.length > 0;
@@ -155,7 +128,10 @@ function TutorPageInner() {
 
   // Load conversation history from DB on first mount
   useEffect(() => {
-    if (historyLoaded || tutorMessages.length > 0) { setHistoryLoaded(true); return; }
+    if (historyLoaded || tutorMessages.length > 0) {
+      queueMicrotask(() => setHistoryLoaded(true));
+      return;
+    }
     fetch(`${API_URL}/conversations?limit=50`, { credentials: "include" })
       .then((r) => (r.ok ? r.json() : []))
       .then((msgs: { role: string; content: string }[]) => {
@@ -236,7 +212,7 @@ function TutorPageInner() {
   useEffect(() => {
     const q = searchParams.get("q");
     if (q) {
-      setInput(q);
+      queueMicrotask(() => setInput(q));
     }
   }, [searchParams]);
 
@@ -244,6 +220,9 @@ function TutorPageInner() {
     const userQuestion = typeof overrideInput === "string" ? overrideInput : input;
     if (!userQuestion.trim()) return;
     setInput("");
+    setStreamError("");
+    setInterruptedQuestion("");
+    lastQuestion.current = userQuestion;
     
     const currentMessages = useAppStore.getState().tutorMessages;
     const history = currentMessages.slice(-10);
@@ -253,6 +232,7 @@ function TutorPageInner() {
     streamingFullRef.current = "";
     displayQueueRef.current = "";
     streamClosedRef.current = false;
+    // eslint-disable-next-line react-hooks/purity
     responseReleaseAtRef.current = Date.now() + MIN_AGENT_DISPLAY_MS;
     streamFinalizedRef.current = false;
     scheduleAgentStages();
@@ -286,14 +266,10 @@ function TutorPageInner() {
       // Buffer incomplete SSE lines that span across chunk boundaries
       let sseLineBuffer = "";
       const processSseLine = (line: string) => {
-        const payload = readSsePayload(line);
-        if (payload === null) return;
-        if (payload === "[DONE]") {
-          return;
-        }
-        if (payload.length === 0) return;
+        const parsed = parseSseLine(line);
+        if (parsed.done || parsed.error) return;
 
-        const token = parseSseToken(payload).replace(/\\n/g, "\n");
+        const token = (parsed.token ?? "").replace(/\\n/g, "\n");
 
         if (token.length > 0) {
           streamingFullRef.current += token;
@@ -325,12 +301,13 @@ function TutorPageInner() {
           sseLineBuffer = "";
         }
       } catch {
-        // Stream dropped mid-response. If we received content already, finalize
-        // what arrived rather than discarding it and showing "Connection error".
         if (streamingFullRef.current.length === 0) {
           throw new Error("STREAM_DROPPED");
         }
-        // else fall through to finalization below with partial content
+        const interruptedNote = "\n\n*(Connection interrupted - response may be incomplete.)*";
+        streamingFullRef.current += interruptedNote;
+        displayQueueRef.current += interruptedNote;
+        setInterruptedQuestion(userQuestion);
       }
       streamClosedRef.current = true;
       await waitForDisplayDrain();
@@ -353,6 +330,19 @@ function TutorPageInner() {
       if (abortController.signal.aborted || streamFinalizedRef.current) return;
       const updatedMessages = useAppStore.getState().tutorMessages;
       const msg = error instanceof Error ? error.message : "";
+      if (msg === "STREAM_DROPPED" && streamingFullRef.current.length === 0) {
+        if (retryCount.current < 2) {
+          retryCount.current += 1;
+          setTimeout(() => {
+            void handleAskQuestion(lastQuestion.current);
+          }, 1500);
+          return;
+        }
+
+        setStreamError("Connection failed after 2 attempts. Please try again.");
+        return;
+      }
+
       let errorContent = "Connection error. Please check your network and try again.";
       if (msg === "SESSION_EXPIRED") {
         errorContent = "Your session has expired. Please [log in again](/login).";
@@ -362,8 +352,6 @@ function TutorPageInner() {
         errorContent = "The tutor service is temporarily unavailable. Please try again shortly.";
       } else if (msg.startsWith("HTTP_5")) {
         errorContent = `Server error (${msg.slice(5)}). Please try again shortly.`;
-      } else if (msg === "STREAM_DROPPED") {
-        errorContent = "Stream disconnected before any response arrived. Please try again.";
       }
       setTutorMessages([...updatedMessages, { role: "assistant", content: errorContent }]);
     } finally {
@@ -383,7 +371,7 @@ function TutorPageInner() {
   };
 
   return (
-    <div className="h-dvh flex flex-col bg-transparent relative overflow-hidden pb-safe">
+    <div className="h-dvh flex flex-col bg-transparent relative overflow-hidden pb-[env(safe-area-inset-bottom,0px)]">
       
       <VideoBackground posterSrc="/media/tutor-ambient-poster.jpg" />
       
@@ -472,6 +460,25 @@ function TutorPageInner() {
               </motion.div>
             )}
 
+            {(streamError || interruptedQuestion) && (
+              <div className="md:ml-[52px] rounded-2xl border border-amber-500/25 bg-amber-500/10 p-4 text-sm text-amber-100">
+                {streamError || "Connection interrupted. You can retry the same question."}
+                <button
+                  type="button"
+                  onClick={() => {
+                    retryCount.current = 0;
+                    const question = interruptedQuestion || lastQuestion.current;
+                    setStreamError("");
+                    setInterruptedQuestion("");
+                    void handleAskQuestion(question);
+                  }}
+                  className="ml-3 rounded-lg border border-amber-400/30 px-3 py-1.5 font-semibold text-amber-50 transition-colors hover:bg-amber-400/10"
+                >
+                  Retry
+                </button>
+              </div>
+            )}
+
             <div ref={messagesEndRef} className="h-4" />
           </div>
         </div>
@@ -540,7 +547,7 @@ function TutorPageInner() {
 
 export default function TutorPage() {
   return (
-    <Suspense fallback={null}>
+    <Suspense fallback={<TutorLoading />}>
       <TutorPageInner />
     </Suspense>
   );

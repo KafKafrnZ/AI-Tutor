@@ -9,30 +9,62 @@ interface VoiceInputProps {
   isProcessing?: boolean;
 }
 
+type SpeechRecognitionConstructor = new () => SpeechRecognition;
+
+interface SpeechRecognitionResultEvent extends Event {
+  results: {
+    [index: number]: {
+      [index: number]: {
+        transcript: string;
+      };
+    };
+  };
+}
+
+interface SpeechRecognitionErrorEvent extends Event {
+  error: string;
+}
+
+interface SpeechRecognition extends EventTarget {
+  continuous: boolean;
+  interimResults: boolean;
+  lang: string;
+  onresult: ((event: SpeechRecognitionResultEvent) => void) | null;
+  onerror: ((event: SpeechRecognitionErrorEvent) => void) | null;
+  onend: (() => void) | null;
+  start: () => void;
+  stop: () => void;
+}
+
+type SpeechWindow = Window & {
+  SpeechRecognition?: SpeechRecognitionConstructor;
+  webkitSpeechRecognition?: SpeechRecognitionConstructor;
+};
+
 export default function VoiceInput({ onTranscript, isProcessing }: VoiceInputProps) {
   const [isRecording, setIsRecording] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isRecognitionAvailable, setIsRecognitionAvailable] = useState(false);
-  const recognitionRef = useRef<any>(null);
+  const recognitionRef = useRef<SpeechRecognition | null>(null);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
       const SpeechRecognition =
-        (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+        (window as SpeechWindow).SpeechRecognition || (window as SpeechWindow).webkitSpeechRecognition;
 
       if (SpeechRecognition) {
         recognitionRef.current = new SpeechRecognition();
-        setIsRecognitionAvailable(true);
+        queueMicrotask(() => setIsRecognitionAvailable(true));
         recognitionRef.current.continuous = false;
         recognitionRef.current.interimResults = false;
         recognitionRef.current.lang = "en-IN"; // Geared towards Indian users
-        recognitionRef.current.onresult = (event: any) => {
+        recognitionRef.current.onresult = (event) => {
           const transcript = event.results[0][0].transcript;
           onTranscript(transcript);
           setIsRecording(false);
         };
 
-        recognitionRef.current.onerror = (event: any) => {
+        recognitionRef.current.onerror = (event) => {
           console.error("Speech recognition error", event.error);
           setError("Microphone access denied or error occurred.");
           setIsRecording(false);
@@ -42,7 +74,7 @@ export default function VoiceInput({ onTranscript, isProcessing }: VoiceInputPro
           setIsRecording(false);
         };
       } else {
-        setError("Speech recognition is not supported in this browser.");
+        queueMicrotask(() => setError("Speech recognition is not supported in this browser."));
       }
     }
   }, [onTranscript]);

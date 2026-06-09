@@ -36,6 +36,15 @@ Target: production-quality SaaS, $35k+/yr value, auctionable asset.
 6. `frontend/app/mistakes/page.tsx` — redirects to `/error-log`
 7. `frontend/components/ThreeDExplorer.tsx` — TypeScript R3F prop fixes
 8. `.github/workflows/deploy-gate.yml` — CI deploy gate added
+9. **Current State Updates**: `cleanup.py` deleted, `ImportError` fixed, exam scope fixed, deployments being rebuilt fresh.
+
+### Completed in June 2026 Session
+- GK-1 / GP-1 / GP-2 / G2-0
+- G1-1: Delete LangGraph Stubs + Fix README
+- G1-2: Expand RAG Corpus + Wire Ingest into Deployment
+- G1-3: Sentry Observability Integration
+- G1-4: LICENSE + SECURITY.md + README Rewrite
+- G1-5: Landing Page Copy + pyqs.json vs pyproject.toml Sync
 
 ---
 
@@ -87,28 +96,28 @@ REDIS_URL=redis://...   (optional, falls back to in-memory)
 
 ---
 
-## Next Session: Enterprise Audit Checklist
+## Next Sprint
 
 This is the full agenda for the next working session. Work through these in order:
 
 ### 1. Frontend Audit
-- [ ] Global error boundary (`app/error.tsx`, `app/global-error.tsx`)
-- [ ] Loading states for all async pages (`app/*/loading.tsx`)
+- [x] Global error boundary (`app/error.tsx`, `app/global-error.tsx`)
+- [x] Loading states for all async pages (`app/*/loading.tsx`)
 - [ ] Form validation (signup/login — client + server side)
 - [ ] Empty/error states on all data-fetching pages
 - [ ] Mobile responsiveness check (sidebar collapse, tutor chat, mock test layout)
 - [ ] Accessibility basics (aria labels, focus rings, keyboard nav)
 - [ ] `<head>` metadata (`app/layout.tsx` — title, description, og:image)
-- [ ] 404 page (`app/not-found.tsx`)
+- [x] 404 page (`app/not-found.tsx`)
 
 ### 2. Backend Audit
-- [ ] Global exception handler (FastAPI `@app.exception_handler`)
-- [ ] Request timeout middleware (kill hung LLM calls after N seconds)
+- [x] Global exception handler (FastAPI `@app.exception_handler`)
+- [x] Request timeout middleware (kill hung LLM calls after N seconds)
 - [ ] Consistent API error response shape `{ error: string, code: string }`
 - [ ] Auth edge cases: expired token, malformed token, missing cookie
-- [ ] Rate limiting review (slowapi config — limits per endpoint)
+- [x] Rate limiting review (slowapi config — limits per endpoint)
 - [ ] DB connection pool tuning (`pool_size`, `max_overflow`, `pool_timeout`)
-- [ ] Health check endpoint `GET /health` returning DB + Redis + LLM status
+- [x] Health check endpoint `GET /health` returning DB + Redis + LLM status (partial)
 - [ ] Startup validation (fail fast if `DATABASE_URL` / `JWT_SECRET` missing)
 - [ ] Structured logging (structlog already in requirements — wire it up properly)
 

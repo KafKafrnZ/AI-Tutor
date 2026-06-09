@@ -17,3 +17,6 @@ backend/package-lock.json
 # Orphaned alembic scaffold at repo root (canonical: backend/alembic/)
 /alembic/
 /alembic.ini
+
+# Environment variables
+.env.local

@@ -12,23 +12,23 @@ import Logo from "@/components/Logo";
 const capabilities = [
   {
     icon: Bot,
-    title: "AI tutor with visual explanations",
-    body: "Ask anything from the syllabus. Ascend explains step by step — with diagrams and charts, not just walls of text — and cites where the answer comes from.",
-  },
-  {
-    icon: FileText,
-    title: "Exam-grade mock tests",
-    body: "Full-length, sectioned mocks modelled on the real UPSC & State PSC pattern — timed, negatively marked, and evaluated the moment you submit.",
+    title: "AI Tutor",
+    body: "Instant answers grounded in PYQ context via RAG.",
   },
   {
     icon: Target,
-    title: "Adaptive practice",
-    body: "Ascend learns your weak areas from every attempt and drills them, so you spend time on what actually moves your score.",
+    title: "Adaptive Practice",
+    body: "AI-generated topic-specific questions.",
   },
   {
     icon: TrendingUp,
-    title: "Progress & mistake analytics",
-    body: "A mistake locker and progress dashboard track every error and trend, turning scattered weak spots into a clear study plan.",
+    title: "Mistake Locker",
+    body: "Personalized weakness analysis from your error history.",
+  },
+  {
+    icon: FileText,
+    title: "Mock Tests",
+    body: "Timed tests with negative marking and performance analytics.",
   },
 ];
 

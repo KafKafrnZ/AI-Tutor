@@ -69,23 +69,23 @@ class MasterQuestion(Base):
     test_id = Column(Integer, index=True)
     section = Column(String) # Reasoning, Quant, English, IT
     topic = Column(String) # Sub-topic
-    question_text = Column(String, nullable=False)
-    option_a = Column(String)
-    option_b = Column(String)
-    option_c = Column(String)
-    option_d = Column(String)
-    correct_answer = Column(String)
-    explanation = Column(String)
+    question_text = Column(String(2000), nullable=False)
+    option_a = Column(String(500))
+    option_b = Column(String(500))
+    option_c = Column(String(500))
+    option_d = Column(String(500))
+    correct_answer = Column(String(10))
+    explanation = Column(String(4000))
 
 class ErrorLog(Base):
     __tablename__ = "error_logs"
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"))
-    question_text = Column(String)
-    user_answer = Column(String)
-    correct_answer = Column(String)
-    explanation = Column(String)
+    question_text = Column(String(2000))
+    user_answer = Column(String(500))
+    correct_answer = Column(String(500))
+    explanation = Column(String(2000))
     date_added = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
 class Conversation(Base):
@@ -106,7 +106,7 @@ class MockTestSession(Base):
     id = Column(String(64), primary_key=True)  # URL-safe token, one per test attempt
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     test_id = Column(Integer, nullable=False)
-    expires_at = Column(DateTime, nullable=False)
+    expires_at = Column(DateTime, nullable=False, index=True)
 
 
 def get_db():

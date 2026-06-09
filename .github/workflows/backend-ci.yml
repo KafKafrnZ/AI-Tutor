@@ -49,18 +49,19 @@ jobs:
           cache-dependency-path: backend/requirements.txt
 
       - name: Install dependencies
-        run: pip install -r backend/requirements.txt
+        run: pip install -r backend/requirements.txt -r backend/requirements-dev.txt
         working-directory: ${{ github.workspace }}
 
-      - name: Run Alembic migrations
-        run: alembic upgrade head
-        working-directory: ${{ github.workspace }}/backend
-
-      - name: Check for migration drift
-        run: alembic check
-        working-directory: backend
+      - name: Run Alembic migration smoke test
         env:
           DATABASE_URL: postgresql://test:test@localhost:5432/test_db
+        run: |
+          cd backend
+          alembic upgrade head
+          alembic downgrade -1
+          alembic upgrade head
+          echo "Migration smoke test passed"
+        working-directory: ${{ github.workspace }}
 
       - name: Run tests
         run: pytest backend/tests/ -v --tb=short

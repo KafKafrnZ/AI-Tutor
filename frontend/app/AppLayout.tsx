@@ -24,6 +24,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [profileName, setProfileName] = useState("");
   const [profileError, setProfileError] = useState("");
+  const [authError, setAuthError] = useState("");
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -39,12 +40,17 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
     const fetchProfile = async () => {
       try {
-        const response = await fetch(`${API_URL}/me`, {
-          method: "GET",
-          credentials: "include",
-        });
+        const response = await fetch("/api/me", { credentials: "include" });
 
-        if (!response.ok) return;
+        if (response.status === 401) {
+          router.replace("/login");
+          return;
+        }
+
+        if (!response.ok) {
+          setAuthError("Failed to load your profile. Please refresh the page.");
+          return;
+        }
 
         const profile = await response.json();
         const name = profile.name || "Student";
@@ -59,13 +65,15 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           email: profile.email || "",
           plan: profile.plan || "free",
         });
+        setAuthError("");
       } catch (error) {
         console.error("Failed to load profile", error);
+        setAuthError("Failed to load your profile. Please refresh the page.");
       }
     };
 
     void fetchProfile();
-  }, [isPublic, setUser]);
+  }, [isPublic, router, setUser]);
 
   useEffect(() => {
     queueMicrotask(() => setIsMobileMenuOpen(false));
@@ -162,6 +170,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <div className="pointer-events-none absolute inset-0 z-0 bg-noise opacity-50" />
 
         <div className="relative z-10 flex-1 overflow-auto scrollbar-thin scrollbar-thumb-zinc-800 pb-16 md:pb-0">
+          {authError && (
+            <div className="border-b border-rose-500/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
+              {authError}
+            </div>
+          )}
           <ErrorBoundary>{children}</ErrorBoundary>
         </div>
       </main>

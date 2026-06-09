@@ -22,13 +22,14 @@ const tools = [
   { id: "tutor", title: "AI Tutor", desc: "Instant, accurate answers with RAG", icon: Bot, color: "text-violet-400", bg: "bg-violet-500/10", link: "/tutor" },
   { id: "explore", title: "3D Universe", desc: "Interactive study knowledge graph", icon: Compass, color: "text-cyan-400", bg: "bg-cyan-500/10", link: "/explore" },
   { id: "practice", title: "Practice Arena", desc: "Adaptive questions by topic", icon: Target, color: "text-amber-400", bg: "bg-amber-500/10", link: "/practice" },
-  { id: "mock", title: "Mock Tests", desc: "Full-length IBPS SO mocks", icon: FileText, color: "text-rose-400", bg: "bg-rose-500/10", link: "/mock-tests" }
+  { id: "mock", title: "Mock Tests", desc: "Full-length government exam mocks", icon: FileText, color: "text-rose-400", bg: "bg-rose-500/10", link: "/mock-tests" }
 ];
 
 export default function DashboardPage() {
   const [plan, setPlan] = useState<RevisionPlan | null>(null);
   const [loading, setLoading] = useState(true);
   const [checkedSteps, setCheckedSteps] = useState<Record<number, boolean>>({});
+  const [modelName, setModelName] = useState<string>("AI Active");
   const router = useRouter();
 
   useEffect(() => {
@@ -53,6 +54,15 @@ export default function DashboardPage() {
     fetchPlan();
   }, []);
 
+  useEffect(() => {
+    fetch("/api/health", { credentials: "include" })
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.model) setModelName(`${data.model} Active`);
+      })
+      .catch(() => {});
+  }, []);
+
   const handleMouseMove = (e: MouseEvent<HTMLDivElement>) => {
     const target = e.currentTarget;
     const rect = target.getBoundingClientRect();
@@ -67,7 +77,7 @@ export default function DashboardPage() {
       <div className="mt-2">
         <PageHeader 
           title="Dashboard Overview"
-          actions={<StatBadge icon={<Sparkles className="text-violet-400" />} label="Llama 3.3 Active" color="zinc" />}
+          actions={<StatBadge icon={<Sparkles className="text-violet-400" />} label={modelName} color="zinc" />}
         />
         
         {/* Tool Grid */}
@@ -166,13 +176,16 @@ export default function DashboardPage() {
                   {plan.actionable_checklist.map((step, idx) => {
                     const isChecked = !!checkedSteps[idx];
                     return (
-                      <li 
-                        key={idx} 
-                        onClick={() => setCheckedSteps(prev => ({ ...prev, [idx]: !prev[idx] }))}
-                        className={`flex items-start gap-3 text-sm cursor-pointer p-2 rounded-lg transition-colors border ${isChecked ? 'bg-emerald-500/10 border-emerald-500/20 text-zinc-400 line-through' : 'bg-transparent border-transparent text-zinc-300 hover:bg-white/5'}`}
-                      >
-                        <CheckCircle2 className={`w-5 h-5 shrink-0 mt-0.5 transition-colors ${isChecked ? 'text-emerald-500' : 'text-zinc-600'}`} />
-                        <span className="leading-relaxed">{step}</span>
+                      <li key={idx}>
+                        <button
+                          type="button"
+                          onClick={() => setCheckedSteps(prev => ({ ...prev, [idx]: !prev[idx] }))}
+                          aria-pressed={isChecked}
+                          className={`flex w-full items-start gap-3 text-left text-sm cursor-pointer p-2 rounded-lg transition-colors border focus:outline-none focus:ring-2 focus:ring-accent/50 ${isChecked ? 'bg-emerald-500/10 border-emerald-500/20 text-zinc-400 line-through' : 'bg-transparent border-transparent text-zinc-300 hover:bg-white/5'}`}
+                        >
+                          <CheckCircle2 className={`w-5 h-5 shrink-0 mt-0.5 transition-colors ${isChecked ? 'text-emerald-500' : 'text-zinc-600'}`} />
+                          <span className="leading-relaxed">{step}</span>
+                        </button>
                       </li>
                     );
                   })}
@@ -186,7 +199,7 @@ export default function DashboardPage() {
                 <BrainCircuit className="w-8 h-8 opacity-50" />
               </div>
               <h3 className="text-xl font-bold text-white mb-2">Strategy Awaiting Data</h3>
-              <p className="text-zinc-500 mb-6 max-w-sm">Take some mock tests and practice sessions. We'll analyze your mistakes and generate a custom revision plan here.</p>
+              <p className="text-zinc-500 mb-6 max-w-sm">Take some mock tests and practice sessions. We&apos;ll analyze your mistakes and generate a custom revision plan here.</p>
               <Link href="/mock-tests">
                 <button className="px-6 py-2.5 bg-accent hover:bg-accent/80 text-white rounded-xl font-medium transition-colors shadow-lg shadow-accent/20">
                   Start a Mock Test

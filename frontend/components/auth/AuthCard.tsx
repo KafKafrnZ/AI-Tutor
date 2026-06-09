@@ -31,6 +31,13 @@ const copy = {
   },
 };
 
+const validatePassword = (pwd: string): string | null => {
+  if (pwd.length < 8) return "Password must be at least 8 characters.";
+  if (!/[A-Z]/.test(pwd)) return "Must contain at least one uppercase letter.";
+  if (!/[0-9]/.test(pwd)) return "Must contain at least one digit.";
+  return null;
+};
+
 export default function AuthCard({ initialMode = "signin", apiBaseUrl, onSuccess }: AuthCardProps) {
   const [mode, setMode] = useState<AuthMode>(initialMode);
   const [name, setName] = useState("");
@@ -38,15 +45,19 @@ export default function AuthCard({ initialMode = "signin", apiBaseUrl, onSuccess
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
+  const [passwordError, setPasswordError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
   const selectedCopy = copy[mode];
   const baseUrl = (apiBaseUrl ?? API_URL).replace(/\/$/, "");
   const canSubmit = mode === "signin" ? Boolean(email && password) : Boolean(name.trim() && email && password);
+  const passwordStrength =
+    password.length < 8 ? "weak" : validatePassword(password) ? "medium" : "strong";
 
   const selectMode = (nextMode: AuthMode) => {
     setMode(nextMode);
     setError("");
+    setPasswordError("");
     setShowPassword(false);
   };
 
@@ -54,8 +65,18 @@ export default function AuthCard({ initialMode = "signin", apiBaseUrl, onSuccess
     event.preventDefault();
     if (!canSubmit) return;
 
-    setIsLoading(true);
     setError("");
+    setPasswordError("");
+
+    if (mode === "signup") {
+      const pwdError = validatePassword(password);
+      if (pwdError) {
+        setPasswordError(pwdError);
+        return;
+      }
+    }
+
+    setIsLoading(true);
 
     try {
       const response = await fetch(`${baseUrl}/${mode === "signin" ? "login" : "signup"}`, {
@@ -170,7 +191,10 @@ export default function AuthCard({ initialMode = "signin", apiBaseUrl, onSuccess
             <input
               type={showPassword ? "text" : "password"}
               value={password}
-              onChange={(event) => setPassword(event.target.value)}
+              onChange={(event) => {
+                setPassword(event.target.value);
+                setPasswordError("");
+              }}
               autoComplete={mode === "signin" ? "current-password" : "new-password"}
               placeholder={mode === "signin" ? "Your password" : "8+ chars, 1 uppercase, 1 digit"}
               className="w-full rounded-xl border border-white/10 bg-black/45 py-3 pl-10 pr-12 text-white placeholder-zinc-600 outline-none transition-all focus:border-primary/60 focus:ring-2 focus:ring-primary/20"
@@ -185,6 +209,21 @@ export default function AuthCard({ initialMode = "signin", apiBaseUrl, onSuccess
               {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
             </button>
           </div>
+          {mode === "signup" && (
+            <div className="mt-2">
+              <div className="h-1.5 overflow-hidden rounded-full bg-white/10">
+                <div
+                  className={cn(
+                    "h-full rounded-full transition-all",
+                    passwordStrength === "weak" && "w-1/3 bg-rose-500",
+                    passwordStrength === "medium" && "w-2/3 bg-amber-400",
+                    passwordStrength === "strong" && "w-full bg-emerald-400"
+                  )}
+                />
+              </div>
+              {passwordError && <p className="mt-1.5 text-sm text-rose-400">{passwordError}</p>}
+            </div>
+          )}
         </label>
 
         {error && (

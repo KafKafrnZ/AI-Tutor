@@ -56,14 +56,22 @@ export default function MockTestsPage() {
         if (nextTests.length > 0) {
           setTests(nextTests);
           setLoadNotice("");
-        } else {
+        } else if (process.env.NODE_ENV !== "production") {
           setTests(fallbackMockTests);
           setLoadNotice("Showing generated starter mocks because no seeded tests are available yet.");
+        } else {
+          setTests([]);
+          setLoadNotice("No mock tests available yet. Check back soon.");
         }
       } catch (e) {
         console.error("Failed to load mock tests list", e);
-        setTests(fallbackMockTests);
-        setLoadNotice("Backend mock catalog is unavailable, so local starter mocks are shown.");
+        if (process.env.NODE_ENV !== "production") {
+          setTests(fallbackMockTests);
+          setLoadNotice("Backend mock catalog is unavailable, so local starter mocks are shown.");
+        } else {
+          setTests([]);
+          setLoadNotice("No mock tests available yet. Check back soon.");
+        }
       } finally {
         setLoading(false);
       }

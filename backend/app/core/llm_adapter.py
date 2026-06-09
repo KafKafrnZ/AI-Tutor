@@ -4,15 +4,20 @@ import logging
 from typing import Any, AsyncGenerator
 
 import httpx
+from tenacity import (
+    before_sleep_log,
+    retry,
+    retry_if_exception,
+    stop_after_attempt,
+    wait_exponential,
+)
 
 from app.core.config import settings
-
-_RETRYABLE = (httpx.TransportError, httpx.TimeoutException)
-_MAX_RETRIES = 3
 
 logger = logging.getLogger(__name__)
 
 _http_client: httpx.AsyncClient | None = None
+_retry_logger = logging.getLogger("ascend_ai")
 
 
 def detect_provider(url: str) -> str:
@@ -153,31 +158,40 @@ def _extract_anthropic_text(data: dict[str, Any]) -> str:
     return "".join(parts)
 
 
+def _is_retryable(exc: BaseException) -> bool:
+    if isinstance(exc, (httpx.TransportError, httpx.TimeoutException)):
+        return True
+    if isinstance(exc, httpx.HTTPStatusError):
+        return exc.response.status_code in (429, 500, 502, 503, 504)
+    return False
+
+
+@retry(
+    stop=stop_after_attempt(3),
+    wait=wait_exponential(multiplier=1, min=1, max=8),
+    retry=retry_if_exception(_is_retryable),
+    before_sleep=before_sleep_log(_retry_logger, logging.WARNING),
+    reraise=True,
+)
+async def _call_llm_with_retry(client: httpx.AsyncClient, **kwargs: Any) -> httpx.Response:
+    response = await client.post(**kwargs)
+    response.raise_for_status()
+    return response
+
+
 async def chat_complete(messages: list[dict], **kwargs: Any) -> str:
-    """Return a full response from the configured chat endpoint (3 retries, exponential backoff)."""
     provider = detect_provider(settings.LLM_BASE_URL)
     client = get_http_client()
-    delay = 1.0
-    last_err: Exception = RuntimeError("LLM unreachable")
-    for attempt in range(_MAX_RETRIES):
-        try:
-            response = await client.post(
-                _completion_url(provider),
-                headers=_headers(provider),
-                json=_payload(provider, messages, stream=False, **kwargs),
-            )
-            response.raise_for_status()
-            data = response.json()
-            if provider == "anthropic":
-                return _extract_anthropic_text(data)
-            return data["choices"][0]["message"].get("content", "")
-        except _RETRYABLE as exc:
-            last_err = exc
-            if attempt < _MAX_RETRIES - 1:
-                logger.warning("LLM request failed (attempt %d/%d): %s — retrying in %.1fs", attempt + 1, _MAX_RETRIES, exc, delay)
-                await asyncio.sleep(delay)
-                delay *= 2
-    raise last_err
+    response = await _call_llm_with_retry(
+        client,
+        url=_completion_url(provider),
+        headers=_headers(provider),
+        json=_payload(provider, messages, stream=False, **kwargs),
+    )
+    data = response.json()
+    if provider == "anthropic":
+        return _extract_anthropic_text(data)
+    return data["choices"][0]["message"].get("content", "")
 
 
 async def _stream_once(provider: str, client: httpx.AsyncClient, messages: list[dict], **kwargs: Any) -> AsyncGenerator[str, None]:
@@ -223,26 +237,40 @@ async def _stream_once(provider: str, client: httpx.AsyncClient, messages: list[
                 yield token
 
 
-async def chat_stream(messages: list[dict], **kwargs: Any) -> AsyncGenerator[str, None]:
-    """Yield text tokens from the configured streaming chat endpoint.
-
-    Retries up to 3 times with exponential backoff, but only if no tokens
-    have been sent yet (mid-stream drops are not retried to avoid duplicates).
-    """
-    provider = detect_provider(settings.LLM_BASE_URL)
-    client = get_http_client()
+async def _connect_stream_with_retry(
+    provider: str,
+    client: httpx.AsyncClient,
+    messages: list[dict],
+    **kwargs: Any,
+) -> AsyncGenerator[str, None]:
+    """Retry only the initial stream connection (before any tokens are sent)."""
     delay = 1.0
-    for attempt in range(_MAX_RETRIES):
+    last_err: Exception | None = None
+    for attempt in range(3):
         tokens_sent = 0
         try:
             async for token in _stream_once(provider, client, messages, **kwargs):
                 tokens_sent += 1
                 yield token
             return
-        except _RETRYABLE as exc:
-            if tokens_sent == 0 and attempt < _MAX_RETRIES - 1:
-                logger.warning("LLM stream failed before first token (attempt %d/%d) — retrying in %.1fs", attempt + 1, _MAX_RETRIES, delay)
-                await asyncio.sleep(delay)
-                delay *= 2
-            else:
+        except Exception as exc:
+            if not _is_retryable(exc) or tokens_sent > 0 or attempt >= 2:
                 raise
+            last_err = exc
+            logger.warning(
+                "LLM stream connect retry attempt=%d error=%s wait=%.1fs",
+                attempt + 1,
+                exc,
+                delay,
+            )
+            await asyncio.sleep(delay)
+            delay *= 2
+    if last_err:
+        raise last_err
+
+
+async def chat_stream(messages: list[dict], **kwargs: Any) -> AsyncGenerator[str, None]:
+    provider = detect_provider(settings.LLM_BASE_URL)
+    client = get_http_client()
+    async for token in _connect_stream_with_retry(provider, client, messages, **kwargs):
+        yield token
