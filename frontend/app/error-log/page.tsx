@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
-import { ArrowLeft, AlertCircle, AlertTriangle, Bot, Target } from "lucide-react";
+import { AlertCircle, AlertTriangle, Bot, Target } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAppStore } from "@/store/useAppStore";
@@ -10,7 +10,6 @@ import { API_URL, fetchWithRefresh } from "@/lib/api";
 import { SkeletonRow } from "@/components/ui/Skeleton";
 import { PageShell } from "@/components/layout/PageShell";
 import { PageHeader } from "@/components/layout/PageHeader";
-import { GlassCard } from "@/components/layout/GlassCard";
 
 // C-02 FIX: Added strict TypeScript interface
 interface ErrorLogEntry {
@@ -69,11 +68,13 @@ export default function ErrorLogPage() {
   }, [fetchErrorLog]);
 
   return (
-    <PageShell maxWidth="max-w-4xl">
-      <PageHeader 
-        title="Mistake Locker" 
-        backHref="/dashboard" 
-        backLabel="Back to Dashboard" 
+    <PageShell maxWidth="max-w-4xl" universe="hades">
+      <PageHeader
+        universe="hades"
+        title="House of Mistakes"
+        subtitle="Claim each shade, read the cause of death, and turn it into a boon."
+        backHref="/dashboard"
+        backLabel="Back to War Room"
       />
 
       {/* Content */}
@@ -83,10 +84,10 @@ export default function ErrorLogPage() {
           </div>
         ) : authError ? (
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-zinc-900/50 border border-white/5 rounded-2xl p-12 shadow-xl backdrop-blur-sm flex flex-col items-center text-center">
-              <div className="w-16 h-16 bg-red-500/10 text-red-400 rounded-full flex items-center justify-center mb-4">
+              <div className="w-16 h-16 bg-accent-mock/10 text-accent-mock rounded-full flex items-center justify-center mb-4">
                 <AlertCircle className="w-8 h-8" />
               </div>
-              <h2 className="text-xl font-bold text-white mb-2">Authentication Failed</h2>
+              <h2 className="text-xl font-bold text-white mb-2">The House Barred Entry</h2>
               <p className="text-zinc-500 mb-6">Your session has expired or is invalid.</p>
               <Link href="/login" className="px-6 py-2 bg-white text-black rounded-full font-medium hover:bg-zinc-200 transition-colors">
                  Log In Again
@@ -96,8 +97,8 @@ export default function ErrorLogPage() {
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
             className="bg-zinc-900/50 border border-white/5 rounded-2xl p-12 flex flex-col items-center text-center">
             <AlertCircle className="w-10 h-10 text-accent-mock mb-4" />
-            <h2 className="text-xl font-bold text-white mb-2">Failed to load mistakes</h2>
-            <p className="text-zinc-500 mb-6">Check your connection and try again.</p>
+            <h2 className="text-xl font-bold text-white mb-2">The shade ledger would not open</h2>
+            <p className="text-zinc-500 mb-6">Check your connection and summon the ledger again.</p>
             <button
               onClick={fetchErrorLog}
               className="px-6 py-2 bg-zinc-800 text-white rounded-full font-medium hover:bg-zinc-700 transition-colors">
@@ -109,16 +110,16 @@ export default function ErrorLogPage() {
               <div className="w-16 h-16 bg-accent-progress/10 text-accent-progress rounded-full flex items-center justify-center mb-4">
                 <AlertTriangle className="w-8 h-8" />
               </div>
-              <h2 className="text-xl font-bold text-white mb-2">Your locker is empty!</h2>
-              <p className="text-zinc-500">You haven&apos;t made any mistakes yet. Keep taking mock tests!</p>
+              <h2 className="text-xl font-bold text-white mb-2">No shades haunt this hall.</h2>
+              <p className="text-zinc-500">No mistakes recorded yet. Enter a trial and the House will keep score.</p>
             </motion.div>
         ) : (
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-zinc-900/50 border border-white/5 rounded-2xl p-6 shadow-lg backdrop-blur-sm">
             <div className="flex items-center gap-3 mb-6 text-accent-mock">
               <AlertTriangle className="w-5 h-5" />
-              <h2 className="font-bold uppercase tracking-wider text-sm">Review Your Mistakes</h2>
+              <h2 className="font-bold uppercase tracking-wider text-sm">Claim Your Shades</h2>
             </div>
-            
+
             {/* C-02 FIX: The new detailed rendering block */}
             <div className="space-y-4">
               {errors.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE).map((err, idx) => (
@@ -126,30 +127,30 @@ export default function ErrorLogPage() {
                   <p className="text-base font-medium text-white">{err.question_text}</p>
                   <div className="flex flex-col gap-1 text-sm">
                     <span className="text-accent-mock">
-                      Your answer: <span className="font-semibold">{err.user_answer}</span>
+                      Fallen answer: <span className="font-semibold">{err.user_answer}</span>
                     </span>
                     <span className="text-accent-progress">
-                      Correct answer: <span className="font-semibold">{err.correct_answer}</span>
+                      Boon answer: <span className="font-semibold">{err.correct_answer}</span>
                     </span>
                   </div>
                   {err.explanation && (
                     <p className="text-sm text-zinc-400 border-t border-white/5 pt-3">{err.explanation}</p>
                   )}
                   <div className="flex gap-3 pt-3 border-t border-white/5 mt-2">
-                    <button 
+                    <button
                       onClick={() => router.push(`/tutor?q=${encodeURIComponent(`Explain the answer to this question: ${err.question_text}`)}`)}
                       className="flex items-center gap-1.5 px-3 py-1.5 bg-accent/10 hover:bg-accent/20 text-accent rounded-lg text-xs font-medium transition-colors"
                     >
-                      <Bot className="w-3.5 h-3.5" /> Ask Tutor
+                      <Bot className="w-3.5 h-3.5" /> Ask Oracle
                     </button>
-                    <button 
+                    <button
                       onClick={() => {
                         setPracticeTopic(err.question_text.slice(0, 50) + "...");
                         router.push("/practice");
                       }}
                       className="flex items-center gap-1.5 px-3 py-1.5 bg-accent-practice/10 hover:bg-accent-practice/20 text-accent-practice rounded-lg text-xs font-medium transition-colors"
                     >
-                      <Target className="w-3.5 h-3.5" /> Practice Topic
+                      <Target className="w-3.5 h-3.5" /> Enter Arena
                     </button>
                   </div>
                 </div>
@@ -177,7 +178,7 @@ export default function ErrorLogPage() {
                 </button>
               </div>
             )}
-            
+
           </motion.div>
         )}
       </PageShell>

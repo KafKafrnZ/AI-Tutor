@@ -27,7 +27,7 @@ export default function PracticePage() {
 
   const generateQuestions = async () => {
     if (!topic.trim()) {
-      toast.error("Please enter a topic");
+      toast.error("Load a target topic before opening the arena.");
       return;
     }
 
@@ -65,13 +65,13 @@ export default function PracticePage() {
 
       if (parsedQuestions.length > 0) {
         setQuestions(parsedQuestions);
-        toast.success(`Generated ${parsedQuestions.length} questions for "${topic}"`);
+        toast.success(`Arena armed: ${parsedQuestions.length} targets loaded for "${topic}"`);
       } else {
-        toast.error("No questions generated. Try a more specific topic.");
+        toast.error("No targets spawned. Try a sharper topic.");
       }
     } catch (err) {
       console.error(err);
-      toast.error("Backend not reachable. Make sure FastAPI is running on port 8000.");
+      toast.error("Arena uplink failed. Make sure the backend core is online.");
     } finally {
       setLoading(false);
     }
@@ -111,7 +111,7 @@ export default function PracticePage() {
           <div className="p-2 rounded-full bg-black/20 backdrop-blur-md border border-white/10 group-hover:bg-white/10 transition-colors">
             <ArrowLeft className="w-4 h-4" />
           </div>
-          <span className="font-medium text-sm drop-shadow-md">Dashboard</span>
+          <span className="font-medium text-sm drop-shadow-md">War Room</span>
         </Link>
       </div>
 
@@ -124,8 +124,9 @@ export default function PracticePage() {
             <div className="w-16 h-16 bg-gradient-to-br from-accent-practice/80 to-accent-practice/50 backdrop-blur-md border border-white/20 rounded-2xl flex items-center justify-center shadow-lg shadow-accent-practice/20 mb-6">
               <Target className="w-8 h-8 text-white" />
             </div>
+            <p className="mb-2 text-xs font-black uppercase tracking-[0.24em] text-accent-practice">Slayer Drill Loop</p>
             <h1 className="text-4xl font-bold text-white tracking-tight mb-3 drop-shadow-lg">Practice Arena</h1>
-            <p className="text-zinc-300 max-w-lg drop-shadow-md">Generate targeted, adaptive mock questions on any government exam topic to strengthen your weak areas.</p>
+            <p className="text-zinc-300 max-w-lg drop-shadow-md">Load a topic, breach the gates, and clear adaptive targets until the weak area stops moving.</p>
           </div>
 
           {/* Search Input (Now glassy) */}
@@ -135,12 +136,12 @@ export default function PracticePage() {
               <input
                 value={topic}
                 onChange={(e) => setTopic(e.target.value)}
-                placeholder="e.g. Database Normalization, OSI Model..."
+                placeholder="Target dossier: Database Normalization, OSI Model..."
                 className="flex-1 bg-transparent text-lg text-white px-4 focus:outline-none placeholder:text-zinc-500"
                 onKeyDown={(e) => e.key === 'Enter' && generateQuestions()}
               />
               <Button onClick={generateQuestions} disabled={loading} className="px-8 py-6 text-md bg-accent-practice/90 hover:bg-accent-practice text-black font-bold rounded-xl transition-all shadow-lg backdrop-blur-md">
-                {loading ? <Loader2 className="animate-spin w-5 h-5" /> : <span className="flex items-center gap-2"><Sparkles className="w-4 h-4"/> Generate</span>}
+                {loading ? <Loader2 className="animate-spin w-5 h-5" /> : <span className="flex items-center gap-2"><Sparkles className="w-4 h-4"/> Arm Arena</span>}
               </Button>
             </div>
           </div>
@@ -150,7 +151,7 @@ export default function PracticePage() {
             <div className="max-w-3xl mx-auto">
               <div className="flex justify-between items-center mb-6">
                 <span className="text-sm font-semibold text-zinc-400 tracking-wider">
-                  QUESTION {currentIdx + 1} OF {questions.length}
+                  TARGET {currentIdx + 1} OF {questions.length}
                 </span>
                 <div className="flex gap-1">
                   {questions.map((_, i) => (
@@ -249,14 +250,14 @@ export default function PracticePage() {
                   disabled={currentIdx === 0}
                   className="px-6 py-2.5 rounded-xl bg-zinc-900/50 border border-white/10 text-zinc-300 hover:bg-zinc-800 disabled:opacity-30 transition-colors font-medium backdrop-blur-sm"
                 >
-                  Previous
+                  Previous Target
                 </button>
                 <button
                   onClick={() => setCurrentIdx(prev => Math.min(questions.length - 1, prev + 1))}
                   disabled={currentIdx === questions.length - 1}
                   className="px-6 py-2.5 rounded-xl bg-accent-practice/90 text-black hover:bg-accent-practice disabled:opacity-30 disabled:hover:bg-accent-practice/90 transition-colors font-bold backdrop-blur-sm shadow-lg shadow-accent-practice/20"
                 >
-                  Next Question
+                  Next Target
                 </button>
               </div>
             </div>

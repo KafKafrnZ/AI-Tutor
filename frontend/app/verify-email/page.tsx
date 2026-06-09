@@ -45,48 +45,48 @@ function VerifyEmailContent() {
   return (
     <div className="w-full max-w-md bg-zinc-900/50 border border-white/10 rounded-3xl p-8 shadow-2xl backdrop-blur-xl">
       <div className="flex flex-col items-center mb-8">
-        <div className="w-12 h-12 bg-violet-600 rounded-xl flex items-center justify-center mb-4 shadow-lg shadow-violet-900/20">
+        <div className="w-12 h-12 bg-primary/15 rounded-xl flex items-center justify-center mb-4 shadow-lg shadow-primary/20 border border-primary/25">
           <Bot className="w-6 h-6 text-white" />
         </div>
-        <h2 className="text-2xl font-bold text-white tracking-tight">Email Verification</h2>
+        <h2 className="text-2xl font-bold text-white tracking-tight">Neural Mail Verification</h2>
       </div>
 
       <div className="flex flex-col items-center gap-6 text-center">
         {status === "loading" && (
           <>
-            <Loader2 className="w-10 h-10 text-violet-400 animate-spin" />
+            <Loader2 className="w-10 h-10 text-primary animate-spin" />
             <p className="text-zinc-400">Verifying your email address…</p>
           </>
         )}
 
         {status === "success" && (
           <>
-            <CheckCircle2 className="w-12 h-12 text-emerald-400" />
+            <CheckCircle2 className="w-12 h-12 text-accent-progress" />
             <div className="space-y-1">
-              <p className="text-emerald-400 font-semibold text-lg">Verified!</p>
+              <p className="text-accent-progress font-semibold text-lg">Access shard verified.</p>
               <p className="text-zinc-400 text-sm">{message}</p>
             </div>
             <Link
               href="/login"
               className="w-full bg-white text-black font-semibold rounded-xl py-3 hover:bg-zinc-200 transition-colors text-center block"
             >
-              Continue to Login
+              Continue to Access Deck
             </Link>
           </>
         )}
 
         {status === "error" && (
           <>
-            <XCircle className="w-12 h-12 text-rose-400" />
+            <XCircle className="w-12 h-12 text-accent-mock" />
             <div className="space-y-1">
-              <p className="text-rose-400 font-semibold text-lg">Verification Failed</p>
+              <p className="text-accent-mock font-semibold text-lg">Verification failed</p>
               <p className="text-zinc-400 text-sm">{message}</p>
             </div>
             <Link
               href="/signup"
               className="w-full bg-white text-black font-semibold rounded-xl py-3 hover:bg-zinc-200 transition-colors text-center block"
             >
-              Back to Sign Up
+              Back to Install
             </Link>
           </>
         )}
@@ -97,11 +97,11 @@ function VerifyEmailContent() {
 
 export default function VerifyEmailPage() {
   return (
-    <div className="min-h-screen bg-[#09090b] flex flex-col items-center justify-center p-4">
+    <div className="min-h-screen bg-bg flex flex-col items-center justify-center p-4">
       <Suspense fallback={
         <div className="flex items-center gap-3 text-zinc-400">
           <Loader2 className="w-5 h-5 animate-spin" />
-          <span>Loading…</span>
+          <span>Loading verification shard...</span>
         </div>
       }>
         <VerifyEmailContent />

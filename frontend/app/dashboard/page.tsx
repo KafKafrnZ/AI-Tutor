@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Bot, Target, FileText, ChevronRight, BrainCircuit, CheckCircle2, Sparkles, Compass } from "lucide-react";
-import { MouseEvent, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { API_URL, fetchWithRefresh } from "@/lib/api";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { PageShell } from "@/components/layout/PageShell";
@@ -19,10 +19,10 @@ interface RevisionPlan {
 }
 
 const tools = [
-  { id: "tutor", title: "AI Tutor", desc: "Instant, accurate answers with RAG", icon: Bot, color: "text-accent", bg: "bg-accent/10", link: "/tutor" },
-  { id: "explore", title: "3D Universe", desc: "Interactive study knowledge graph", icon: Compass, color: "text-primary", bg: "bg-primary/10", link: "/explore" },
-  { id: "practice", title: "Practice Arena", desc: "Adaptive questions by topic", icon: Target, color: "text-accent-practice", bg: "bg-accent-practice/10", link: "/practice" },
-  { id: "mock", title: "Mock Tests", desc: "Full-length government exam mocks", icon: FileText, color: "text-accent-mock", bg: "bg-accent-mock/10", link: "/mock-tests" }
+  { id: "tutor", title: "Aperture Chamber", desc: "Run concept tests with the tutor core", icon: Bot, color: "text-accent", bg: "bg-accent/10", link: "/tutor" },
+  { id: "explore", title: "Grace Map", desc: "Chart the 3D syllabus realm", icon: Compass, color: "text-primary", bg: "bg-primary/10", link: "/explore" },
+  { id: "practice", title: "Slayer Arena", desc: "Fast adaptive drills by target", icon: Target, color: "text-accent-practice", bg: "bg-accent-practice/10", link: "/practice" },
+  { id: "mock", title: "Bonfire Trials", desc: "High-stakes mocks with post-mortems", icon: FileText, color: "text-accent-mock", bg: "bg-accent-mock/10", link: "/mock-tests" }
 ];
 
 export default function DashboardPage() {
@@ -62,20 +62,13 @@ export default function DashboardPage() {
       .catch(() => {});
   }, []);
 
-  const handleMouseMove = (e: MouseEvent<HTMLDivElement>) => {
-    const target = e.currentTarget;
-    const rect = target.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    target.style.setProperty("--mouse-x", `${x}px`);
-    target.style.setProperty("--mouse-y", `${y}px`);
-  };
-
   return (
-    <PageShell maxWidth="max-w-6xl">
+    <PageShell maxWidth="max-w-6xl" universe="witcher">
       <div className="mt-2">
         <PageHeader 
-          title="Dashboard Overview"
+          universe="witcher"
+          title="Kaer Morhen War Room"
+          subtitle="Contracts, bounties, and fast travel for today's government-exam hunt."
           actions={<StatBadge icon={<Sparkles className="text-accent" />} label={modelName} color="zinc" />}
         />
         
@@ -121,8 +114,8 @@ export default function DashboardPage() {
               <BrainCircuit className="w-6 h-6 text-accent" />
             </div>
             <div>
-              <h2 className="text-2xl font-bold text-white">Dynamic AI Strategy</h2>
-              <p className="text-zinc-400 text-sm">Calculated from your Mistake Locker</p>
+              <h2 className="text-2xl font-bold text-white">Geralt&apos;s Journal</h2>
+              <p className="text-zinc-400 text-sm">Calculated from shades in your Mistake Locker</p>
             </div>
           </div>
 
@@ -144,14 +137,14 @@ export default function DashboardPage() {
               {/* Left Column: Weakness & Concepts */}
               <div className="space-y-6">
                 <div>
-                  <h4 className="text-xs uppercase tracking-wider text-zinc-500 font-bold mb-2">Primary Weakness</h4>
+                  <h4 className="text-xs uppercase tracking-wider text-zinc-500 font-bold mb-2">Highest Bounty</h4>
                   <div className="inline-block px-4 py-2 bg-accent-mock/10 border border-accent-mock/20 rounded-lg text-accent-mock font-semibold">
                     {plan.primary_weakness}
                   </div>
                 </div>
                 
                 <div>
-                  <h4 className="text-xs uppercase tracking-wider text-zinc-500 font-bold mb-3">Critical Concepts to Review</h4>
+                  <h4 className="text-xs uppercase tracking-wider text-zinc-500 font-bold mb-3">Signs to Prepare</h4>
                   <div className="flex flex-wrap gap-2">
                     {plan.critical_concepts.map((concept, idx) => (
                       <button 
@@ -169,7 +162,7 @@ export default function DashboardPage() {
               {/* Right Column: Checklist */}
               <div className="bg-black/20 rounded-2xl p-6 border border-white/5">
                 <h4 className="text-sm font-bold text-white mb-4 flex items-center gap-2">
-                  <Target className="w-4 h-4 text-accent" /> Target Checklist
+                  <Target className="w-4 h-4 text-accent" /> Contract Checklist
                 </h4>
                 <ul className="space-y-3">
                   {plan.actionable_checklist.map((step, idx) => {
@@ -197,11 +190,11 @@ export default function DashboardPage() {
               <div className="w-16 h-16 bg-white/5 text-zinc-400 rounded-full flex items-center justify-center mb-4 border border-white/10">
                 <BrainCircuit className="w-8 h-8 opacity-50" />
               </div>
-              <h3 className="text-xl font-bold text-white mb-2">Strategy Awaiting Data</h3>
-              <p className="text-zinc-500 mb-6 max-w-sm">Take some mock tests and practice sessions. We&apos;ll analyze your mistakes and generate a custom revision plan here.</p>
+              <h3 className="text-xl font-bold text-white mb-2">Notice Board Awaiting Monsters</h3>
+              <p className="text-zinc-500 mb-6 max-w-sm">Complete a trial or arena run. The medallion will read your mistakes and pin a smarter contract here.</p>
               <Link href="/mock-tests">
                 <button className="px-6 py-2.5 bg-accent hover:bg-accent/80 text-white rounded-xl font-medium transition-colors shadow-lg shadow-accent/20">
-                  Start a Mock Test
+                  Kindle a Bonfire Trial
                 </button>
               </Link>
             </div>

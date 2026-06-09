@@ -7,6 +7,8 @@ import { Loader2, X } from "lucide-react";
 import Sidebar from "@/components/layout/Sidebar";
 import MobileTabBar from "@/components/layout/MobileTabBar";
 import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
+import { GameAtmosphere, HudBar } from "@/components/game/GamePrimitives";
+import { universeForPath } from "@/components/game/universes";
 import { API_URL } from "@/lib/api";
 import { useAppStore } from "@/store/useAppStore";
 
@@ -83,6 +85,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     return <>{children}</>;
   }
 
+  const universe = universeForPath(pathname);
+
   const openProfile = () => {
     setProfileName(userName === "Student" ? "" : userName);
     setProfileError("");
@@ -156,6 +160,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="relative flex h-dvh overflow-hidden bg-bg font-sans text-zinc-200">
+      <GameAtmosphere universe={universe} intensity="quiet" />
       <Sidebar
         appName="Ascend AI"
         userName={userName}
@@ -164,12 +169,14 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         onMobileOpenChange={setIsMobileMenuOpen}
         onOpenProfile={openProfile}
         onLogout={handleLogout}
+        universe={universe}
       />
 
       <main className="relative flex h-full w-full min-w-0 flex-1 flex-col overflow-hidden pt-16 md:pl-64 md:pt-0">
         <div className="pointer-events-none absolute inset-0 z-0 bg-noise opacity-50" />
 
         <div className="relative z-10 flex-1 overflow-auto scrollbar-thin scrollbar-thumb-zinc-800 pb-16 md:pb-0">
+          <HudBar userName={userName} plan={userPlan} universe={universe} />
           {authError && (
             <div className="border-b border-accent-mock/20 bg-accent-mock/10 px-4 py-3 text-sm text-accent-mock">
               {authError}
@@ -179,15 +186,16 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         </div>
       </main>
 
-      <MobileTabBar onMenuClick={() => setIsMobileMenuOpen(true)} />
+      <MobileTabBar onMenuClick={() => setIsMobileMenuOpen(true)} universe={universe} />
 
       {isProfileOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 px-4 backdrop-blur-sm">
-          <form onSubmit={handleSaveProfile} className="w-full max-w-md rounded-2xl border border-white/10 bg-surface p-6 shadow-2xl">
+          <form onSubmit={handleSaveProfile} className="w-full max-w-md rounded-[var(--radius-token)] border border-accent-deus/20 bg-surface/95 p-6 shadow-2xl shadow-accent-deus/10">
             <div className="mb-6 flex items-start justify-between gap-4">
               <div>
-                <h2 className="text-lg font-bold text-white">Profile Details</h2>
-                <p className="mt-1 text-sm text-zinc-500">Update the name shown in your sidebar.</p>
+                <p className="text-xs font-bold uppercase tracking-[0.22em] text-accent-deus">Ripperdoc Console</p>
+                <h2 className="text-lg font-bold text-white">Identity Implant</h2>
+                <p className="mt-1 text-sm text-zinc-500">Tune the operator name shown in the Neuro-OS HUD.</p>
               </div>
               <button
                 type="button"
@@ -201,18 +209,18 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
             <div className="space-y-4">
               <label htmlFor="profile-name" className="block">
-                <span className="mb-1.5 block text-sm font-medium text-zinc-300">Name</span>
+                <span className="mb-1.5 block text-sm font-medium text-zinc-300">Operator call sign</span>
                 <input
                   id="profile-name"
                   value={profileName}
                   onChange={(event) => setProfileName(event.target.value)}
                   className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-white outline-none transition-all focus:border-primary focus:ring-1 focus:ring-primary"
-                  placeholder="Your name"
+                  placeholder="Your call sign"
                 />
               </label>
 
               <label htmlFor="profile-email" className="block">
-                <span className="mb-1.5 block text-sm font-medium text-zinc-300">Email</span>
+                <span className="mb-1.5 block text-sm font-medium text-zinc-300">Secure access ID</span>
                 <input
                   id="profile-email"
                   value={userEmail || "Not loaded"}
@@ -230,7 +238,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 onClick={() => setIsProfileOpen(false)}
                 className="rounded-xl border border-zinc-800 px-4 py-2.5 text-sm font-semibold text-zinc-300 transition-colors hover:bg-white/5 hover:text-white"
               >
-                Cancel
+                Close bay
               </button>
               <button
                 type="submit"
@@ -238,7 +246,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 className="flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-bg transition-colors hover:bg-primary disabled:opacity-50"
               >
                 {isSavingProfile && <Loader2 className="size-4 animate-spin" />}
-                Save Changes
+                Install implant
               </button>
             </div>
           </form>
