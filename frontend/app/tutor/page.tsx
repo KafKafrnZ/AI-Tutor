@@ -6,7 +6,7 @@ import { Send, User, ArrowLeft, Sparkles, CheckCircle2, CircleDashed } from "luc
 import ReactMarkdown, { type Components } from "react-markdown";
 import rehypeSanitize from "rehype-sanitize";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useAppStore } from "@/store/useAppStore";
 import VideoBackground from "@/components/VideoBackground";
 import { API_URL, fetchWithRefresh } from "@/lib/api";
@@ -46,7 +46,7 @@ const markdownComponents: Components = {
     );
   },
   strong({ children }) {
-    return <strong className="text-transparent bg-clip-text bg-gradient-to-r from-violet-300 to-fuchsia-300 font-bold tracking-wide">{children}</strong>;
+    return <strong className="text-accent font-bold tracking-wide">{children}</strong>;
   },
   ul({ children }) {
     return <ul className="list-disc list-outside space-y-2 ml-5 my-4 text-zinc-200">{children}</ul>;
@@ -79,6 +79,7 @@ const MarkdownMessage = ({ content }: { content: string }) => {
 function TutorPageInner() {
   const tutorMessages = useAppStore((state) => state.tutorMessages);
   const setTutorMessages = useAppStore((state) => state.setTutorMessages);
+  const router = useRouter();
   const searchParams = useSearchParams();
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -265,7 +266,7 @@ function TutorPageInner() {
             body: streamPayload,
           });
         } else {
-          window.location.href = "/login";
+          router.replace("/login");
           throw new Error("SESSION_EXPIRED");
         }
       }
