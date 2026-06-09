@@ -2,7 +2,9 @@ import os
 import json as _json
 from dotenv import load_dotenv
 
-load_dotenv()
+# .env.local (gitignored) overrides .env — matches Next.js / Docker Compose convention
+load_dotenv(".env.local")
+load_dotenv()  # fallback to .env if .env.local is absent
 
 
 def parse_bool(raw: str | None, default: bool = False) -> bool:
