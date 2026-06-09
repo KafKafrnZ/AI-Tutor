@@ -13,16 +13,24 @@ import { API_URL } from "@/lib/api";
 import { useAppStore } from "@/store/useAppStore";
 
 const PUBLIC_ROUTES = ["/", "/login", "/signup", "/forgot-password", "/reset-password", "/verify-email"];
+const PREVIEW_AUTH_ENABLED = process.env.NEXT_PUBLIC_PREVIEW_AUTH === "true";
+const PREVIEW_USER = {
+  id: 0,
+  name: "Preview Operator",
+  email: "preview@localhost",
+  plan: "cinematic",
+};
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const isPublic = PUBLIC_ROUTES.includes(pathname);
+  const isPreviewAuth = PREVIEW_AUTH_ENABLED && typeof window !== "undefined" && window.location.hostname === "localhost";
   const { setUser, user: storeUser } = useAppStore();
 
-  const [userName, setUserName] = useState("Student");
-  const [userEmail, setUserEmail] = useState(() => storeUser?.email || "");
-  const [userPlan, setUserPlan] = useState(() => storeUser?.plan || "free");
+  const [userName, setUserName] = useState(() => (isPreviewAuth ? PREVIEW_USER.name : "Student"));
+  const [userEmail, setUserEmail] = useState(() => (isPreviewAuth ? PREVIEW_USER.email : storeUser?.email || ""));
+  const [userPlan, setUserPlan] = useState(() => (isPreviewAuth ? PREVIEW_USER.plan : storeUser?.plan || "free"));
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [profileName, setProfileName] = useState("");
   const [profileError, setProfileError] = useState("");
@@ -39,6 +47,15 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (isPublic) return;
+
+    if (isPreviewAuth) {
+      queueMicrotask(() => {
+        localStorage.setItem("userName", PREVIEW_USER.name);
+        setUser(PREVIEW_USER);
+        setAuthError("");
+      });
+      return;
+    }
 
     const fetchProfile = async () => {
       try {
@@ -75,7 +92,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     };
 
     void fetchProfile();
-  }, [isPublic, router, setUser]);
+  }, [isPreviewAuth, isPublic, router, setUser]);
 
   useEffect(() => {
     queueMicrotask(() => setIsMobileMenuOpen(false));

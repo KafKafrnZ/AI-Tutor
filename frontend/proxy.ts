@@ -6,6 +6,12 @@ const PROTECTED_ROUTES = [
   '/progress', '/error-log', '/explore'
 ]
 const AUTH_ROUTES = ['/login', '/signup', '/']
+const PREVIEW_AUTH_ENABLED = process.env.NEXT_PUBLIC_PREVIEW_AUTH === 'true'
+
+function isLocalhost(request: NextRequest): boolean {
+  const host = request.headers.get('host') || ''
+  return host.startsWith('localhost:') || host.startsWith('127.0.0.1:')
+}
 
 function isTokenExpired(token: string): boolean {
   try {
@@ -17,17 +23,18 @@ function isTokenExpired(token: string): boolean {
 }
 
 export function proxy(request: NextRequest) {
+  const previewAuth = PREVIEW_AUTH_ENABLED && isLocalhost(request)
   const token = request.cookies.get('access_token')?.value
   const tokenValid = token && !isTokenExpired(token)
 
   const isProtected = PROTECTED_ROUTES.some(route => request.nextUrl.pathname.startsWith(route))
   const isAuthRoute = AUTH_ROUTES.some(route => request.nextUrl.pathname === route)
 
-  if (isProtected && !tokenValid) {
+  if (isProtected && !tokenValid && !previewAuth) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
 
-  if (isAuthRoute && tokenValid) {
+  if (isAuthRoute && tokenValid && !previewAuth) {
     return NextResponse.redirect(new URL('/dashboard', request.url))
   }
 
