@@ -23,9 +23,15 @@ describe("SSE parser", () => {
     expect(parseSseLine("event: ping")).toEqual({});
   });
 
-  it("handles malformed JSON without throwing", () => {
+  it("handles malformed JSON without throwing and returns raw payload as token", () => {
     expect(() => parseSseLine("data: {broken")).not.toThrow();
-    expect(parseSseLine("data: {broken")).toEqual({ error: "Malformed SSE JSON" });
+    // Non-JSON payloads fall back to raw token so plain-string SSE streams work
+    expect(parseSseLine("data: {broken")).toEqual({ token: "{broken" });
+  });
+
+  it("treats plain-string sse-starlette tokens as raw tokens", () => {
+    expect(parseSseLine("data: Hello world")).toEqual({ token: "Hello world" });
+    expect(parseSseLine("data: Hello\\nworld")).toEqual({ token: "Hello\\nworld" });
   });
 
   it("skips empty lines silently", () => {

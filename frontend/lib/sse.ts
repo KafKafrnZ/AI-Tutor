@@ -40,6 +40,8 @@ export function parseSseLine(line: string): ParsedSseLine {
 
     return {};
   } catch {
-    return { error: "Malformed SSE JSON" };
+    // Backend sent a raw (non-JSON) string token — treat the entire payload as the token.
+    // This handles FastAPI/sse-starlette streams that yield plain strings without JSON wrapping.
+    return payload.trim() ? { token: payload } : {};
   }
 }
