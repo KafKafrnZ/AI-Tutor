@@ -6,7 +6,7 @@ import { ArrowLeft, AlertCircle, AlertTriangle, Bot, Target } from "lucide-react
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAppStore } from "@/store/useAppStore";
-import { API_URL } from "@/lib/api";
+import { API_URL, fetchWithRefresh } from "@/lib/api";
 import { SkeletonRow } from "@/components/ui/Skeleton";
 import { PageShell } from "@/components/layout/PageShell";
 import { PageHeader } from "@/components/layout/PageHeader";
@@ -41,15 +41,9 @@ export default function ErrorLogPage() {
     setAuthError(false);
     setIsLoading(true);
     try {
-      const response = await fetch(`${API_URL}/error-log`, {
+      const response = await fetchWithRefresh(`${API_URL}/error-log`, {
         method: "GET",
-        credentials: "include",
       });
-
-      if (response.status === 401) {
-        setAuthError(true);
-        return;
-      }
 
       if (response.ok) {
         const data = await response.json();
@@ -101,7 +95,7 @@ export default function ErrorLogPage() {
         ) : fetchError ? (
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
             className="bg-zinc-900/50 border border-white/5 rounded-2xl p-12 flex flex-col items-center text-center">
-            <AlertCircle className="w-10 h-10 text-rose-400 mb-4" />
+            <AlertCircle className="w-10 h-10 text-accent-mock mb-4" />
             <h2 className="text-xl font-bold text-white mb-2">Failed to load mistakes</h2>
             <p className="text-zinc-500 mb-6">Check your connection and try again.</p>
             <button
@@ -112,7 +106,7 @@ export default function ErrorLogPage() {
           </motion.div>
         ) : errors.length === 0 ? (
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-zinc-900/50 border border-white/5 rounded-2xl p-12 shadow-xl backdrop-blur-sm flex flex-col items-center text-center">
-              <div className="w-16 h-16 bg-emerald-500/10 text-emerald-400 rounded-full flex items-center justify-center mb-4">
+              <div className="w-16 h-16 bg-accent-progress/10 text-accent-progress rounded-full flex items-center justify-center mb-4">
                 <AlertTriangle className="w-8 h-8" />
               </div>
               <h2 className="text-xl font-bold text-white mb-2">Your locker is empty!</h2>
@@ -120,7 +114,7 @@ export default function ErrorLogPage() {
             </motion.div>
         ) : (
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-zinc-900/50 border border-white/5 rounded-2xl p-6 shadow-lg backdrop-blur-sm">
-            <div className="flex items-center gap-3 mb-6 text-rose-400">
+            <div className="flex items-center gap-3 mb-6 text-accent-mock">
               <AlertTriangle className="w-5 h-5" />
               <h2 className="font-bold uppercase tracking-wider text-sm">Review Your Mistakes</h2>
             </div>
@@ -131,10 +125,10 @@ export default function ErrorLogPage() {
                 <div key={err.id ?? idx} className="p-5 bg-zinc-950/50 border border-white/5 rounded-xl space-y-3">
                   <p className="text-base font-medium text-white">{err.question_text}</p>
                   <div className="flex flex-col gap-1 text-sm">
-                    <span className="text-rose-400">
+                    <span className="text-accent-mock">
                       Your answer: <span className="font-semibold">{err.user_answer}</span>
                     </span>
-                    <span className="text-emerald-400">
+                    <span className="text-accent-progress">
                       Correct answer: <span className="font-semibold">{err.correct_answer}</span>
                     </span>
                   </div>

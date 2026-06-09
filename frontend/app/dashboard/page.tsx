@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Bot, Target, FileText, ChevronRight, BrainCircuit, CheckCircle2, Sparkles, Compass } from "lucide-react";
 import { MouseEvent, useEffect, useState } from "react";
-import { API_URL } from "@/lib/api";
+import { API_URL, fetchWithRefresh } from "@/lib/api";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { PageShell } from "@/components/layout/PageShell";
 import { PageHeader } from "@/components/layout/PageHeader";
@@ -19,10 +19,10 @@ interface RevisionPlan {
 }
 
 const tools = [
-  { id: "tutor", title: "AI Tutor", desc: "Instant, accurate answers with RAG", icon: Bot, color: "text-violet-400", bg: "bg-violet-500/10", link: "/tutor" },
-  { id: "explore", title: "3D Universe", desc: "Interactive study knowledge graph", icon: Compass, color: "text-cyan-400", bg: "bg-cyan-500/10", link: "/explore" },
-  { id: "practice", title: "Practice Arena", desc: "Adaptive questions by topic", icon: Target, color: "text-amber-400", bg: "bg-amber-500/10", link: "/practice" },
-  { id: "mock", title: "Mock Tests", desc: "Full-length government exam mocks", icon: FileText, color: "text-rose-400", bg: "bg-rose-500/10", link: "/mock-tests" }
+  { id: "tutor", title: "AI Tutor", desc: "Instant, accurate answers with RAG", icon: Bot, color: "text-accent", bg: "bg-accent/10", link: "/tutor" },
+  { id: "explore", title: "3D Universe", desc: "Interactive study knowledge graph", icon: Compass, color: "text-primary", bg: "bg-primary/10", link: "/explore" },
+  { id: "practice", title: "Practice Arena", desc: "Adaptive questions by topic", icon: Target, color: "text-accent-practice", bg: "bg-accent-practice/10", link: "/practice" },
+  { id: "mock", title: "Mock Tests", desc: "Full-length government exam mocks", icon: FileText, color: "text-accent-mock", bg: "bg-accent-mock/10", link: "/mock-tests" }
 ];
 
 export default function DashboardPage() {
@@ -35,9 +35,8 @@ export default function DashboardPage() {
   useEffect(() => {
     const fetchPlan = async () => {
       try {
-        const res = await fetch(`${API_URL}/revision-plan`, {
+        const res = await fetchWithRefresh(`${API_URL}/revision-plan`, {
           method: "GET",
-          credentials: "include",
         });
 
         const data = await res.json();
@@ -77,7 +76,7 @@ export default function DashboardPage() {
       <div className="mt-2">
         <PageHeader 
           title="Dashboard Overview"
-          actions={<StatBadge icon={<Sparkles className="text-violet-400" />} label={modelName} color="zinc" />}
+          actions={<StatBadge icon={<Sparkles className="text-accent" />} label={modelName} color="zinc" />}
         />
         
         {/* Tool Grid */}
@@ -146,7 +145,7 @@ export default function DashboardPage() {
               <div className="space-y-6">
                 <div>
                   <h4 className="text-xs uppercase tracking-wider text-zinc-500 font-bold mb-2">Primary Weakness</h4>
-                  <div className="inline-block px-4 py-2 bg-rose-500/10 border border-rose-500/20 rounded-lg text-rose-400 font-semibold">
+                  <div className="inline-block px-4 py-2 bg-accent-mock/10 border border-accent-mock/20 rounded-lg text-accent-mock font-semibold">
                     {plan.primary_weakness}
                   </div>
                 </div>
@@ -158,7 +157,7 @@ export default function DashboardPage() {
                       <button 
                         key={idx} 
                         onClick={() => router.push(`/tutor?q=${encodeURIComponent(`Explain ${concept}`)}`)}
-                        className="px-3 py-1.5 bg-white/5 hover:bg-violet-500/20 border border-white/10 hover:border-violet-500/30 rounded-md text-zinc-300 hover:text-violet-300 text-sm transition-colors cursor-pointer"
+                        className="px-3 py-1.5 bg-white/5 hover:bg-accent/20 border border-white/10 hover:border-accent/30 rounded-md text-zinc-300 hover:text-accent text-sm transition-colors cursor-pointer"
                       >
                         {concept}
                       </button>
@@ -181,9 +180,9 @@ export default function DashboardPage() {
                           type="button"
                           onClick={() => setCheckedSteps(prev => ({ ...prev, [idx]: !prev[idx] }))}
                           aria-pressed={isChecked}
-                          className={`flex w-full items-start gap-3 text-left text-sm cursor-pointer p-2 rounded-lg transition-colors border focus:outline-none focus:ring-2 focus:ring-accent/50 ${isChecked ? 'bg-emerald-500/10 border-emerald-500/20 text-zinc-400 line-through' : 'bg-transparent border-transparent text-zinc-300 hover:bg-white/5'}`}
+                          className={`flex w-full items-start gap-3 text-left text-sm cursor-pointer p-2 rounded-lg transition-colors border focus:outline-none focus:ring-2 focus:ring-accent/50 ${isChecked ? 'bg-accent-progress/10 border-accent-progress/20 text-zinc-400 line-through' : 'bg-transparent border-transparent text-zinc-300 hover:bg-white/5'}`}
                         >
-                          <CheckCircle2 className={`w-5 h-5 shrink-0 mt-0.5 transition-colors ${isChecked ? 'text-emerald-500' : 'text-zinc-600'}`} />
+                          <CheckCircle2 className={`w-5 h-5 shrink-0 mt-0.5 transition-colors ${isChecked ? 'text-accent-progress' : 'text-zinc-600'}`} />
                           <span className="leading-relaxed">{step}</span>
                         </button>
                       </li>

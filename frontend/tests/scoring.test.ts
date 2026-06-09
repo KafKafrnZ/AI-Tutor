@@ -32,4 +32,16 @@ describe("negative marking scoring", () => {
       { selected: "C", correctAnswer: "D" },
     ])).toMatchObject({ score: 0, wrongCount: 2 });
   });
+
+  it("returns 0 for an empty question set — no NaN or divide-by-zero", () => {
+    const result = scoreWithNegativeMarking([]);
+    expect(result.score).toBe(0);
+    expect(Number.isFinite(result.score)).toBe(true);
+  });
+
+  it("handles a single correct answer", () => {
+    expect(scoreWithNegativeMarking([
+      { selected: "A", correctAnswer: "A" },
+    ])).toMatchObject({ score: 1, correctCount: 1, wrongCount: 0, skippedCount: 0 });
+  });
 });

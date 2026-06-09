@@ -345,7 +345,9 @@ class TestDeadDependenciesRemoved:
     def _check_file(self, path: str):
         import ast
         import pathlib
-        src = pathlib.Path(path).read_text(encoding="utf-8")
+        # Resolve relative to the backend/ package root regardless of CWD
+        backend_root = pathlib.Path(__file__).parent.parent
+        src = (backend_root / path).read_text(encoding="utf-8")
         for node in ast.walk(ast.parse(src)):
             if isinstance(node, (ast.Import, ast.ImportFrom)):
                 mod = node.module if isinstance(node, ast.ImportFrom) else None
@@ -356,7 +358,7 @@ class TestDeadDependenciesRemoved:
                             f"Dead import '{name}' in {path}"
 
     def test_tutor_clean(self):
-        self._check_file("modules/tutor.py")
+        self._check_file("app/routers/tutor.py")
 
     def test_main_clean(self):
         self._check_file("app/main.py")

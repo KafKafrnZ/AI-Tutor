@@ -8,7 +8,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useAppStore } from "@/store/useAppStore";
 import VideoBackground from "@/components/VideoBackground";
-import { API_URL } from "@/lib/api";
+import { API_URL, fetchWithRefresh } from "@/lib/api";
 import { parseSseLine } from "@/lib/sse";
 import VoiceInput from "@/components/VoiceInput";
 import TutorLoading from "./loading";
@@ -24,8 +24,8 @@ const markdownComponents: Components = {
       <code
         className={
           isBlock
-            ? `text-emerald-300 font-mono text-[14px] leading-relaxed ${className ?? ""}`
-            : "bg-white/10 px-1.5 py-0.5 rounded-md text-[14px] font-mono border border-white/10 text-emerald-300"
+            ? `text-accent-progress font-mono text-[14px] leading-relaxed ${className ?? ""}`
+            : "bg-white/10 px-1.5 py-0.5 rounded-md text-[14px] font-mono border border-white/10 text-accent-progress"
         }
       >
         {children}
@@ -36,9 +36,9 @@ const markdownComponents: Components = {
     return (
       <div className="bg-black/30 backdrop-blur-md border border-white/10 rounded-xl my-6 overflow-hidden shadow-lg">
         <div className="flex px-4 py-3 bg-white/5 border-b border-white/5 gap-2">
-          <div className="w-3 h-3 rounded-full bg-rose-500/80" />
-          <div className="w-3 h-3 rounded-full bg-amber-500/80" />
-          <div className="w-3 h-3 rounded-full bg-emerald-500/80" />
+          <div className="w-3 h-3 rounded-full bg-accent-mock/80" />
+          <div className="w-3 h-3 rounded-full bg-accent-practice/80" />
+          <div className="w-3 h-3 rounded-full bg-accent-progress/80" />
         </div>
         <pre className="p-5 overflow-x-auto scrollbar-thin scrollbar-thumb-white/10">{children}</pre>
       </div>
@@ -132,7 +132,7 @@ function TutorPageInner() {
       queueMicrotask(() => setHistoryLoaded(true));
       return;
     }
-    fetch(`${API_URL}/conversations?limit=50`, { credentials: "include" })
+    fetchWithRefresh(`${API_URL}/conversations?limit=50`, { method: "GET" })
       .then((r) => (r.ok ? r.json() : []))
       .then((msgs: { role: string; content: string }[]) => {
         if (msgs.length > 0) setTutorMessages(msgs.map((m) => ({ ...m, role: m.role as "user" | "assistant" })));
@@ -242,18 +242,32 @@ function TutorPageInner() {
     const abortController = new AbortController();
     streamAbortRef.current = abortController;
 
+    const streamPayload = JSON.stringify({ question: userQuestion, context: "", history });
     try {
-      const response = await fetch(`${API_URL}/ask/stream`, {
+      let response = await fetch(`${API_URL}/ask/stream`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         signal: abortController.signal,
-        body: JSON.stringify({
-          question: userQuestion,
-          context: "",
-          history,
-        }),
+        body: streamPayload,
       });
+
+      // If 401, attempt one silent token refresh then retry the stream
+      if (response.status === 401) {
+        const refreshRes = await fetch(`${API_URL}/auth/refresh`, { method: "POST", credentials: "include" });
+        if (refreshRes.ok) {
+          response = await fetch(`${API_URL}/ask/stream`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            signal: abortController.signal,
+            body: streamPayload,
+          });
+        } else {
+          window.location.href = "/login";
+          throw new Error("SESSION_EXPIRED");
+        }
+      }
 
       if (!response.ok || !response.body) {
         if (response.status === 401) throw new Error("SESSION_EXPIRED");
@@ -421,7 +435,7 @@ function TutorPageInner() {
                         className="flex items-center gap-3 text-[13px]"
                       >
                         <Icon
-                          className={`w-4 h-4 shrink-0 ${done ? "text-emerald-400" : active ? "text-violet-300 animate-spin" : "text-zinc-600"}`}
+                          className={`w-4 h-4 shrink-0 ${done ? "text-accent-progress" : active ? "text-accent animate-spin" : "text-zinc-600"}`}
                           style={!done ? { animationDuration: "2.5s" } : {}}
                         />
                         <div className="min-w-0">
@@ -461,7 +475,7 @@ function TutorPageInner() {
             )}
 
             {(streamError || interruptedQuestion) && (
-              <div className="md:ml-[52px] rounded-2xl border border-amber-500/25 bg-amber-500/10 p-4 text-sm text-amber-100">
+              <div className="md:ml-[52px] rounded-2xl border border-accent-practice/25 bg-accent-practice/10 p-4 text-sm text-accent-practice">
                 {streamError || "Connection interrupted. You can retry the same question."}
                 <button
                   type="button"
@@ -472,7 +486,7 @@ function TutorPageInner() {
                     setInterruptedQuestion("");
                     void handleAskQuestion(question);
                   }}
-                  className="ml-3 rounded-lg border border-amber-400/30 px-3 py-1.5 font-semibold text-amber-50 transition-colors hover:bg-amber-400/10"
+                  className="ml-3 rounded-lg border border-accent-practice/30 px-3 py-1.5 font-semibold text-accent-practice transition-colors hover:bg-accent-practice/10"
                 >
                   Retry
                 </button>
@@ -489,7 +503,7 @@ function TutorPageInner() {
         {!isChatStarted && (
           <div className="text-center mb-8 relative z-20">
             <div className="w-16 h-16 bg-black/20 backdrop-blur-xl rounded-2xl flex items-center justify-center mx-auto mb-6 border border-white/10 shadow-[0_0_30px_rgba(139,92,246,0.15)]">
-              <Sparkles className="w-8 h-8 text-violet-300" />
+              <Sparkles className="w-8 h-8 text-accent" />
             </div>
             <h1 className="text-4xl font-bold text-white mb-3 drop-shadow-lg">What do you want to learn?</h1>
             <p className="text-zinc-300 font-medium drop-shadow-md mb-8">Ask complex concepts. Grounded answers with previous-year context.</p>
@@ -514,7 +528,7 @@ function TutorPageInner() {
         )}
 
         {/* The Input Pill - Now ultra-glassy */}
-        <motion.div layout className={`relative bg-black/30 backdrop-blur-2xl border transition-all duration-300 shadow-2xl rounded-[28px] overflow-hidden flex items-center ${isFocused ? 'border-violet-500/50 shadow-[0_0_40px_rgba(139,92,246,0.2)] ring-4 ring-violet-500/20' : 'border-white/10 hover:border-white/20'}`}>
+        <motion.div layout className={`relative bg-black/30 backdrop-blur-2xl border transition-all duration-300 shadow-2xl rounded-[28px] overflow-hidden flex items-center ${isFocused ? 'border-accent/50 shadow-[0_0_40px_rgba(139,92,246,0.2)] ring-4 ring-accent/20' : 'border-white/10 hover:border-white/20'}`}>
           <textarea
             value={input}
             onFocus={() => setIsFocused(true)}

@@ -1,3 +1,4 @@
+import os
 from datetime import datetime, timezone, date as date_type
 from sqlalchemy import create_engine, Column, Integer, String, Date, ForeignKey, Float, Boolean, DateTime
 from sqlalchemy.orm import declarative_base, sessionmaker, Session, relationship
@@ -8,8 +9,13 @@ logger = logging.getLogger(__name__)
 
 # Pool kwargs only valid for PostgreSQL/MySQL — SQLite (used in tests) rejects them
 _pg_pool_kwargs = (
-    {"pool_size": 10, "max_overflow": 20, "pool_timeout": 30,
-     "pool_recycle": 1800, "pool_pre_ping": True}
+    {
+        "pool_size": int(os.getenv("DB_POOL_SIZE", "5")),
+        "max_overflow": int(os.getenv("DB_MAX_OVERFLOW", "10")),
+        "pool_timeout": 30,
+        "pool_recycle": 1800,   # recycle connections older than 30 min
+        "pool_pre_ping": True,  # drop stale connections before using (critical on Railway)
+    }
     if not settings.DATABASE_URL.startswith("sqlite")
     else {}
 )

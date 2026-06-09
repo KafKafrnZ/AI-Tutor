@@ -28,15 +28,22 @@ An immersive, production-grade AI Tutoring application designed specifically for
 
 ## 🛠 Tech Stack
 - **Frontend**: Next.js 16 (App Router), React 19, Tailwind CSS v4, Zustand, Framer Motion, React Three Fiber.
-- **Backend**: FastAPI, LlamaIndex / LangChain capabilities, SQLAlchemy, PostgreSQL, ChromaDB, SSE (Server-Sent Events) for real-time streaming, Sentry Observability.
-- **AI Models**: Designed to interoperate with Llama 3.3, Groq, and Gemini.
+- **Backend**: FastAPI, SQLAlchemy, PostgreSQL, Alembic, ChromaDB + fastembed (RAG), Redis, structlog, slowapi, Sentry.
+- **AI Models**: Llama 3.3 via Groq API — streamed responses with SSE.
 
 ---
 
 ## ⚙️ Architecture
-- **RAG Pipeline**: Retrieves factual content from a structured exam corpus (`pyqs.json` containing UPSC, SSC CGL, IBPS PO/SO/Clerk, RRB NTPC, State PSC questions) via ChromaDB semantic search.
-- **Response Generation**: LLM generates streamed responses strictly grounded in the retrieved context.
-- **Error Handling**: Comprehensive Sentry integration on both frontend (global-error.tsx) and backend (general_exception_handler) for robust observability.
+- **RAG Pipeline**: Retrieves factual content from a structured exam corpus (`pyqs.json` — UPSC, SSC CGL, IBPS PO/SO/Clerk, RRB NTPC, State PSC) via ChromaDB semantic search + fastembed embeddings.
+- **Response Generation**: Llama 3.3 via Groq API generates streamed responses grounded in the retrieved context.
+- **Auth**: httpOnly JWT cookies with 1-hour access tokens + 30-day refresh token rotation. CSRF protection via Origin/Referer validation.
+- **Error Handling**: Sentry integration on both frontend (`global-error.tsx`) and backend (`general_exception_handler`). Structured JSON logging with X-Request-ID correlation.
+
+---
+
+## 📦 License
+
+[MIT](LICENSE)
 
 ---
 

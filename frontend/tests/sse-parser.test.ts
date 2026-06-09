@@ -27,4 +27,18 @@ describe("SSE parser", () => {
     expect(() => parseSseLine("data: {broken")).not.toThrow();
     expect(parseSseLine("data: {broken")).toEqual({ error: "Malformed SSE JSON" });
   });
+
+  it("skips empty lines silently", () => {
+    expect(parseSseLine("")).toEqual({});
+    expect(parseSseLine("   ")).toEqual({});
+  });
+
+  it("handles lines without 'data:' prefix", () => {
+    expect(parseSseLine("id: 42")).toEqual({});
+    expect(parseSseLine("retry: 3000")).toEqual({});
+  });
+
+  it("extracts token from nested object payload", () => {
+    expect(parseSseLine('data: {"token": "Hello world"}')).toEqual({ token: "Hello world" });
+  });
 });

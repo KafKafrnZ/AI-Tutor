@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import { Loader2, CheckCircle2, XCircle, ArrowLeft, Target, Sparkles } from 'lucide-react';
 import { useAppStore } from "@/store/useAppStore";
 import BlackholeBackground from "@/components/ui/Blackhole";
-import { API_URL } from "@/lib/api";
+import { API_URL, fetchWithRefresh } from "@/lib/api";
 
 export default function PracticePage() {
   // GLOBAL STATE
@@ -39,12 +39,11 @@ export default function PracticePage() {
     try {
       const enhancedTopic = `${topic}. Generate exactly 30 questions for this topic.`;
 
-      const res = await fetch(`${API_URL}/practice`, {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  credentials: "include",
-  body: JSON.stringify({ topic: enhancedTopic }),
-});
+      const res = await fetchWithRefresh(`${API_URL}/practice`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ topic: enhancedTopic }),
+      });
 
       if (!res.ok) throw new Error("Backend error");
 
@@ -88,16 +87,16 @@ export default function PracticePage() {
 
   const getDifficultyHue = (difficulty: string) => {
     const diff = difficulty?.toLowerCase() || 'medium';
-    if (diff === 'easy') return "border-emerald-500/30 shadow-[0_0_30px_rgba(16,185,129,0.1)]";
-    if (diff === 'hard') return "border-rose-500/30 shadow-[0_0_30px_rgba(244,63,113,0.1)]";
-    return "border-amber-500/30 shadow-[0_0_30px_rgba(245,158,11,0.1)]";
+    if (diff === 'easy') return "border-accent-progress/30 shadow-[0_0_30px_rgba(16,185,129,0.1)]";
+    if (diff === 'hard') return "border-accent-mock/30 shadow-[0_0_30px_rgba(244,63,113,0.1)]";
+    return "border-accent-practice/30 shadow-[0_0_30px_rgba(245,158,11,0.1)]";
   };
 
   const getBadgeStyle = (difficulty: string) => {
     const diff = difficulty?.toLowerCase() || 'medium';
-    if (diff === 'easy') return "bg-emerald-500/20 text-emerald-300 border-emerald-500/30";
-    if (diff === 'hard') return "bg-rose-500/20 text-rose-300 border-rose-500/30";
-    return "bg-amber-500/20 text-amber-300 border-amber-500/30";
+    if (diff === 'easy') return "bg-accent-progress/20 text-accent-progress border-accent-progress/30";
+    if (diff === 'hard') return "bg-accent-mock/20 text-accent-mock border-accent-mock/30";
+    return "bg-accent-practice/20 text-accent-practice border-accent-practice/30";
   };
 
   return (
@@ -193,13 +192,13 @@ export default function PracticePage() {
                           const isThisOptionSelected = userSelectedOpt === opt;
                           
                           // Default Glassy Option Style
-                          let style = "bg-black/30 border-white/10 text-zinc-300 hover:border-amber-500/50 hover:bg-amber-500/10 cursor-pointer backdrop-blur-md";
+                          let style = "bg-black/30 border-white/10 text-zinc-300 hover:border-accent-practice/50 hover:bg-accent-practice/10 cursor-pointer backdrop-blur-md";
                           
                           if (isAnswered) {
                             if (isCorrectAnswer) {
-                              style = "bg-emerald-500/20 border-emerald-500/50 text-emerald-300 cursor-default shadow-[0_0_15px_rgba(16,185,129,0.2)] backdrop-blur-md";
+                              style = "bg-accent-progress/20 border-accent-progress/50 text-accent-progress cursor-default shadow-[0_0_15px_rgba(16,185,129,0.2)] backdrop-blur-md";
                             } else if (isThisOptionSelected && !isCorrectAnswer) {
-                              style = "bg-rose-500/20 border-rose-500/50 text-rose-300 cursor-default backdrop-blur-md";
+                              style = "bg-accent-mock/20 border-accent-mock/50 text-accent-mock cursor-default backdrop-blur-md";
                             } else {
                               style = "bg-black/10 border-white/5 text-zinc-500 cursor-default opacity-50 backdrop-blur-sm";
                             }
@@ -215,13 +214,13 @@ export default function PracticePage() {
                               className={`p-5 border rounded-2xl transition-all duration-300 flex justify-between items-center text-left focus:outline-none focus:ring-2 focus:ring-accent/50 ${style}`}
                             >
                               <span className="font-medium drop-shadow-sm">{opt}</span>
-                              {isAnswered && isCorrectAnswer && <CheckCircle2 className="w-6 h-6 text-emerald-400 shrink-0 drop-shadow-md" />}
-                              {isAnswered && isThisOptionSelected && !isCorrectAnswer && <XCircle className="w-6 h-6 text-rose-400 shrink-0 drop-shadow-md" />}
+                              {isAnswered && isCorrectAnswer && <CheckCircle2 className="w-6 h-6 text-accent-progress shrink-0 drop-shadow-md" />}
+                              {isAnswered && isThisOptionSelected && !isCorrectAnswer && <XCircle className="w-6 h-6 text-accent-mock shrink-0 drop-shadow-md" />}
                             </button>
                           );
                         })
                       ) : (
-                        <div className="p-4 rounded-xl bg-rose-500/20 backdrop-blur-md border border-rose-500/30 text-rose-300 text-sm">
+                        <div className="p-4 rounded-xl bg-accent-mock/20 backdrop-blur-md border border-accent-mock/30 text-accent-mock text-sm">
                           ⚠️ The AI failed to format the options properly.
                         </div>
                       )}
