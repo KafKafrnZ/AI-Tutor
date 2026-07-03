@@ -2,7 +2,7 @@
 
 import { useRef } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
-import { useGLTF, Float, Environment } from "@react-three/drei";
+import { useGLTF, Float } from "@react-three/drei";
 import * as THREE from "three";
 
 function BlackholeMesh({ scale = 2.2 }: { scale?: number }) {
@@ -48,8 +48,11 @@ export default function BlackholeBackground({
         <pointLight position={[-10, -10, -10]} intensity={2} color="#a855f7" />
         
         <BlackholeMesh scale={scale} />
-        
-        <Environment preset="night" />
+
+        {/* Replaces <Environment preset="night"> — avoids loading dikhololo_night_1k.hdr from CDN */}
+        <ambientLight intensity={0.15} color="#1a0533" />
+        <pointLight position={[0, 0, 5]} intensity={0.4} color="#6d28d9" />
+        <pointLight position={[5, -5, -5]} intensity={0.3} color="#0ea5e9" />
       </Canvas>
     </div>
   );

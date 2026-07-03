@@ -12,23 +12,23 @@ import Logo from "@/components/Logo";
 const capabilities = [
   {
     icon: Bot,
-    title: "AI Tutor",
-    body: "Instant answers grounded in PYQ context via RAG.",
+    title: "Tutor Core",
+    body: "Portal-grade explanations grounded in PYQ context.",
   },
   {
     icon: Target,
-    title: "Adaptive Practice",
-    body: "AI-generated topic-specific questions.",
+    title: "Arena Drills",
+    body: "AI-generated target waves for specific topics.",
   },
   {
     icon: TrendingUp,
-    title: "Mistake Locker",
-    body: "Personalized weakness analysis from your error history.",
+    title: "Mistake Ledger",
+    body: "Turn error history into boons and contracts.",
   },
   {
     icon: FileText,
     title: "Mock Tests",
-    body: "Timed tests with negative marking and performance analytics.",
+    body: "Bonfire trials with negative marking and performance post-mortems.",
   },
 ];
 
@@ -46,15 +46,15 @@ export default function LandingPage() {
         <nav className="mx-auto flex max-w-7xl items-center justify-between px-6 py-5">
           <Link href="/" className="flex items-center gap-2.5">
             <Logo className="size-9 text-primary drop-shadow-[0_0_18px_rgba(0,212,255,0.45)]" />
-            <span className="text-lg font-bold tracking-tight">Ascend AI</span>
+            <span className="text-lg font-bold tracking-tight">Ascend AI Neuro-OS</span>
           </Link>
           <div className="flex items-center gap-2">
             <Link href="/login" className="px-4 py-2 text-sm font-medium text-zinc-300 transition-colors hover:text-white">
-              Log in
+              Jack in
             </Link>
             <Link href="/signup">
               <button className="rounded-full bg-white px-5 py-2 text-sm font-semibold text-black transition-colors hover:bg-zinc-200">
-                Get started
+                Install
               </button>
             </Link>
           </div>
@@ -73,37 +73,35 @@ export default function LandingPage() {
         >
           <div className="mb-8 flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-sm font-medium text-zinc-300 backdrop-blur-md">
             <Sparkles className="h-4 w-4 text-primary" />
-            Open-source · Self-hostable · RAG-powered
+            Open-source / Self-hostable / RAG-powered
           </div>
 
           <h1 className="mb-6 text-5xl font-extrabold tracking-tight md:text-7xl">
-            Ascend India&apos;s toughest <br />
+            Jack into India&apos;s toughest <br />
             <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
               government exams.
             </span>
           </h1>
 
           <p className="mb-10 max-w-2xl text-lg leading-relaxed text-zinc-400 md:text-xl">
-            An AI tutor built for UPSC &amp; State PSC. Ascend pinpoints your weak
-            areas, generates exam-grade mock tests, and explains every answer with
-            diagrams and citations — so you stop guessing what to study.
+            A neon study operating system for UPSC, SSC, banking, railways, and state exams. Ascend locks onto weak areas, arms exam-grade trials, and explains every answer with grounded citations so your next move is never guesswork.
           </p>
 
           <div className="flex flex-col items-center gap-4 sm:flex-row">
             <Link href="/signup">
               <button className="flex items-center gap-2 rounded-full bg-white px-8 py-4 text-lg font-bold text-black transition-all hover:bg-zinc-200">
-                Start preparing free <ArrowRight className="h-5 w-5" />
+                Breach the syllabus <ArrowRight className="h-5 w-5" />
               </button>
             </Link>
             <Link href="/dashboard">
               <button className="rounded-full border border-white/10 bg-white/5 px-8 py-4 text-lg font-bold text-white transition-all hover:bg-white/10">
-                View dashboard
+                Enter war room
               </button>
             </Link>
           </div>
 
           <p className="mt-6 text-sm text-zinc-500">
-            No credit card needed · Open-source core · Your data stays yours
+            No credit card needed / Open-source core / Your data stays yours
           </p>
         </motion.div>
       </section>
@@ -113,11 +111,10 @@ export default function LandingPage() {
         <div className="mx-auto max-w-6xl">
           <div className="mx-auto mb-16 max-w-2xl text-center">
             <h2 className="mb-4 text-3xl font-bold tracking-tight md:text-4xl">
-              Everything you need to clear the exam.
+              Every module feels like a mission.
             </h2>
             <p className="text-lg text-zinc-400">
-              One system that tutors, tests, and tracks — purpose-built for the
-              UPSC &amp; State PSC syllabus.
+              Tutor chambers, arena drills, bonfire mocks, and command analytics: one deck for the full government-exam grind.
             </p>
           </div>
 
@@ -146,7 +143,7 @@ export default function LandingPage() {
         <div className="mx-auto max-w-6xl">
           <div className="mx-auto mb-16 max-w-2xl text-center">
             <h2 className="mb-4 text-3xl font-bold tracking-tight md:text-4xl">
-              Own the whole system.
+              Own the whole stack.
             </h2>
             <p className="text-lg text-zinc-400">
               Ascend is built to be deployed and owned — not rented. Ideal for
@@ -176,7 +173,7 @@ export default function LandingPage() {
         <div className="mx-auto flex max-w-3xl flex-col items-center text-center">
           <h2 className="mb-6 text-4xl font-extrabold tracking-tight md:text-5xl">
             Ready to{" "}
-            <span className="bg-gradient-to-r from-violet-400 to-fuchsia-400 bg-clip-text text-transparent">
+            <span className="text-accent">
               ascend?
             </span>
           </h2>
@@ -185,7 +182,7 @@ export default function LandingPage() {
           </p>
           <Link href="/signup">
             <button className="flex items-center gap-2 rounded-full bg-white px-8 py-4 text-lg font-bold text-black transition-all hover:bg-zinc-200">
-              Create your free account <ArrowRight className="h-5 w-5" />
+              Install your free account <ArrowRight className="h-5 w-5" />
             </button>
           </Link>
         </div>

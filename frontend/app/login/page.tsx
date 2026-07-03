@@ -41,7 +41,7 @@ export default function LoginPage() {
       </Link>
 
       <div className="relative z-10 mx-auto flex w-full max-w-6xl items-center justify-center pt-14">
-        <AuthCard initialMode="signin" onSuccess={handleSuccess} />
+        <AuthCard key="signin" initialMode="signin" onSuccess={handleSuccess} />
       </div>
     </main>
   );

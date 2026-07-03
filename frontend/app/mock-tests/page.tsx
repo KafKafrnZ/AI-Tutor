@@ -1,10 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { motion } from "framer-motion";
 import Link from "next/link";
 import { FileText, Clock, ChevronRight, Brain, Target, BookOpen, Loader2, AlertTriangle, type LucideIcon } from "lucide-react";
-import { MouseEvent } from "react";
 import { API_URL, fetchWithRefresh } from "@/lib/api";
 import { fallbackMockTests } from "@/lib/mockFallback";
 import { PageShell } from "@/components/layout/PageShell";
@@ -58,19 +56,19 @@ export default function MockTestsPage() {
           setLoadNotice("");
         } else if (process.env.NODE_ENV !== "production") {
           setTests(fallbackMockTests);
-          setLoadNotice("Showing generated starter mocks because no seeded tests are available yet.");
+          setLoadNotice("Starter bonfire trials are visible because no seeded trials are available yet.");
         } else {
           setTests([]);
-          setLoadNotice("No mock tests available yet. Check back soon.");
+          setLoadNotice("No bonfire trials are prepared yet. Check back soon.");
         }
       } catch (e) {
         console.error("Failed to load mock tests list", e);
         if (process.env.NODE_ENV !== "production") {
           setTests(fallbackMockTests);
-          setLoadNotice("Backend mock catalog is unavailable, so local starter mocks are shown.");
+          setLoadNotice("The trial catalog is unreachable, so local starter bonfires are shown.");
         } else {
           setTests([]);
-          setLoadNotice("No mock tests available yet. Check back soon.");
+          setLoadNotice("No bonfire trials are prepared yet. Check back soon.");
         }
       } finally {
         setLoading(false);
@@ -79,21 +77,13 @@ export default function MockTestsPage() {
     load();
   }, []);
 
-  const handleMouseMove = (e: MouseEvent<HTMLDivElement>) => {
-    const target = e.currentTarget;
-    const rect = target.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    target.style.setProperty("--mouse-x", `${x}px`);
-    target.style.setProperty("--mouse-y", `${y}px`);
-  };
-
   return (
-    <PageShell maxWidth="max-w-6xl">
+    <PageShell maxWidth="max-w-6xl" universe="souls">
       <div className="mt-2">
-        <PageHeader 
-          title="Mock Tests" 
-          subtitle="Timed government-exam practice with AI grading and analytics."
+        <PageHeader
+          universe="souls"
+          title="Bonfire Trials"
+          subtitle="Full-length simulations with hollowing penalties, posture breaks, and a precise post-mortem."
         />
 
         {loadNotice && (
@@ -104,9 +94,9 @@ export default function MockTestsPage() {
         )}
 
         {loading ? (
-          <div className="flex items-center gap-2 text-zinc-400"><Loader2 className="animate-spin" /> Loading available tests...</div>
+          <div className="flex items-center gap-2 text-zinc-400"><Loader2 className="animate-spin" /> Kindling available trials...</div>
         ) : tests.length === 0 ? (
-          <div className="text-zinc-400">No tests available yet. Run the seeder or add questions via DB.</div>
+          <div className="text-zinc-400">No trials available yet. Seed the question realm or add questions via DB.</div>
         ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {tests.map((test) => {
@@ -130,7 +120,7 @@ export default function MockTestsPage() {
                   </div>
                   <Link href={`/mock-tests/${test.id}`} className="block w-full">
                     <button className="w-full py-4 rounded-xl bg-zinc-950 border border-white/5 text-zinc-300 font-semibold hover:bg-white hover:text-black hover:border-transparent transition-all flex items-center justify-center gap-2 group-hover:shadow-[0_0_20px_rgba(255,255,255,0.1)]">
-                      Start Mock Test <ChevronRight className="w-4 h-4 opacity-50 group-hover:opacity-100 transition-opacity" />
+                      Enter the Fog Gate <ChevronRight className="w-4 h-4 opacity-50 group-hover:opacity-100 transition-opacity" />
                     </button>
                   </Link>
                 </div>

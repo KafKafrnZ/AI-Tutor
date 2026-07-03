@@ -18,16 +18,16 @@ type AuthCardProps = {
 
 const copy = {
   signin: {
-    eyebrow: "Returning user",
-    title: "Welcome back",
-    body: "Continue your exam preparation with your AI tutor, practice history, and progress plan.",
-    cta: "Sign in",
+    eyebrow: "Neural access",
+    title: "Jack back in",
+    body: "Reconnect to your tutor core, arena history, and active exam contracts.",
+    cta: "Breach account",
   },
   signup: {
-    eyebrow: "New account",
-    title: "Create your account",
-    body: "Start a guided study workspace with adaptive practice, mock tests, and mistake tracking.",
-    cta: "Create account",
+    eyebrow: "Ripperdoc install",
+    title: "Install Ascend firmware",
+    body: "Create a guided study deck with adaptive drills, bonfire trials, and mistake intel.",
+    cta: "Install account",
   },
 };
 
@@ -131,7 +131,7 @@ export default function AuthCard({ initialMode = "signin", apiBaseUrl, onSuccess
           </div>
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">{selectedCopy.eyebrow}</p>
-            <h1 className="font-display text-2xl font-bold tracking-tight text-white">{selectedCopy.title}</h1>
+          <h1 className="font-display text-2xl font-bold tracking-tight text-white">{selectedCopy.title}</h1>
           </div>
         </div>
       </div>
@@ -151,7 +151,7 @@ export default function AuthCard({ initialMode = "signin", apiBaseUrl, onSuccess
               mode === item ? "bg-primary text-bg" : "text-zinc-400 hover:text-white"
             )}
           >
-            {item === "signin" ? "Sign in" : "Sign up"}
+            {item === "signin" ? "Jack in" : "Install"}
           </button>
         ))}
       </div>
@@ -159,7 +159,7 @@ export default function AuthCard({ initialMode = "signin", apiBaseUrl, onSuccess
       <form onSubmit={handleSubmit} className="space-y-4">
         {mode === "signup" && (
           <label htmlFor="auth-name" className="block">
-            <span className="mb-1.5 block text-sm font-medium text-zinc-300">Name</span>
+                <span className="mb-1.5 block text-sm font-medium text-zinc-300">Call sign</span>
             <div className="relative">
               <User className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-zinc-500" />
               <input
@@ -168,7 +168,7 @@ export default function AuthCard({ initialMode = "signin", apiBaseUrl, onSuccess
                 value={name}
                 onChange={(event) => setName(event.target.value)}
                 autoComplete="name"
-                placeholder="Your name"
+                placeholder="Operator name"
                 className="w-full rounded-xl border border-white/10 bg-black/45 py-3 pl-10 pr-4 text-white placeholder-zinc-600 outline-none transition-all focus:border-primary/60 focus:ring-2 focus:ring-primary/20"
                 required
               />
@@ -177,7 +177,7 @@ export default function AuthCard({ initialMode = "signin", apiBaseUrl, onSuccess
         )}
 
         <label htmlFor="auth-email" className="block">
-          <span className="mb-1.5 block text-sm font-medium text-zinc-300">Email</span>
+          <span className="mb-1.5 block text-sm font-medium text-zinc-300">Access ID</span>
           <div className="relative">
             <Mail className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-zinc-500" />
             <input
@@ -186,7 +186,7 @@ export default function AuthCard({ initialMode = "signin", apiBaseUrl, onSuccess
               value={email}
               onChange={(event) => setEmail(event.target.value)}
               autoComplete="email"
-              placeholder="you@example.com"
+              placeholder="operator@example.com"
               className="w-full rounded-xl border border-white/10 bg-black/45 py-3 pl-10 pr-4 text-white placeholder-zinc-600 outline-none transition-all focus:border-primary/60 focus:ring-2 focus:ring-primary/20"
               required
             />
@@ -194,7 +194,7 @@ export default function AuthCard({ initialMode = "signin", apiBaseUrl, onSuccess
         </label>
 
         <label htmlFor="auth-password" className="block">
-          <span className="mb-1.5 block text-sm font-medium text-zinc-300">Password</span>
+          <span className="mb-1.5 block text-sm font-medium text-zinc-300">Passphrase</span>
           <div className="relative">
             <LockKeyhole className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-zinc-500" />
             <input
@@ -208,7 +208,7 @@ export default function AuthCard({ initialMode = "signin", apiBaseUrl, onSuccess
               onFocus={() => setIsPasswordFocused(true)}
               onBlur={() => setIsPasswordFocused(false)}
               autoComplete={mode === "signin" ? "current-password" : "new-password"}
-              placeholder={mode === "signin" ? "Your password" : "8+ chars, 1 uppercase, 1 digit"}
+              placeholder={mode === "signin" ? "Secure passphrase" : "8+ chars, 1 uppercase, 1 digit"}
               className="w-full rounded-xl border border-white/10 bg-black/45 py-3 pl-10 pr-12 text-white placeholder-zinc-600 outline-none transition-all focus:border-primary/60 focus:ring-2 focus:ring-primary/20"
               required
             />
@@ -227,21 +227,21 @@ export default function AuthCard({ initialMode = "signin", apiBaseUrl, onSuccess
                 {passwordRules.map((rule, index) => (
                   <div
                     key={index}
-                    className={cn("h-1.5 rounded-full transition-colors", rule.met ? "bg-emerald-400" : "bg-zinc-700")}
+                    className={cn("h-1.5 rounded-full transition-colors", rule.met ? "bg-accent-progress" : "bg-zinc-700")}
                   />
                 ))}
               </div>
               {firstUnmetPasswordRule && (
                 <p className="text-xs text-zinc-400">{firstUnmetPasswordRule.hint}</p>
               )}
-              {passwordError && <p className="mt-0.5 text-xs text-rose-400">{passwordError}</p>}
+              {passwordError && <p className="mt-0.5 text-xs text-accent-mock">{passwordError}</p>}
             </div>
           )}
         </label>
 
         {error && (
-          <div role="alert" aria-live="polite" className="flex gap-2 rounded-xl border border-rose-500/25 bg-rose-500/10 p-3 text-sm text-rose-200">
-            <AlertCircle className="mt-0.5 size-4 shrink-0 text-rose-300" />
+          <div role="alert" aria-live="polite" className="flex gap-2 rounded-xl border border-accent-mock/25 bg-accent-mock/10 p-3 text-sm text-accent-mock">
+            <AlertCircle className="mt-0.5 size-4 shrink-0 text-accent-mock" />
             <span>{error}</span>
           </div>
         )}
@@ -258,16 +258,16 @@ export default function AuthCard({ initialMode = "signin", apiBaseUrl, onSuccess
 
       {mode === "signin" ? (
         <p className="mt-5 text-center text-sm text-zinc-500">
-          Forgot your password?{" "}
+          Lost your access shard?{" "}
           <Link href="/forgot-password" className="font-medium text-primary transition-colors hover:text-primary">
-            Reset it
+            Rebuild it
           </Link>
         </p>
       ) : (
         <p className="mt-5 text-center text-sm text-zinc-500">
-          Already have an account?{" "}
+          Firmware already installed?{" "}
           <button type="button" onClick={() => selectMode("signin")} className="font-medium text-primary transition-colors hover:text-primary">
-            Sign in
+            Jack in
           </button>
         </p>
       )}

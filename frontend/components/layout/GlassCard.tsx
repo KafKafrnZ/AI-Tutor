@@ -1,5 +1,6 @@
 import { motion, HTMLMotionProps } from "framer-motion";
 import { ReactNode, MouseEvent } from "react";
+import { cn } from "@/lib/utils";
 
 interface GlassCardProps extends HTMLMotionProps<"div"> {
   children: ReactNode;
@@ -21,7 +22,7 @@ export function GlassCard({ children, className = "", interactive = false, ...pr
   return (
     <motion.div
       onMouseMove={handleMouseMove}
-      className={`relative bg-zinc-900/40 backdrop-blur-md border border-white/5 rounded-3xl overflow-hidden ${interactive ? 'group cursor-pointer' : ''} ${className}`}
+      className={cn("game-card relative overflow-hidden rounded-[var(--radius-token)] border border-white/10 bg-surface/55 backdrop-blur-2xl", interactive && "group cursor-pointer", className)}
       {...props}
     >
       {interactive && (

@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 
 import Logo from "@/components/Logo";
+import { type UniverseTheme } from "@/components/game/universes";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -47,6 +48,7 @@ type SidebarProps = {
   onMobileOpenChange: (open: boolean) => void;
   onOpenProfile: () => void;
   onLogout: () => void;
+  universe?: UniverseTheme;
 };
 
 export default function Sidebar({
@@ -57,6 +59,7 @@ export default function Sidebar({
   onMobileOpenChange,
   onOpenProfile,
   onLogout,
+  universe,
 }: SidebarProps) {
   const pathname = usePathname();
   const initials = userName.trim().slice(0, 2).toUpperCase() || "ST";
@@ -66,7 +69,7 @@ export default function Sidebar({
       <div className="absolute inset-x-0 top-0 z-[60] flex h-16 items-center justify-between border-b border-white/10 bg-bg/85 px-5 backdrop-blur-xl md:hidden">
         <Link href="/" className="flex min-w-0 items-center gap-3">
           <Logo className="size-8 shrink-0 text-primary drop-shadow-[0_0_16px_rgba(0,212,255,0.45)]" />
-          <span className="truncate font-display text-lg font-bold tracking-tight text-white">{appName}</span>
+          <span className="truncate font-display text-lg font-bold tracking-tight text-white">Neuro-OS</span>
         </Link>
         <button
           type="button"
@@ -96,7 +99,10 @@ export default function Sidebar({
         <div className="hidden h-16 shrink-0 items-center border-b border-white/10 px-6 md:flex">
           <Link href="/" className="group flex min-w-0 items-center gap-3 transition-opacity hover:opacity-85">
             <Logo className="size-9 shrink-0 text-primary drop-shadow-[0_0_18px_rgba(0,212,255,0.45)]" />
-            <span className="truncate font-display text-xl font-bold tracking-tight text-white">{appName}</span>
+            <div className="min-w-0">
+              <span className="block truncate font-display text-xl font-bold tracking-tight text-white">{appName}</span>
+              <span className="block truncate text-[10px] font-bold uppercase tracking-[0.22em] text-zinc-500">{universe?.label ?? "Neuro-OS"}</span>
+            </div>
           </Link>
         </div>
 
@@ -139,7 +145,7 @@ export default function Sidebar({
                 </Avatar>
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-bold text-white">{userName}</p>
-                  <p className="text-[10px] font-semibold uppercase tracking-widest text-zinc-500">{userPlan} member</p>
+                  <p className="text-[10px] font-semibold uppercase tracking-widest text-zinc-500">{userPlan} operator</p>
                 </div>
                 <MoreVertical className="size-4 text-zinc-500" />
               </div>
@@ -152,12 +158,12 @@ export default function Sidebar({
               <DropdownMenuSeparator className="bg-white/5" />
               <DropdownMenuItem onClick={onOpenProfile} className="cursor-pointer rounded-xl py-3 text-zinc-200 outline-none transition-colors hover:bg-white/10 hover:text-white">
                 <User className="mr-3 size-4 text-zinc-400" />
-                Profile Details
+                Aug Lab
               </DropdownMenuItem>
               <DropdownMenuSeparator className="bg-white/5" />
               <DropdownMenuItem onClick={onLogout} className="cursor-pointer rounded-xl py-3 text-accent-mock outline-none transition-colors hover:bg-accent-mock/10 hover:text-accent-mock">
                 <LogOut className="mr-3 size-4" />
-                Sign Out
+                Flatline Session
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

@@ -6,7 +6,7 @@ import { Send, User, ArrowLeft, Sparkles, CheckCircle2, CircleDashed } from "luc
 import ReactMarkdown, { type Components } from "react-markdown";
 import rehypeSanitize from "rehype-sanitize";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useAppStore } from "@/store/useAppStore";
 import VideoBackground from "@/components/VideoBackground";
 import { API_URL, fetchWithRefresh } from "@/lib/api";
@@ -46,7 +46,7 @@ const markdownComponents: Components = {
     );
   },
   strong({ children }) {
-    return <strong className="text-transparent bg-clip-text bg-gradient-to-r from-violet-300 to-fuchsia-300 font-bold tracking-wide">{children}</strong>;
+    return <strong className="text-accent font-bold tracking-wide">{children}</strong>;
   },
   ul({ children }) {
     return <ul className="list-disc list-outside space-y-2 ml-5 my-4 text-zinc-200">{children}</ul>;
@@ -79,6 +79,7 @@ const MarkdownMessage = ({ content }: { content: string }) => {
 function TutorPageInner() {
   const tutorMessages = useAppStore((state) => state.tutorMessages);
   const setTutorMessages = useAppStore((state) => state.setTutorMessages);
+  const router = useRouter();
   const searchParams = useSearchParams();
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -106,22 +107,22 @@ function TutorPageInner() {
   const agentRows = [
     {
       icon: agentStep >= 1 ? CheckCircle2 : CircleDashed,
-      label: "PYQ Agent",
+      label: "Archive Core",
       detail: agentStep >= 1 ? "Relevant context selected" : "Searching exam corpus",
       done: agentStep >= 1,
       active: agentStep === 0,
     },
     {
       icon: agentStep >= 2 ? CheckCircle2 : CircleDashed,
-      label: "Reasoning Agent",
-      detail: agentStep >= 2 ? "Answer structure prepared" : "Building the explanation",
+      label: "Logic Core",
+      detail: agentStep >= 2 ? "Answer structure prepared" : "Building the chamber solution",
       done: agentStep >= 2,
       active: agentStep === 1,
     },
     {
       icon: agentStep >= 3 ? CheckCircle2 : CircleDashed,
-      label: "Review Agent",
-      detail: agentStep >= 3 ? "Ready to respond" : "Cross-checking clarity",
+      label: "Review Core",
+      detail: agentStep >= 3 ? "Ready to respond" : "Cross-checking clarity protocol",
       done: agentStep >= 3,
       active: agentStep >= 2,
     },
@@ -265,7 +266,7 @@ function TutorPageInner() {
             body: streamPayload,
           });
         } else {
-          window.location.href = "/login";
+          router.replace("/login");
           throw new Error("SESSION_EXPIRED");
         }
       }
@@ -394,7 +395,7 @@ function TutorPageInner() {
       <div className="h-24 flex items-start pt-6 px-6 shrink-0 bg-gradient-to-b from-black/80 to-transparent absolute top-0 w-full z-10 pointer-events-none">
         <Link href="/dashboard" className="flex items-center gap-2 text-zinc-300 hover:text-white transition-colors group pointer-events-auto h-11 px-2">
           <div className="w-11 h-11 flex items-center justify-center rounded-full bg-black/20 backdrop-blur-md border border-white/10 group-hover:bg-white/10 transition-colors"><ArrowLeft className="w-5 h-5" /></div>
-          <span className="font-medium text-sm drop-shadow-md">Dashboard</span>
+          <span className="font-medium text-sm drop-shadow-md">War Room</span>
         </Link>
       </div>
 
@@ -406,11 +407,11 @@ function TutorPageInner() {
               const isUser = msg.role === "user";
               return (
                 <motion.div key={idx} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex gap-5">
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 mt-0.5 shadow-lg backdrop-blur-md border ${isUser ? "bg-black/40 border-white/10" : "bg-gradient-to-br from-violet-600/80 to-fuchsia-600/80 border-white/20"}`}>
-                    {isUser ? <User className="w-4 h-4 text-zinc-300" /> : <Sparkles className="w-4 h-4 text-white" />}
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 mt-0.5 shadow-lg backdrop-blur-md border ${isUser ? "bg-black/40 border-white/10" : "bg-accent/20 border-accent/30"}`}>
+                    {isUser ? <User className="w-4 h-4 text-zinc-300" /> : <Sparkles className="w-4 h-4 text-accent" />}
                   </div>
                   <div className="flex-1 min-w-0 flex flex-col text-[15px] leading-7 text-zinc-200">
-                    <span className="font-bold text-[12px] text-zinc-400 mb-2 uppercase tracking-widest drop-shadow-md">{isUser ? "You" : "AI Tutor"}</span>
+                    <span className="font-bold text-[12px] text-zinc-400 mb-2 uppercase tracking-widest drop-shadow-md">{isUser ? "Test Subject" : "Aperture Tutor Core"}</span>
                     {/* Highly transparent user message bubble */}
                     {isUser ? <div className="whitespace-pre-wrap bg-black/20 backdrop-blur-md p-4 rounded-2xl border border-white/10 shadow-xl">{msg.content}</div> : <MarkdownMessage content={msg.content} />}
                   </div>
@@ -421,11 +422,11 @@ function TutorPageInner() {
             {/* Agent thinking indicator — shown while waiting for the first streaming token */}
             {isLoading && !streamingContent && (
               <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex gap-5">
-                <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 mt-0.5 shadow-lg backdrop-blur-md border bg-gradient-to-br from-violet-600/80 to-fuchsia-600/80 border-white/20">
-                  <Sparkles className="w-4 h-4 text-white animate-pulse" />
+                <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 mt-0.5 shadow-lg backdrop-blur-md border bg-accent/20 border-accent/30">
+                  <Sparkles className="w-4 h-4 text-accent animate-pulse" />
                 </div>
                 <div className="flex-1 min-w-0 flex flex-col">
-                  <span className="font-bold text-[12px] text-zinc-400 mb-3 uppercase tracking-widest drop-shadow-md">AI Tutor</span>
+                  <span className="font-bold text-[12px] text-zinc-400 mb-3 uppercase tracking-widest drop-shadow-md">Aperture Tutor Core</span>
                   <div className="flex flex-col gap-2.5 rounded-2xl border border-white/10 bg-black/20 p-4 backdrop-blur-md">
                     {agentRows.map(({ icon: Icon, label, detail, done, active }, i) => (
                       <motion.div
@@ -453,11 +454,11 @@ function TutorPageInner() {
             {/* Live streaming assistant reply (plain token accumulation from backend) - instant for live tokens */}
             {streamingContent && (
               <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex gap-5">
-                <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 mt-0.5 shadow-lg backdrop-blur-md border bg-gradient-to-br from-violet-600/80 to-fuchsia-600/80 border-white/20">
-                  <Sparkles className="w-4 h-4 text-white" />
+                <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 mt-0.5 shadow-lg backdrop-blur-md border bg-accent/20 border-accent/30">
+                  <Sparkles className="w-4 h-4 text-accent" />
                 </div>
                 <div className="flex-1 min-w-0 flex flex-col text-[15px] leading-7 text-zinc-200">
-                  <span className="font-bold text-[12px] text-zinc-400 mb-2 uppercase tracking-widest drop-shadow-md">AI Tutor</span>
+                  <span className="font-bold text-[12px] text-zinc-400 mb-2 uppercase tracking-widest drop-shadow-md">Aperture Tutor Core</span>
                   <div className="relative">
                     <MarkdownMessage content={streamingContent} />
                     <button
@@ -468,7 +469,7 @@ function TutorPageInner() {
                       }}
                       className="absolute -top-2 -right-2 text-[10px] px-3 py-2 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full bg-white/10 border border-white/20 hover:bg-white/20 text-zinc-300"
                     >
-                      Show full
+                      Override
                     </button>
                   </div>
                 </div>
@@ -506,15 +507,16 @@ function TutorPageInner() {
             <div className="w-16 h-16 bg-black/20 backdrop-blur-xl rounded-2xl flex items-center justify-center mx-auto mb-6 border border-white/10 shadow-[0_0_30px_rgba(139,92,246,0.15)]">
               <Sparkles className="w-8 h-8 text-accent" />
             </div>
-            <h1 className="text-4xl font-bold text-white mb-3 drop-shadow-lg">What do you want to learn?</h1>
-            <p className="text-zinc-300 font-medium drop-shadow-md mb-8">Ask complex concepts. Grounded answers with previous-year context.</p>
+            <p className="mb-2 text-xs font-black uppercase tracking-[0.24em] text-accent">Aperture Study Chamber</p>
+            <h1 className="text-4xl font-bold text-white mb-3 drop-shadow-lg">What chamber are we testing?</h1>
+            <p className="text-zinc-300 font-medium drop-shadow-md mb-8">Ask complex concepts. The tutor core will pretend this was your idea.</p>
             
             <div className="flex flex-wrap justify-center gap-3 max-w-2xl mx-auto">
               {[
-                "Explain monetary policy",
-                "Difference between NEFT and RTGS",
-                "Summarize Indian Constitution Part III",
-                "Basel III norms explained"
+                "Test Chamber: monetary policy",
+                "Portal link: NEFT vs RTGS",
+                "Core scan: Constitution Part III",
+                "Calibration: Basel III norms"
               ].map((prompt) => (
                 <button
                   key={prompt}
@@ -536,7 +538,7 @@ function TutorPageInner() {
             onBlur={() => setIsFocused(false)}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleAskQuestion(); } }}
-            placeholder="Message AI Tutor..."
+            placeholder="Speak to the chamber core..."
             className="w-full bg-transparent max-h-32 min-h-[60px] py-4 pl-6 pr-14 text-white text-[15px] focus:outline-none resize-none placeholder:text-zinc-400 font-medium"
             rows={1}
           />

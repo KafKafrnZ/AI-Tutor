@@ -105,7 +105,7 @@ export default function MockTestEnginePage() {
         }
 
         if (data.test?.is_fallback || data.test?.source?.includes("fallback")) {
-          setLoadNotice("Generated starter questions are loaded because this mock has not been seeded yet.")
+          setLoadNotice("Generated starter questions are loaded because this bonfire trial has not been seeded yet.")
         } else {
           setLoadNotice("")
         }
@@ -148,7 +148,7 @@ export default function MockTestEnginePage() {
   const executeSubmit = useCallback(
     async (isAutoSubmit = false) => {
       if (!test || !sessionId) {
-        toast.error("Test session is missing. Please reload and start a new test.")
+        toast.error("Bonfire session is missing. Please reload and kindle a new trial.")
         return
       }
 
@@ -176,12 +176,12 @@ export default function MockTestEnginePage() {
           const code = errBody?.error?.code
           const message = errBody?.error?.message ?? errBody?.detail
           if (code === "SESSION_EXPIRED") {
-            toast.error("Time's up - your session expired and results could not be saved.")
+            toast.error("The curse consumed the timer; results could not be saved.")
             router.push("/mock-tests")
             return
           }
           if (code === "SESSION_NOT_FOUND") {
-            toast.error("Invalid test session. Please start a new test.")
+            toast.error("Invalid bonfire session. Please start a new trial.")
             router.push("/mock-tests")
             return
           }
@@ -192,9 +192,9 @@ export default function MockTestEnginePage() {
         const data = (await res.json()) as SubmitResponse
         setSubmitResults(data)
         if (isAutoSubmit) {
-          toast.error("Time is up! Your answers have been automatically submitted.")
+          toast.error("The curse reached full strength. Your answers were submitted.")
         } else {
-          toast.success(`Submitted - score ${data.score}/${data.total} (${data.percentage}%)`)
+          toast.success(`Trial complete - score ${data.score}/${data.total} (${data.percentage}%)`)
         }
       } catch (err) {
         console.error("Failed to submit test results:", err)
@@ -249,7 +249,7 @@ export default function MockTestEnginePage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-bg flex items-center justify-center text-zinc-400 font-medium">
-        Loading exam terminal resources...
+        Kindling bonfire resources...
       </div>
     )
   }
@@ -257,12 +257,12 @@ export default function MockTestEnginePage() {
   if (!test || test.questions.length === 0) {
     return (
       <div className="min-h-screen bg-bg flex flex-col items-center justify-center gap-4 px-6 text-center font-medium">
-        <p className="text-accent-mock">Exam layout not found or contains no questions.</p>
+        <p className="text-accent-mock">This trial was lost in the fog or contains no questions.</p>
         <button
           onClick={() => router.push("/mock-tests")}
           className="rounded-xl border border-white/10 bg-zinc-900 px-4 py-2 text-sm text-zinc-200 transition-colors hover:bg-white hover:text-black"
         >
-          Return to Mock Tests
+          Return to Bonfires
         </button>
       </div>
     )
@@ -273,10 +273,11 @@ export default function MockTestEnginePage() {
     const skippedCount = Math.max(0, submitResults.total - submitResults.attempted)
 
     return (
-      <div className="min-h-screen bg-bg text-white p-6 md:p-12">
+      <div className="min-h-screen bg-bg text-white p-6 md:p-12 relative overflow-hidden">
         <div className="max-w-4xl mx-auto flex flex-col gap-6">
           <div className="bg-zinc-900/60 border border-white/5 rounded-2xl p-6">
-            <h1 className="text-2xl font-bold">{test.title} - Results</h1>
+            <p className="text-xs font-black uppercase tracking-[0.24em] text-accent-mock">Post-Mortem of Cinders</p>
+            <h1 className="text-2xl font-bold">{test.title} - Trial Results</h1>
             <p className="text-zinc-400 mt-2">
               Correct: <span className="text-accent-progress">{submitResults.correct}</span> | Wrong:{" "}
               <span className="text-accent-mock">{wrongCount}</span> | Skipped:{" "}
@@ -285,7 +286,7 @@ export default function MockTestEnginePage() {
             <p className="text-zinc-400 mt-2">
               Score: <span className="text-accent-mock font-mono">{submitResults.score}</span> / {submitResults.total} ({submitResults.percentage}%)
             </p>
-            <p className="text-xs text-accent-practice mt-1">Negative marks applied: -0.25 per wrong answer</p>
+            <p className="text-xs text-accent-practice mt-1">Hollowing applied: -0.25 per wrong answer</p>
           </div>
 
           <div className="flex flex-col gap-4">
@@ -324,12 +325,12 @@ export default function MockTestEnginePage() {
                     <div className="flex-1">
                       <p className="text-sm text-zinc-500 mb-1">Q{idx + 1}</p>
                       <p className="font-medium">{questionText}</p>
-                      <p className={`text-sm mt-2 ${selectedClass}`}>Your answer: {selectedText}</p>
+                      <p className={`text-sm mt-2 ${selectedClass}`}>Chosen stance: {selectedText}</p>
                       <p className="text-sm text-accent-progress mt-1">
-                        Correct answer: {item.correct_answer}. {item.correct_answer_text}
+                        True stance: {item.correct_answer}. {item.correct_answer_text}
                       </p>
                       <p className={`text-sm font-semibold mt-1 ${marksClass}`}>
-                        Marks awarded: {item.marks_awarded > 0 ? "+" : ""}{item.marks_awarded}
+                        Souls awarded: {item.marks_awarded > 0 ? "+" : ""}{item.marks_awarded}
                       </p>
                       <p className="text-sm text-zinc-500 mt-1">{item.explanation}</p>
                     </div>
@@ -344,7 +345,7 @@ export default function MockTestEnginePage() {
             onClick={() => router.push("/progress")}
             className="self-center px-6 py-3 rounded-xl bg-accent-mock hover:bg-accent-mock font-semibold transition-colors"
           >
-            View Progress
+            Open Command Center
           </button>
         </div>
       </div>
@@ -373,21 +374,21 @@ export default function MockTestEnginePage() {
               <button onClick={() => setShowSubmitModal(false)} className="absolute top-4 right-4 text-zinc-400 hover:text-white">
                 <X className="w-5 h-5" />
               </button>
-              <h2 className="text-2xl font-bold mb-4">Submit Exam?</h2>
+              <h2 className="text-2xl font-bold mb-4">Enter the Fog?</h2>
               <p className="text-zinc-400 mb-8">
                 You have answered {Object.keys(answers).length} out of {test.questions.length} questions.
-                Are you sure you want to submit? You cannot undo this action.
+                Once you enter the fog, this trial becomes a post-mortem.
               </p>
               <div className="flex gap-4 justify-end">
                 <button onClick={() => setShowSubmitModal(false)} className="px-5 py-2.5 rounded-xl text-zinc-300 hover:bg-white/5 transition-colors font-medium">
-                  Review Answers
+                  Return to Bonfire
                 </button>
                 <button
                   onClick={() => void executeSubmit(false)}
                   disabled={isSubmitting}
                   className="px-5 py-2.5 rounded-xl bg-accent-mock hover:bg-accent-mock text-white font-bold transition-all shadow-lg flex items-center gap-2"
                 >
-                  {isSubmitting ? "Submitting..." : "Yes, Submit"}
+                  {isSubmitting ? "Crossing..." : "Submit Trial"}
                 </button>
               </div>
             </motion.div>
@@ -400,7 +401,7 @@ export default function MockTestEnginePage() {
           <div>
             <h1 className="text-xl font-bold tracking-tight">{test.title}</h1>
             <p className="text-sm text-zinc-400 mt-1">
-              Question {currentIdx + 1} of {test.questions.length}
+              Fog gate {currentIdx + 1} of {test.questions.length}
             </p>
           </div>
 
@@ -421,7 +422,7 @@ export default function MockTestEnginePage() {
                 disabled={isSubmitting}
                 className="flex items-center gap-2 px-5 py-2.5 bg-accent-mock hover:bg-accent-mock disabled:bg-zinc-800 rounded-xl text-sm font-semibold transition-all shadow-lg shadow-accent-mock/20"
               >
-                <Send className="w-4 h-4" /> Finish Exam
+                <Send className="w-4 h-4" /> Finish Trial
               </button>
             </div>
           </div>
@@ -505,7 +506,7 @@ export default function MockTestEnginePage() {
                 }
                 className="text-xs text-zinc-500 hover:text-accent-mock transition-colors underline underline-offset-4"
               >
-                Clear Answer Choice
+                Clear Stance
               </button>
               <button
                 onClick={() => setCurrentIdx((prev) => Math.min(test.questions.length - 1, prev + 1))}
