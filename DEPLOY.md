@@ -51,10 +51,27 @@ Set all of these in Railway → Project → Variables:
 | `DB_MAX_OVERFLOW` | Default: `10` |
 | `ALLOW_FALLBACK_QUESTIONS` | `true` for demo mode, `false` for production |
 | `REQUIRE_EMAIL_VERIFICATION` | `true` for production |
+| `RAG_CHROMA_PATH` | Chroma directory. Defaults to `$RAILWAY_VOLUME_MOUNT_PATH/chroma`, else `/data/chroma` |
+| `PYQS_SOURCE` | PYQ JSON path. Default: `/app/data/pyqs.json` |
+
+### Volume (required in production)
+
+Attach a Railway volume and set `RAILWAY_VOLUME_MOUNT_PATH` to its mount (e.g. `/data`). The start script writes Chroma under `$RAILWAY_VOLUME_MOUNT_PATH/chroma` unless `RAG_CHROMA_PATH` is set. Without a volume, production boot fails because `RAG_REQUIRE_PERSISTENT_CHROMA` rejects an ephemeral path.
+
+### Startup
+
+`scripts/start.sh` (Dockerfile CMD **and** `railway.toml` startCommand) runs:
+
+1. `alembic upgrade head`
+2. `python -m data.ingest` (skipped if the collection already has ≥100 docs)
+3. `uvicorn`
+
+**First boot is slow** (fastembed model download + indexing). Later boots skip ingest when the volume already has data. If ingest fails, the process exits non-zero and Railway marks the deploy failed — that is intentional.
 
 ### Post-deploy Verification
 
 - `GET https://your-app.railway.app/health` → should return `{"status":"ok","database":"connected",...}`
+- Railway deploy logs should show `start.sh: chroma=...` then either `Indexed N new chunks` or `Skipping ingest`
 - Alembic migrations run **automatically** on startup — check Railway deploy logs to confirm
 
 ---

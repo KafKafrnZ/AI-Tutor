@@ -4,8 +4,11 @@ dockerfilePath = "./Dockerfile"
 
 [deploy]
 # Set WEB_CONCURRENCY > 1 only if REDIS_URL is configured.
-startCommand = "sh -c 'alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000} --workers ${WEB_CONCURRENCY:-1}'"
+# startCommand overrides Dockerfile CMD — keep this pointing at scripts/start.sh
+# so PYQ ingest cannot be skipped again.
+startCommand = "sh /app/scripts/start.sh"
 healthcheckPath = "/health"
-healthcheckTimeout = 30
+# First boot runs fastembed ingest; 30s was too short and killed healthy deploys.
+healthcheckTimeout = 300
 restartPolicyType = "on_failure"
 restartPolicyMaxRetries = 3
