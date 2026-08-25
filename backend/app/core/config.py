@@ -17,6 +17,12 @@ def parse_bool(raw: str | None, default: bool = False) -> bool:
     return raw.lower() in {"1", "true", "yes", "on"}
 
 
+def parse_require_email_verification(raw: str | None, environment: str) -> bool:
+    if raw is not None and raw.strip():
+        return parse_bool(raw.strip())
+    return environment.lower() == "production"
+
+
 def _safe_int(value: str | None, default: int) -> int:
     try:
         return int(value) if value is not None else default
@@ -91,12 +97,9 @@ class Settings:
         "ENVIRONMENT",
         "production" if os.getenv("RAILWAY_ENVIRONMENT") else "development",
     )
-    REQUIRE_EMAIL_VERIFICATION: bool = os.getenv("REQUIRE_EMAIL_VERIFICATION", "false").lower() in {
-        "1",
-        "true",
-        "yes",
-        "on",
-    }
+    REQUIRE_EMAIL_VERIFICATION: bool = parse_require_email_verification(
+        os.getenv("REQUIRE_EMAIL_VERIFICATION"), ENVIRONMENT
+    )
 
     BACKEND_CORS_ORIGINS: list = get_cors_origins()
 
