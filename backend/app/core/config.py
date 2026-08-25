@@ -1,3 +1,4 @@
+import logging
 import os
 import json as _json
 from dotenv import load_dotenv
@@ -5,6 +6,9 @@ from dotenv import load_dotenv
 # .env.local (gitignored) overrides .env — matches Next.js / Docker Compose convention
 load_dotenv(".env.local")
 load_dotenv()  # fallback to .env if .env.local is absent
+
+logger = logging.getLogger(__name__)
+_smtp_alias_warned = False
 
 
 def parse_bool(raw: str | None, default: bool = False) -> bool:
@@ -35,6 +39,24 @@ def get_cors_origins() -> list[str]:
         if parts:
             return parts
     return ["http://localhost:3000", "http://localhost:3001"]
+
+
+def _get_email_var(new_key: str, old_key: str, default: str = "") -> str:
+    """Prefer EMAIL_*; fall back to deprecated SMTP_* once per process."""
+    global _smtp_alias_warned
+    new_val = (os.getenv(new_key) or "").strip()
+    if new_val:
+        return new_val
+    old_val = (os.getenv(old_key) or "").strip()
+    if old_val:
+        if not _smtp_alias_warned:
+            logger.warning(
+                "Deprecated SMTP_* email env vars are set; use EMAIL_* instead. "
+                "SMTP_* aliases will be removed in a later release."
+            )
+            _smtp_alias_warned = True
+        return old_val
+    return default
 
 
 class Settings:
@@ -78,11 +100,12 @@ class Settings:
 
     BACKEND_CORS_ORIGINS: list = get_cors_origins()
 
-    EMAIL_HOST: str = os.getenv("EMAIL_HOST", "")
-    EMAIL_PORT: int = _safe_int(os.getenv("EMAIL_PORT"), 587)
-    EMAIL_USER: str = os.getenv("EMAIL_USER", "")
-    EMAIL_PASSWORD: str = os.getenv("EMAIL_PASSWORD", "")
-    EMAIL_FROM: str = os.getenv("EMAIL_FROM", "noreply@ascend-ai.in")
+    EMAIL_HOST: str = _get_email_var("EMAIL_HOST", "SMTP_HOST", "")
+    EMAIL_PORT: int = _safe_int(_get_email_var("EMAIL_PORT", "SMTP_PORT", "587"), 587)
+    EMAIL_USER: str = _get_email_var("EMAIL_USER", "SMTP_USER", "")
+    EMAIL_PASSWORD: str = _get_email_var("EMAIL_PASSWORD", "SMTP_PASSWORD", "")
+    EMAIL_FROM: str = _get_email_var("EMAIL_FROM", "SMTP_FROM", "noreply@ascend-ai.in")
+
     REDIS_URL: str = os.getenv("REDIS_URL", "")
     FRONTEND_URL: str = os.getenv("FRONTEND_URL", "http://localhost:3000")
 

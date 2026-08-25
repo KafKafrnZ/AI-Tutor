@@ -43,7 +43,7 @@ Set all of these in Railway → Project → Variables:
 |---|---|
 | `REDIS_URL` | Redis connection string — required when `WEB_CONCURRENCY > 1` |
 | `SENTRY_DSN` | Sentry DSN for backend error tracking |
-| `SMTP_HOST` / `SMTP_PORT` / `SMTP_USER` / `SMTP_PASSWORD` | Email service for account verification |
+| `EMAIL_HOST` / `EMAIL_PORT` / `EMAIL_USER` / `EMAIL_PASSWORD` / `EMAIL_FROM` | Email service for account verification |
 | `FRONTEND_URL` | Your Vercel URL — used in email verification links |
 | `ACCESS_TOKEN_EXPIRE_MINUTES` | Default: `60` |
 | `REFRESH_TOKEN_EXPIRE_DAYS` | Default: `30` |

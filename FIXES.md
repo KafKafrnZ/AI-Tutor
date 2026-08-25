@@ -69,7 +69,7 @@ Work top-to-bottom. Each item: **problem → files → steps → verify**.
 
 ### P0 — Critical
 
-- **F-01** Email env vars: rename `SMTP_*` → `EMAIL_*` in `backend/.env.example` and `DEPLOY.md`
+- **F-01** ~~Email env vars: rename `SMTP_*` → `EMAIL_*` in `backend/.env.example` and `DEPLOY.md`~~ Done (P-01). Code prefers `EMAIL_*`, falls back to deprecated `SMTP_*` with one warning.
 - **F-02** Railway ingest: add `data.ingest` to `backend/railway.toml` startCommand (match Dockerfile)
 - **F-03** Preview auth: gate `NEXT_PUBLIC_PREVIEW_AUTH` to `NODE_ENV === 'development'` only
 

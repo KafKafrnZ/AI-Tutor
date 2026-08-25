@@ -983,3 +983,53 @@ class TestConversations:
             "question": "Test?", "answer": "Test."
         })
         assert res.status_code in (401, 403)
+
+# ============================================================================
+# Task P-01 — Email Environment Configuration
+# ============================================================================
+
+class TestEmailSettings:
+    def setup_method(self):
+        import app.core.config as config
+
+        config._smtp_alias_warned = False
+
+    def test_email_host_wins_over_smtp_host(self, monkeypatch):
+        monkeypatch.setenv("EMAIL_HOST", "email.example.com")
+        monkeypatch.setenv("SMTP_HOST", "smtp.example.com")
+        from app.core.config import _get_email_var
+
+        assert _get_email_var("EMAIL_HOST", "SMTP_HOST", "") == "email.example.com"
+
+    def test_smtp_host_used_when_email_host_empty(self, monkeypatch):
+        monkeypatch.delenv("EMAIL_HOST", raising=False)
+        monkeypatch.setenv("SMTP_HOST", "smtp.fallback.com")
+        from app.core.config import _get_email_var
+
+        assert _get_email_var("EMAIL_HOST", "SMTP_HOST", "") == "smtp.fallback.com"
+
+    def test_blank_email_host_falls_back_to_smtp(self, monkeypatch):
+        monkeypatch.setenv("EMAIL_HOST", "   ")
+        monkeypatch.setenv("SMTP_HOST", "smtp.fallback.com")
+        from app.core.config import _get_email_var
+
+        assert _get_email_var("EMAIL_HOST", "SMTP_HOST", "") == "smtp.fallback.com"
+
+    def test_smtp_alias_warns_once(self, monkeypatch, caplog):
+        import logging
+
+        import app.core.config as config
+        from app.core.config import _get_email_var
+
+        monkeypatch.delenv("EMAIL_HOST", raising=False)
+        monkeypatch.delenv("EMAIL_USER", raising=False)
+        monkeypatch.setenv("SMTP_HOST", "smtp.example.com")
+        monkeypatch.setenv("SMTP_USER", "ops@example.com")
+
+        with caplog.at_level(logging.WARNING, logger="app.core.config"):
+            assert _get_email_var("EMAIL_HOST", "SMTP_HOST", "") == "smtp.example.com"
+            assert _get_email_var("EMAIL_USER", "SMTP_USER", "") == "ops@example.com"
+
+        warnings = [r for r in caplog.records if "SMTP_*" in r.getMessage()]
+        assert len(warnings) == 1
+        assert config._smtp_alias_warned is True
