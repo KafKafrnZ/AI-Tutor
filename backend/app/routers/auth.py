@@ -12,8 +12,8 @@ from app.core.auth import (
     create_refresh_token,
     create_token,
     hash_password,
+    lookup_refresh,
     verify_password,
-    verify_refresh_token,
 )
 from app.core.config import settings
 from app.core.dependencies import cookie_security_options, get_current_user, limiter
@@ -178,14 +178,7 @@ async def refresh_access_token(
 ):
     if not refresh_token:
         raise api_error(401, "TOKEN_MISSING", "No refresh token.")
-    records = db.query(AuthToken).filter(
-        AuthToken.token_type == "refresh",
-        AuthToken.refresh_expires_at > datetime.now(timezone.utc),
-    ).all()
-    matched = next(
-        (r for r in records if verify_refresh_token(refresh_token, r.refresh_token or "")),
-        None,
-    )
+    matched = lookup_refresh(db, refresh_token)
     if not matched:
         raise api_error(401, "TOKEN_INVALID", "Refresh token invalid or expired.")
 
