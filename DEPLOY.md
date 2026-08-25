@@ -134,8 +134,9 @@ This starts: PostgreSQL, Redis, FastAPI backend (with auto-migration + fastembed
 
 Run through this before every production deploy:
 
-- [ ] All GitHub Actions green on `main` (backend-ci, frontend-ci, deploy-gate)
-- [ ] `alembic upgrade head` runs clean in CI (checked by `backend-ci.yml`)
+- [ ] GitHub Actions workflow **CI** is green: jobs `Pytest + Type Check`, `Lint + Type Check + Build`, and `Gate`
+- [ ] Branch protection on `main` requires the check named **Gate** (workflow CI)
+- [ ] `alembic upgrade head` runs clean in CI (checked by the backend job)
 - [ ] `GET /health` returns 200 on Railway with `"database":"connected"`
 - [ ] Login → dashboard flow works end-to-end on Vercel
 - [ ] Token refresh (`POST /auth/refresh`) works (wait 61 minutes or test manually)
