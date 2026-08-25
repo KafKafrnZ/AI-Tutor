@@ -1,6 +1,6 @@
 # Ascend AI — Project Memory
 
-_Last updated: 2026-06-08. Read this first when starting a new session._
+_Last updated: 2026-08-25. Read this first when starting a new session._
 
 ---
 
@@ -11,18 +11,26 @@ Target: production-quality SaaS, $35k+/yr value, auctionable asset.
 
 - **Frontend**: Next.js 16 (App Router) + Tailwind v4 + Framer Motion — deployed on Vercel
 - **Backend**: FastAPI + SQLAlchemy + PostgreSQL + Alembic + ChromaDB (RAG) + Redis — deployed on Railway
-- **Auth**: httpOnly JWT cookies (`access_token`)
+- **Auth**: httpOnly cookies `access_token` + `refresh_token` (path=/auth); refresh looked up by hash.
 - **AI**: Llama 3.3 via external LLM API, fastembed for RAG embeddings
 - **GitHub repo**: `https://github.com/KafKafrnZ/AI-Tutor`
 
 ---
 
-## Current State (as of session end)
+## Current State
 
-### Deployments
-- User is **removing Railway and Vercel deployments** to start fresh.
-- All code fixes are committed and pushed to `main` on GitHub.
-- Fresh clone of `main` = fully working codebase ready for re-deploy.
+This branch (`gemini/p-01-email-env-names`) is Phase 1 hardening. It is not yet merged to `main`.
+
+### Phase 1 (this branch)
+- P-01: `EMAIL_*` canonical; `SMTP_*` deprecated one-shot fallback
+- P-02: `scripts/start.sh` — migrate → ingest → uvicorn (Dockerfile + railway.toml)
+- P-03: `PREVIEW_AUTH` server-only; production + flag throws; no `NEXT_PUBLIC_PREVIEW_AUTH`
+- P-04: CSRF fail-closed in production; exact scheme+netloc match
+- P-05: `lookup_refresh` by SHA-256; unique partial index; no `.all()` scan
+- P-06: `GET /health` `llm=connected|unconfigured|unavailable`; 5s GET, no completions
+- P-07: `REQUIRE_EMAIL_VERIFICATION` defaults true in production
+- P-08: `.github/workflows/ci.yml` only; required check name `Gate`
+- P-09: BFF 502 BACKEND_UNREACHABLE; set-cookie not hop-by-hop
 
 ### What's Already Fixed and Merged to `main`
 1. `backend/requirements.txt` — 3 pip dependency conflicts resolved:
@@ -35,7 +43,7 @@ Target: production-quality SaaS, $35k+/yr value, auctionable asset.
 5. Phase 4 color tokens applied across dashboard, practice, mock-tests, error-log, progress pages
 6. `frontend/app/mistakes/page.tsx` — redirects to `/error-log`
 7. `frontend/components/ThreeDExplorer.tsx` — TypeScript R3F prop fixes
-8. `.github/workflows/deploy-gate.yml` — CI deploy gate added
+8. ~~`.github/workflows/deploy-gate.yml` — CI deploy gate added~~ (Replaced by `ci.yml` in P-08)
 9. **Current State Updates**: `cleanup.py` deleted, `ImportError` fixed, exam scope fixed, deployments being rebuilt fresh.
 
 ### Completed in June 2026 Session
@@ -84,8 +92,9 @@ Browser → Vercel /api/* → Railway backend
 - `text-primary` = cyan (#00D4FF) — primary brand
 
 ### Auth Flow
-- Login → backend sets httpOnly `access_token` cookie
-- `proxy.ts` guards: `/dashboard`, `/tutor`, `/practice`, `/mock-tests`, `/progress`, `/error-log`
+- Login → backend sets httpOnly `access_token` and `refresh_token` (path=/auth)
+- `POST /auth/refresh` looks up the refresh cookie by SHA-256 (no row scan)
+- `proxy.ts` guards: `/dashboard`, `/tutor`, `/practice`, `/mock-tests`, `/progress`, `/error-log`, `/explore`
 - Unauthenticated → redirect to `/login`; Authenticated on auth routes → redirect to `/dashboard`
 
 ---
@@ -95,6 +104,7 @@ Browser → Vercel /api/* → Railway backend
 ### Vercel (Frontend)
 ```
 BACKEND_API_URL=https://<your-railway-url>
+# Never set PREVIEW_AUTH on Vercel. Never use NEXT_PUBLIC_PREVIEW_AUTH.
 ```
 
 ### Railway (Backend)
@@ -105,11 +115,16 @@ LLM_API_KEY=<your-llm-provider-key>
 BACKEND_CORS_ORIGINS=https://<your-vercel-url>
 ENVIRONMENT=production
 REDIS_URL=redis://...   (optional, falls back to in-memory)
+EMAIL_HOST=...          # Use EMAIL_*, not SMTP_*
+REQUIRE_EMAIL_VERIFICATION=true  # Defaults to true in production if unset
 ```
 
 ---
 
 ## Next Sprint
+
+Phase 2 (billing/quotas) must NOT start until this branch is merged. 
+Remaining FIXES: F-05, F-06, F-07, F-09–F-12, F-14–F-19.
 
 This is the full agenda for the next working session. Work through these in order:
 
@@ -130,39 +145,38 @@ This is the full agenda for the next working session. Work through these in orde
 - [ ] Auth edge cases: expired token, malformed token, missing cookie
 - [x] Rate limiting review (slowapi config — limits per endpoint)
 - [ ] DB connection pool tuning (`pool_size`, `max_overflow`, `pool_timeout`)
-- [x] Health check endpoint `GET /health` returning DB + Redis + LLM status (partial)
+- [x] Health check endpoint `GET /health` returning DB + Redis + Chroma + LLM status
 - [ ] Startup validation (fail fast if `DATABASE_URL` / `JWT_SECRET` missing)
 - [ ] Structured logging (structlog already in requirements — wire it up properly)
 
 ### 3. Integration Audit
-- [ ] Proxy error passthrough (5xx from Railway → meaningful message to user)
+- [x] Proxy error passthrough (502 BACKEND_UNREACHABLE on fetch throw; upstream 4xx/5xx pass through)
 - [ ] SSE connection drop recovery (frontend reconnect logic in tutor page)
 - [ ] Cookie forwarding end-to-end test (login → dashboard → API call)
 - [ ] CORS-free validation (confirm no `Access-Control` headers needed on Railway)
 - [ ] API response shape consistency across all endpoints
 
 ### 4. Load & Resilience
-- [ ] LLM call timeout + retry (tenacity already in requirements — use it)
+- [x] LLM call timeout + retry (tenacity on 429/5xx)
 - [ ] ChromaDB query timeout guard
 - [ ] Redis fallback already in place — verify it degrades gracefully
 - [ ] Async DB sessions (confirm all endpoints use `async with` session)
 - [ ] Background task queue for heavy operations (mock test scoring)
 
 ### 5. Deployment Packaging
-- [ ] `docker-compose.yml` for local dev (postgres + redis + backend + frontend)
-- [ ] `.env.example` complete for both frontend and backend
-- [ ] Railway `railway.toml` health check config
-- [ ] Vercel `vercel.json` with correct `rewrites` and `headers`
-- [ ] Alembic migration check on Railway startup (already scripted — verify)
-- [ ] Zero-downtime deploy checklist in `DEPLOY.md`
-- [ ] GitHub Actions CI green on `main` before deploying
+- [x] `docker-compose.yml` for local dev (postgres + redis + backend + frontend)
+- [x] `.env.example` complete for both frontend and backend
+- [x] Railway `railway.toml` health check config (`scripts/start.sh` + 300s timeout)
+- [x] Vercel `vercel.json` security headers
+- [x] Alembic migration check on Railway startup (`start.sh`)
+- [x] Zero-downtime deploy checklist in `DEPLOY.md`
+- [ ] GitHub Actions CI green on `main` (this branch: `.github/workflows/ci.yml`, check **Gate**)
 
 ---
 
 ## Branch Strategy
 - `main` — production-ready, always deployable
-- Working branch this session: `claude/pc-file-access-mnxju`
-- All work should be committed with clear messages and pushed
+- Working branch this session: `gemini/p-01-email-env-names` (Phase 1; not merged yet)
 
 ---
 
@@ -194,3 +208,6 @@ This is the full agenda for the next working session. Work through these in orde
 | `frontend/styles/tokens.css` | Design token definitions |
 | `frontend/components/layout/` | PageShell, PageHeader, GlassCard, Sidebar |
 | `frontend/lib/api.ts` | `API_URL` constant and fetch helpers |
+| `backend/app/core/csrf.py` | CSRF origin matching |
+| `backend/scripts/start.sh` | Production boot: migrate → ingest → uvicorn |
+| `.github/workflows/ci.yml` | Backend + frontend + Gate |
