@@ -87,7 +87,7 @@ Work top-to-bottom. Each item: **problem → files → steps → verify**.
 - **F-10** Empty/error states on data-fetching pages
 - **F-11** Replace raw Tailwind colors with design tokens
 - **F-12** SSE mid-stream resume in `frontend/app/tutor/page.tsx`
-- **F-13** Proxy 5xx passthrough in `frontend/app/api/[...path]/route.ts`
+- **F-13** ~~Proxy 5xx passthrough in `frontend/app/api/[...path]/route.ts`~~ Done (P-09). Fetch throw → 502 `{error:{code:BACKEND_UNREACHABLE}}`; upstream 4xx/5xx pass through. `set-cookie` is not hop-by-hop.
 - **F-14** Complete game UI per `FRONTEND_GAME_UI_ORCHESTRATION.md`
 
 ### P3 — Low
