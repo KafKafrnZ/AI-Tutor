@@ -6,6 +6,7 @@ from app.core.cache import _redis_client
 from app.core.dependencies import limiter
 from app.core.error_handler import api_error
 from app.core.rag import get_chroma_client
+from app.core.llm_adapter import llm_ping
 from app.models.database import get_db
 import structlog
 
@@ -42,9 +43,13 @@ def health_check(request: Request, db: Session = Depends(get_db)):
     if not db_ok:
         raise api_error(503, "DB_UNAVAILABLE", "Database unavailable")
 
+    llm_res = llm_ping()
+    llm_status = "connected" if llm_res["ok"] else ("unconfigured" if llm_res.get("error") == "unconfigured" else "unavailable")
+
     return {
         "status": "ok",
         "database": "connected",
         "redis": "connected" if redis_ok else "unavailable",
         "chroma": chroma_status,
+        "llm": llm_status,
     }

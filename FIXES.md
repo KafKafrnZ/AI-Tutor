@@ -75,7 +75,7 @@ Work top-to-bottom. Each item: **problem → files → steps → verify**.
 
 ### P1 — High
 
-- **F-04** Health: add LLM reachability to `backend/app/routers/health.py`
+- **F-04** ~~Health: add LLM reachability to `backend/app/routers/health.py`~~ Done (P-06). `/health` reports `llm` as connected/unconfigured/unavailable; LLM down is not a 503.
 - **F-05** LLM fallback model tier in `llm_adapter.py` (see `codex/production-rag-llm-hardening`)
 - **F-06** Sync SQLAlchemy: tune pool or migrate hot paths to async
 - **F-07** Chroma query timeout in `backend/app/core/rag.py`

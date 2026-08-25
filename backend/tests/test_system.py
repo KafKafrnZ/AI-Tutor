@@ -73,11 +73,16 @@ def _login(client, email: str, password: str = STRONG_PASSWORD):
 # ============================================================================
 
 class TestHealth:
-    def test_health_returns_ok(self, client):
+    def test_health_returns_ok(self, client, monkeypatch):
+        monkeypatch.setattr(
+            "app.routers.health.llm_ping",
+            lambda: {"ok": True, "provider": "groq", "error": None},
+        )
         r = client.get("/health")
         assert r.status_code == 200
         assert r.json()["status"] == "ok"
         assert r.json()["database"] == "connected"
+        assert r.json()["llm"] == "connected"
 
 
 # ============================================================================
