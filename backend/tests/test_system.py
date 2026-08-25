@@ -73,11 +73,16 @@ def _login(client, email: str, password: str = STRONG_PASSWORD):
 # ============================================================================
 
 class TestHealth:
-    def test_health_returns_ok(self, client):
+    def test_health_returns_ok(self, client, monkeypatch):
+        monkeypatch.setattr(
+            "app.routers.health.llm_ping",
+            lambda: {"ok": True, "provider": "groq", "error": None},
+        )
         r = client.get("/health")
         assert r.status_code == 200
         assert r.json()["status"] == "ok"
         assert r.json()["database"] == "connected"
+        assert r.json()["llm"] == "connected"
 
 
 # ============================================================================
@@ -983,3 +988,104 @@ class TestConversations:
             "question": "Test?", "answer": "Test."
         })
         assert res.status_code in (401, 403)
+
+# ============================================================================
+# Task P-01 — Email Environment Configuration
+# ============================================================================
+
+class TestEmailSettings:
+    def setup_method(self):
+        import app.core.config as config
+
+        config._smtp_alias_warned = False
+
+    def test_email_host_wins_over_smtp_host(self, monkeypatch):
+        monkeypatch.setenv("EMAIL_HOST", "email.example.com")
+        monkeypatch.setenv("SMTP_HOST", "smtp.example.com")
+        from app.core.config import _get_email_var
+
+        assert _get_email_var("EMAIL_HOST", "SMTP_HOST", "") == "email.example.com"
+
+    def test_smtp_host_used_when_email_host_empty(self, monkeypatch):
+        monkeypatch.delenv("EMAIL_HOST", raising=False)
+        monkeypatch.setenv("SMTP_HOST", "smtp.fallback.com")
+        from app.core.config import _get_email_var
+
+        assert _get_email_var("EMAIL_HOST", "SMTP_HOST", "") == "smtp.fallback.com"
+
+    def test_blank_email_host_falls_back_to_smtp(self, monkeypatch):
+        monkeypatch.setenv("EMAIL_HOST", "   ")
+        monkeypatch.setenv("SMTP_HOST", "smtp.fallback.com")
+        from app.core.config import _get_email_var
+
+        assert _get_email_var("EMAIL_HOST", "SMTP_HOST", "") == "smtp.fallback.com"
+
+    def test_smtp_alias_warns_once(self, monkeypatch, caplog):
+        import logging
+
+        import app.core.config as config
+        from app.core.config import _get_email_var
+
+        monkeypatch.delenv("EMAIL_HOST", raising=False)
+        monkeypatch.delenv("EMAIL_USER", raising=False)
+        monkeypatch.setenv("SMTP_HOST", "smtp.example.com")
+        monkeypatch.setenv("SMTP_USER", "ops@example.com")
+
+        with caplog.at_level(logging.WARNING, logger="app.core.config"):
+            assert _get_email_var("EMAIL_HOST", "SMTP_HOST", "") == "smtp.example.com"
+            assert _get_email_var("EMAIL_USER", "SMTP_USER", "") == "ops@example.com"
+
+        warnings = [r for r in caplog.records if "SMTP_*" in r.getMessage()]
+        assert len(warnings) == 1
+        assert config._smtp_alias_warned is True
+
+# ============================================================================
+# Task P-04 — CSRF strict origin checks
+# ============================================================================
+
+class TestCsrf:
+    @pytest.fixture(autouse=True)
+    def patch_csrf_settings(self, monkeypatch):
+        monkeypatch.setattr("app.core.middleware.settings.ALLOWED_ORIGINS", ["https://allowed.example"])
+        monkeypatch.setattr("app.core.middleware.settings.ENVIRONMENT", "production")
+
+    def test_production_no_origin_reject(self, client):
+        r = client.post("/login", json={})
+        assert r.status_code == 403
+        assert r.json() == {"error": {"code": "CSRF_REJECTED", "message": "Cross-site request rejected."}}
+
+    def test_production_exact_origin_allowed(self, client):
+        r = client.post("/login", json={}, headers={"origin": "https://allowed.example"})
+        assert r.status_code != 403
+
+    def test_production_evil_origin_reject(self, client):
+        r = client.post("/login", json={}, headers={"origin": "https://evil.example"})
+        assert r.status_code == 403
+        assert r.json()["error"]["code"] == "CSRF_REJECTED"
+
+    def test_production_startswith_evil_origin_reject(self, client):
+        r = client.post("/login", json={}, headers={"origin": "https://allowed.example.evil.com"})
+        assert r.status_code == 403
+
+    def test_development_no_origin_allowed(self, client, monkeypatch):
+        monkeypatch.setattr("app.core.middleware.settings.ENVIRONMENT", "development")
+        r = client.post("/login", json={})
+        assert r.status_code != 403
+
+    def test_development_evil_origin_reject(self, client, monkeypatch):
+        monkeypatch.setattr("app.core.middleware.settings.ENVIRONMENT", "development")
+        r = client.post("/login", json={}, headers={"origin": "https://evil.example"})
+        assert r.status_code == 403
+
+    def test_production_get_no_origin_allowed(self, client):
+        r = client.get("/health")
+        assert r.status_code == 200
+
+    def test_production_referer_path_ignored_allowed(self, client):
+        r = client.post("/login", json={}, headers={"referer": "https://allowed.example/login/path"})
+        assert r.status_code != 403
+
+    def test_development_localhost_origin_allowed(self, client, monkeypatch):
+        monkeypatch.setattr("app.core.middleware.settings.ENVIRONMENT", "development")
+        r = client.post("/login", json={}, headers={"origin": "http://127.0.0.1:3000"})
+        assert r.status_code != 403

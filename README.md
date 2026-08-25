@@ -61,4 +61,6 @@ This boots up the PostgreSQL database, the ChromaDB vector store, the FastAPI ba
 ---
 
 ## 🚀 Deploy
-See [DEPLOY.md](DEPLOY.md) for detailed instructions on deploying the application to Railway and Vercel.
+See [DEPLOY.md](DEPLOY.md) for Railway + Vercel.
+
+What is still required before this is a shippable, paid product: [PRODUCTION_READINESS.md](PRODUCTION_READINESS.md).

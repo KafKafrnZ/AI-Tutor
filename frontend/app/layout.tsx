@@ -4,6 +4,9 @@ import "./globals.css";
 import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
 import AppLayout from "./AppLayout";
 import { Toaster } from "sonner";
+import { assertPreviewAuthConfig } from "@/lib/preview-auth";
+
+assertPreviewAuthConfig(process.env.NODE_ENV, process.env.PREVIEW_AUTH);
 
 export const metadata: Metadata = {
   title: "Ascend AI — AI Tutor for Government Exams",
@@ -48,11 +51,15 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const previewAuthEnabled =
+    process.env.NODE_ENV !== "production" &&
+    process.env.PREVIEW_AUTH === "true";
+
   return (
     <html lang="en" className="dark font-sans">
       <body>
         <ErrorBoundary>
-          <AppLayout>{children}</AppLayout>
+          <AppLayout previewAuthEnabled={previewAuthEnabled}>{children}</AppLayout>
         </ErrorBoundary>
         <Toaster richColors position="top-right" />
       </body>

@@ -274,3 +274,17 @@ async def chat_stream(messages: list[dict], **kwargs: Any) -> AsyncGenerator[str
     client = get_http_client()
     async for token in _connect_stream_with_retry(provider, client, messages, **kwargs):
         yield token
+
+
+def llm_ping() -> dict[str, Any]:
+    """Reachability only — never call /chat/completions. 5s, no retries."""
+    provider = detect_provider(settings.LLM_BASE_URL)
+    if not (settings.LLM_API_KEY or "").strip():
+        return {"ok": False, "provider": provider, "error": "unconfigured"}
+
+    try:
+        with httpx.Client(timeout=5.0) as client:
+            client.get(settings.LLM_BASE_URL)
+        return {"ok": True, "provider": provider, "error": None}
+    except httpx.RequestError as exc:
+        return {"ok": False, "provider": provider, "error": str(exc)[:200]}

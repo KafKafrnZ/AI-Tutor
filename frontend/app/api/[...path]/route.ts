@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { copyResponseHeaders, backendUnreachableBody, HOP_BY_HOP_HEADERS } from "@/lib/bff-proxy";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -7,23 +8,11 @@ export const preferredRegion = "auto";
 
 // BACKEND_API_URL must be set in Vercel → Settings → Environment Variables.
 // Value: your Railway service URL (no trailing slash).
-// If missing, all API calls return 502.
+// If missing / unreachable, this route returns 502 BACKEND_UNREACHABLE.
+// Cookie names access_token and refresh_token must be forwarded (do not
+// put set-cookie in HOP_BY_HOP_HEADERS).
 
 const BACKEND_API_URL = (process.env.BACKEND_API_URL || "http://127.0.0.1:8000").replace(/\/$/, "");
-
-const HOP_BY_HOP_HEADERS = new Set([
-  "connection",
-  "content-encoding",
-  "content-length",
-  "expect",           // undici (Node.js fetch) doesn't support Expect: 100-continue
-  "keep-alive",
-  "proxy-authenticate",
-  "proxy-authorization",
-  "te",
-  "trailer",
-  "transfer-encoding",
-  "upgrade",
-]);
 
 type RouteContext = {
   params: Promise<{ path?: string[] }>;
@@ -44,16 +33,6 @@ function copyRequestHeaders(request: NextRequest): Headers {
   }
 
   headers.delete("host");
-  return headers;
-}
-
-function copyResponseHeaders(response: Response): Headers {
-  const headers = new Headers(response.headers);
-
-  for (const header of HOP_BY_HOP_HEADERS) {
-    headers.delete(header);
-  }
-
   return headers;
 }
 
@@ -99,13 +78,7 @@ async function proxyRequest(request: NextRequest, context: RouteContext): Promis
     });
   } catch (error) {
     console.error("[api-proxy] backend request failed", { targetUrl, error });
-
-    return NextResponse.json(
-      {
-        detail: "Backend API is not responding. Check the Railway service logs and environment variables.",
-      },
-      { status: 502 }
-    );
+    return NextResponse.json(backendUnreachableBody(), { status: 502 });
   }
 }
 

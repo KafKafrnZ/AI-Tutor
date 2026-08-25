@@ -92,6 +92,16 @@ async def lifespan(app: FastAPI):
             note="Redis not configured — using in-memory cache. Single worker only.",
         )
 
+    if (
+        settings.ENVIRONMENT.lower() == "production"
+        and settings.REQUIRE_EMAIL_VERIFICATION
+        and not (settings.EMAIL_HOST and settings.EMAIL_USER and settings.EMAIL_PASSWORD)
+    ):
+        logger.error(
+            "email_unconfigured_in_production",
+            note="verification tokens will be created but emails will not send",
+        )
+
     chroma_path = validate_chroma_persistence_config()
     logger.info("app_starting", chroma_path=str(chroma_path))
     _check_migration_drift()

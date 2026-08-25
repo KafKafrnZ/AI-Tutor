@@ -1,17 +1,14 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
+import { isPreviewAuthAllowed, assertPreviewAuthConfig } from './lib/preview-auth'
 
 const PROTECTED_ROUTES = [
   '/dashboard', '/tutor', '/practice', '/mock-tests',
   '/progress', '/error-log', '/explore'
 ]
 const AUTH_ROUTES = ['/login', '/signup', '/']
-const PREVIEW_AUTH_ENABLED = process.env.NEXT_PUBLIC_PREVIEW_AUTH === 'true'
 
-function isLocalhost(request: NextRequest): boolean {
-  const host = request.headers.get('host') || ''
-  return host.startsWith('localhost:') || host.startsWith('127.0.0.1:')
-}
+assertPreviewAuthConfig(process.env.NODE_ENV, process.env.PREVIEW_AUTH)
 
 function isTokenExpired(token: string): boolean {
   try {
@@ -23,7 +20,11 @@ function isTokenExpired(token: string): boolean {
 }
 
 export function proxy(request: NextRequest) {
-  const previewAuth = PREVIEW_AUTH_ENABLED && isLocalhost(request)
+  const previewAuth = isPreviewAuthAllowed({
+    nodeEnv: process.env.NODE_ENV,
+    previewAuth: process.env.PREVIEW_AUTH,
+    host: request.headers?.get('host') || undefined
+  })
   const token = request.cookies.get('access_token')?.value
   const tokenValid = token && !isTokenExpired(token)
 

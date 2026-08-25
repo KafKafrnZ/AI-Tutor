@@ -43,18 +43,35 @@ Set all of these in Railway → Project → Variables:
 |---|---|
 | `REDIS_URL` | Redis connection string — required when `WEB_CONCURRENCY > 1` |
 | `SENTRY_DSN` | Sentry DSN for backend error tracking |
-| `SMTP_HOST` / `SMTP_PORT` / `SMTP_USER` / `SMTP_PASSWORD` | Email service for account verification |
+| `EMAIL_HOST` / `EMAIL_PORT` / `EMAIL_USER` / `EMAIL_PASSWORD` / `EMAIL_FROM` | Email service for account verification |
 | `FRONTEND_URL` | Your Vercel URL — used in email verification links |
 | `ACCESS_TOKEN_EXPIRE_MINUTES` | Default: `60` |
 | `REFRESH_TOKEN_EXPIRE_DAYS` | Default: `30` |
 | `DB_POOL_SIZE` | Default: `5` (free tier Postgres: keep at 5) |
 | `DB_MAX_OVERFLOW` | Default: `10` |
 | `ALLOW_FALLBACK_QUESTIONS` | `true` for demo mode, `false` for production |
-| `REQUIRE_EMAIL_VERIFICATION` | `true` for production |
+| `REQUIRE_EMAIL_VERIFICATION` | Defaults to `true` in production if unset; explicit `false` disables |
+| `RAG_CHROMA_PATH` | Chroma directory. Defaults to `$RAILWAY_VOLUME_MOUNT_PATH/chroma`, else `/data/chroma` |
+| `PYQS_SOURCE` | PYQ JSON path. Default: `/app/data/pyqs.json` |
+
+### Volume (required in production)
+
+Attach a Railway volume and set `RAILWAY_VOLUME_MOUNT_PATH` to its mount (e.g. `/data`). The start script writes Chroma under `$RAILWAY_VOLUME_MOUNT_PATH/chroma` unless `RAG_CHROMA_PATH` is set. Without a volume, production boot fails because `RAG_REQUIRE_PERSISTENT_CHROMA` rejects an ephemeral path.
+
+### Startup
+
+`scripts/start.sh` (Dockerfile CMD **and** `railway.toml` startCommand) runs:
+
+1. `alembic upgrade head`
+2. `python -m data.ingest` (skipped if the collection already has ≥100 docs)
+3. `uvicorn`
+
+**First boot is slow** (fastembed model download + indexing). Later boots skip ingest when the volume already has data. If ingest fails, the process exits non-zero and Railway marks the deploy failed — that is intentional.
 
 ### Post-deploy Verification
 
 - `GET https://your-app.railway.app/health` → should return `{"status":"ok","database":"connected",...}`
+- Railway deploy logs should show `start.sh: chroma=...` then either `Indexed N new chunks` or `Skipping ingest`
 - Alembic migrations run **automatically** on startup — check Railway deploy logs to confirm
 
 ---
@@ -117,8 +134,9 @@ This starts: PostgreSQL, Redis, FastAPI backend (with auto-migration + fastembed
 
 Run through this before every production deploy:
 
-- [ ] All GitHub Actions green on `main` (backend-ci, frontend-ci, deploy-gate)
-- [ ] `alembic upgrade head` runs clean in CI (checked by `backend-ci.yml`)
+- [ ] GitHub Actions workflow **CI** is green: jobs `Pytest + Type Check`, `Lint + Type Check + Build`, and `Gate`
+- [ ] Branch protection on `main` requires the check named **Gate** (workflow CI)
+- [ ] `alembic upgrade head` runs clean in CI (checked by the backend job)
 - [ ] `GET /health` returns 200 on Railway with `"database":"connected"`
 - [ ] Login → dashboard flow works end-to-end on Vercel
 - [ ] Token refresh (`POST /auth/refresh`) works (wait 61 minutes or test manually)

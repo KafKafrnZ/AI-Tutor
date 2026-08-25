@@ -10,10 +10,10 @@ import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
 import { GameAtmosphere, HudBar } from "@/components/game/GamePrimitives";
 import { universeForPath } from "@/components/game/universes";
 import { API_URL } from "@/lib/api";
+import { isPreviewAuthAllowed } from "@/lib/preview-auth";
 import { useAppStore } from "@/store/useAppStore";
 
 const PUBLIC_ROUTES = ["/", "/login", "/signup", "/forgot-password", "/reset-password", "/verify-email"];
-const PREVIEW_AUTH_ENABLED = process.env.NEXT_PUBLIC_PREVIEW_AUTH === "true";
 const PREVIEW_USER = {
   id: 0,
   name: "Preview Operator",
@@ -21,11 +21,17 @@ const PREVIEW_USER = {
   plan: "cinematic",
 };
 
-export default function AppLayout({ children }: { children: React.ReactNode }) {
+export default function AppLayout({ children, previewAuthEnabled = false }: { children: React.ReactNode, previewAuthEnabled?: boolean }) {
   const pathname = usePathname();
   const router = useRouter();
   const isPublic = PUBLIC_ROUTES.includes(pathname);
-  const isPreviewAuth = PREVIEW_AUTH_ENABLED && typeof window !== "undefined" && window.location.hostname === "localhost";
+  const isPreviewAuth =
+    typeof window !== "undefined" &&
+    isPreviewAuthAllowed({
+      nodeEnv: process.env.NODE_ENV,
+      previewAuth: previewAuthEnabled ? "true" : undefined,
+      host: window.location.host,
+    });
   const { setUser, user: storeUser } = useAppStore();
 
   const [userName, setUserName] = useState(() => (isPreviewAuth ? PREVIEW_USER.name : "Student"));

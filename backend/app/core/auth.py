@@ -1,10 +1,14 @@
 import bcrypt
 import hashlib
 import secrets as _secrets
+from datetime import datetime, timedelta, timezone
+
 import jwt
 from jwt.exceptions import InvalidTokenError
-from datetime import datetime, timedelta, timezone
+from sqlalchemy.orm import Session
+
 from app.core.config import settings
+from app.models.database import AuthToken
 
 def hash_password(password: str) -> str:
     if not password:
@@ -42,3 +46,18 @@ def create_refresh_token() -> tuple[str, str]:
 
 def verify_refresh_token(raw: str, hashed: str) -> bool:
     return hashlib.sha256(raw.encode()).hexdigest() == hashed
+
+
+def lookup_refresh(db: Session, raw: str) -> AuthToken | None:
+    if not raw:
+        return None
+    hashed = hashlib.sha256(raw.encode()).hexdigest()
+    return (
+        db.query(AuthToken)
+        .filter(
+            AuthToken.token_type == "refresh",
+            AuthToken.refresh_token == hashed,
+            AuthToken.refresh_expires_at > datetime.now(timezone.utc),
+        )
+        .one_or_none()
+    )

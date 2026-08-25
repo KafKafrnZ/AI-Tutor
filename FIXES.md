@@ -1,6 +1,6 @@
 # Ascend AI — Fixes Playbook
 
-_Last verified against `main` @ `dd02674` (PR #24, 2026-07-03)._
+_Last verified against `gemini/p-01-email-env-names` (Phase 1 hardening, 2026-08-25)._
 
 This is the single source of truth for what is still broken, what is already fixed, and how to tackle each item in order.
 
@@ -17,7 +17,7 @@ rm -rf ~/projects/AI-Tutor ~/.gemini/history/ai-tutor ~/.gemini/tmp/ai-tutor
 # Clone latest main
 git clone https://github.com/KafKafrnZ/AI-Tutor.git ~/projects/AI-Tutor
 cd ~/projects/AI-Tutor
-git log -1 --oneline   # expect: dd02674 Merge pull request #24
+# git log -1 --oneline   # Verify you are on the latest commit
 
 # Backend
 cp backend/.env.example backend/.env
@@ -57,9 +57,18 @@ docker compose up --build
 | XSS protection on tutor markdown | `rehype-sanitize` in `frontend/app/tutor/page.tsx` |
 | SSE plain-token parser fix | `frontend/lib/sse.ts` |
 | 200-question RAG corpus | `backend/data/pyqs.json` |
-| 63 backend tests | `backend/tests/test_system.py` |
+| 100+ backend tests | `backend/tests/` |
 | docker-compose local stack | `docker-compose.yml` |
 | Game UI pass (partial) | PR #24 — see F-14 for gaps |
+| Email env vars: `EMAIL_*` canonical | `backend/.env.example` |
+| `start.sh` ingest boot sequence | `backend/scripts/start.sh` |
+| Preview auth server-only | `frontend/lib/preview-auth.ts` |
+| CSRF fail-closed origin validation | `backend/app/core/csrf.py` |
+| Refresh token O(1) hashed lookup | `backend/app/routers/auth.py` |
+| Health check LLM status | `backend/app/routers/health.py` |
+| Production email-verification default | `backend/app/core/config.py` |
+| Unified CI workflow | `.github/workflows/ci.yml` |
+| BFF proxy 502 BACKEND_UNREACHABLE | `frontend/app/api/[...path]/route.ts` |
 
 ---
 
@@ -69,25 +78,25 @@ Work top-to-bottom. Each item: **problem → files → steps → verify**.
 
 ### P0 — Critical
 
-- **F-01** Email env vars: rename `SMTP_*` → `EMAIL_*` in `backend/.env.example` and `DEPLOY.md`
-- **F-02** Railway ingest: add `data.ingest` to `backend/railway.toml` startCommand (match Dockerfile)
-- **F-03** Preview auth: gate `NEXT_PUBLIC_PREVIEW_AUTH` to `NODE_ENV === 'development'` only
+- **F-01** ~~Email env vars: rename `SMTP_*` → `EMAIL_*` in `backend/.env.example` and `DEPLOY.md`~~ Done (P-01). Code prefers `EMAIL_*`, falls back to deprecated `SMTP_*` with one warning.
+- **F-02** ~~Railway ingest: add `data.ingest` to `backend/railway.toml` startCommand (match Dockerfile)~~ Done (P-02). `scripts/start.sh` is shared by Dockerfile + Railway; ingest failure aborts boot.
+- **F-03** ~~Preview auth: gate `NEXT_PUBLIC_PREVIEW_AUTH` to `NODE_ENV === 'development'` only~~ Done (P-03). Server-only `PREVIEW_AUTH`; production + flag throws at boot.
 
 ### P1 — High
 
-- **F-04** Health: add LLM reachability to `backend/app/routers/health.py`
+- **F-04** ~~Health: add LLM reachability to `backend/app/routers/health.py`~~ Done (P-06). `/health` reports `llm` as connected/unconfigured/unavailable; LLM down is not a 503.
 - **F-05** LLM fallback model tier in `llm_adapter.py` (see `codex/production-rag-llm-hardening`)
 - **F-06** Sync SQLAlchemy: tune pool or migrate hot paths to async
 - **F-07** Chroma query timeout in `backend/app/core/rag.py`
 
 ### P2 — Medium
 
-- **F-08** Update stale `MEMORY.md`
+- **F-08** ~~Update stale `MEMORY.md`~~ Done (P-10).
 - **F-09** Form validation (signup/login client + server)
 - **F-10** Empty/error states on data-fetching pages
 - **F-11** Replace raw Tailwind colors with design tokens
 - **F-12** SSE mid-stream resume in `frontend/app/tutor/page.tsx`
-- **F-13** Proxy 5xx passthrough in `frontend/app/api/[...path]/route.ts`
+- **F-13** ~~Proxy 5xx passthrough in `frontend/app/api/[...path]/route.ts`~~ Done (P-09). Fetch throw → 502 `{error:{code:BACKEND_UNREACHABLE}}`; upstream 4xx/5xx pass through. `set-cookie` is not hop-by-hop.
 - **F-14** Complete game UI per `FRONTEND_GAME_UI_ORCHESTRATION.md`
 
 ### P3 — Low
@@ -104,9 +113,9 @@ See full step-by-step instructions in the local copy at `~/projects/AI-Tutor/FIX
 
 ## 3. Sprint Plan
 
-1. **Sprint 1:** F-01–F-04 + CI green + redeploy
-2. **Sprint 2:** F-05, F-07, F-12, F-13
-3. **Sprint 3:** F-08–F-11, F-14, F-18
+1. ~~**Sprint 1:** F-01–F-04 + CI green + redeploy~~ (Done)
+2. **Sprint 2:** F-05, F-07, F-12
+3. **Sprint 3:** F-09–F-11, F-14, F-18
 4. **Sprint 4:** F-06, F-15, F-16, F-19
 
 ---
