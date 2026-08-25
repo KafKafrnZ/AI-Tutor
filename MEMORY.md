@@ -123,8 +123,9 @@ REQUIRE_EMAIL_VERIFICATION=true  # Defaults to true in production if unset
 
 ## Next Sprint
 
-Phase 2 (billing/quotas) must NOT start until this branch is merged. 
-Remaining FIXES: F-05, F-06, F-07, F-09–F-12, F-14–F-19.
+Phase 2 (billing/quotas) must NOT start until this branch is merged.
+Remaining work: [PRODUCTION_READINESS.md](PRODUCTION_READINESS.md).
+FIXES still open: F-05, F-06, F-07, F-09–F-12, F-14–F-19.
 
 This is the full agenda for the next working session. Work through these in order:
 
