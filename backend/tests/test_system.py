@@ -1033,3 +1033,54 @@ class TestEmailSettings:
         warnings = [r for r in caplog.records if "SMTP_*" in r.getMessage()]
         assert len(warnings) == 1
         assert config._smtp_alias_warned is True
+
+# ============================================================================
+# Task P-04 — CSRF strict origin checks
+# ============================================================================
+
+class TestCsrf:
+    @pytest.fixture(autouse=True)
+    def patch_csrf_settings(self, monkeypatch):
+        monkeypatch.setattr("app.core.middleware.settings.ALLOWED_ORIGINS", ["https://allowed.example"])
+        monkeypatch.setattr("app.core.middleware.settings.ENVIRONMENT", "production")
+
+    def test_production_no_origin_reject(self, client):
+        r = client.post("/login", json={})
+        assert r.status_code == 403
+        assert r.json() == {"error": {"code": "CSRF_REJECTED", "message": "Cross-site request rejected."}}
+
+    def test_production_exact_origin_allowed(self, client):
+        r = client.post("/login", json={}, headers={"origin": "https://allowed.example"})
+        assert r.status_code != 403
+
+    def test_production_evil_origin_reject(self, client):
+        r = client.post("/login", json={}, headers={"origin": "https://evil.example"})
+        assert r.status_code == 403
+        assert r.json()["error"]["code"] == "CSRF_REJECTED"
+
+    def test_production_startswith_evil_origin_reject(self, client):
+        r = client.post("/login", json={}, headers={"origin": "https://allowed.example.evil.com"})
+        assert r.status_code == 403
+
+    def test_development_no_origin_allowed(self, client, monkeypatch):
+        monkeypatch.setattr("app.core.middleware.settings.ENVIRONMENT", "development")
+        r = client.post("/login", json={})
+        assert r.status_code != 403
+
+    def test_development_evil_origin_reject(self, client, monkeypatch):
+        monkeypatch.setattr("app.core.middleware.settings.ENVIRONMENT", "development")
+        r = client.post("/login", json={}, headers={"origin": "https://evil.example"})
+        assert r.status_code == 403
+
+    def test_production_get_no_origin_allowed(self, client):
+        r = client.get("/health")
+        assert r.status_code == 200
+
+    def test_production_referer_path_ignored_allowed(self, client):
+        r = client.post("/login", json={}, headers={"referer": "https://allowed.example/login/path"})
+        assert r.status_code != 403
+
+    def test_development_localhost_origin_allowed(self, client, monkeypatch):
+        monkeypatch.setattr("app.core.middleware.settings.ENVIRONMENT", "development")
+        r = client.post("/login", json={}, headers={"origin": "http://127.0.0.1:3000"})
+        assert r.status_code != 403

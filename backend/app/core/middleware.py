@@ -11,6 +11,7 @@ from fastapi import Request
 from fastapi.responses import JSONResponse
 
 from app.core.config import settings
+from app.core.csrf import csrf_should_reject
 
 logger = structlog.get_logger("ascend_ai")
 
@@ -55,14 +56,15 @@ async def log_requests_and_add_headers(request: Request, call_next):
 
 
 async def csrf_protection(request: Request, call_next):
-    safe_methods = {"GET", "HEAD", "OPTIONS"}
-    if request.method not in safe_methods:
-        origin = request.headers.get("origin", "")
-        referer = request.headers.get("referer", "")
-        source = origin or referer
-        if source and not any(source.startswith(o) for o in settings.ALLOWED_ORIGINS):
-            return JSONResponse(
-                status_code=403,
-                content={"error": {"code": "CSRF_REJECTED", "message": "Cross-site request rejected."}},
-            )
+    if csrf_should_reject(
+        method=request.method,
+        origin=request.headers.get("origin", ""),
+        referer=request.headers.get("referer", ""),
+        allowed_origins=settings.ALLOWED_ORIGINS,
+        environment=settings.ENVIRONMENT,
+    ):
+        return JSONResponse(
+            status_code=403,
+            content={"error": {"code": "CSRF_REJECTED", "message": "Cross-site request rejected."}},
+        )
     return await call_next(request)
