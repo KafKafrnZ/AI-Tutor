@@ -71,7 +71,7 @@ Work top-to-bottom. Each item: **problem → files → steps → verify**.
 
 - **F-01** ~~Email env vars: rename `SMTP_*` → `EMAIL_*` in `backend/.env.example` and `DEPLOY.md`~~ Done (P-01). Code prefers `EMAIL_*`, falls back to deprecated `SMTP_*` with one warning.
 - **F-02** ~~Railway ingest: add `data.ingest` to `backend/railway.toml` startCommand (match Dockerfile)~~ Done (P-02). `scripts/start.sh` is shared by Dockerfile + Railway; ingest failure aborts boot.
-- **F-03** Preview auth: gate `NEXT_PUBLIC_PREVIEW_AUTH` to `NODE_ENV === 'development'` only
+- **F-03** ~~Preview auth: gate `NEXT_PUBLIC_PREVIEW_AUTH` to `NODE_ENV === 'development'` only~~ Done (P-03). Server-only `PREVIEW_AUTH`; production + flag throws at boot.
 
 ### P1 — High
 
