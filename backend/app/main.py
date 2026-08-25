@@ -34,6 +34,8 @@ import os
 _sentry_dsn = os.getenv("SENTRY_DSN", "")
 if _sentry_dsn:
     import sentry_sdk
+    from sentry_sdk.integrations.fastapi import FastApiIntegration
+    from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
 
     sentry_sdk.init(
         dsn=_sentry_dsn,
@@ -42,10 +44,8 @@ if _sentry_dsn:
         environment=settings.ENVIRONMENT,
         release=os.getenv("RAILWAY_GIT_COMMIT_SHA", "unknown"),
         integrations=[
-            sentry_sdk.integrations.fastapi.FastApiIntegration(
-                transaction_style="url"
-            ),
-            sentry_sdk.integrations.sqlalchemy.SqlalchemyIntegration(),
+            FastApiIntegration(transaction_style="url"),
+            SqlalchemyIntegration(),
         ],
         before_send=lambda event, hint: event,
     )

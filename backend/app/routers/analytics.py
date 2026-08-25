@@ -43,6 +43,7 @@ def stats(request: Request, db: Session = Depends(get_db), current_user: Any = D
     else:
         overall_stats = get_overall_stats(df)
         weak_areas_result = get_weak_areas(df)
+        weak_areas_serialized: str | dict[str, float]
         if hasattr(weak_areas_result, "to_dict"):
             weak_areas_serialized = {
                 str(key): float(value)

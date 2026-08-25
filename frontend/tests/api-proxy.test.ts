@@ -4,7 +4,7 @@ import { backendUnreachableBody, copyResponseHeaders, HOP_BY_HOP_HEADERS } from 
 describe("API Proxy Helpers", () => {
   it("backendUnreachableBody should return BACKEND_UNREACHABLE code without detail", () => {
     const body = backendUnreachableBody();
-    expect((body as any).detail).toBeUndefined();
+    expect((body as { detail?: unknown }).detail).toBeUndefined();
     expect(body.error.code).toBe("BACKEND_UNREACHABLE");
     expect(body.error.message).toBe("The tutor service is not responding. Please try again.");
   });

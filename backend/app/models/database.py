@@ -1,7 +1,7 @@
 import os
 from datetime import datetime, timezone, date as date_type
 from sqlalchemy import create_engine, Column, Integer, String, Date, ForeignKey, Float, Boolean, DateTime
-from sqlalchemy.orm import declarative_base, sessionmaker, Session, relationship
+from sqlalchemy.orm import DeclarativeBase, sessionmaker, Session, relationship
 from app.core.config import settings
 import logging
 
@@ -21,7 +21,8 @@ _pg_pool_kwargs = (
 )
 engine = create_engine(settings.DATABASE_URL, **_pg_pool_kwargs)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-Base = declarative_base()
+class Base(DeclarativeBase):
+    pass
 
 class User(Base):
     __tablename__ = "users"

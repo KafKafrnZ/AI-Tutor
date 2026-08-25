@@ -69,13 +69,13 @@ class Settings:
     PROJECT_NAME: str = "AI Tutor"
     VERSION: str = "1.2"
 
-    JWT_SECRET: str = os.getenv("JWT_SECRET")
+    JWT_SECRET: str = os.getenv("JWT_SECRET") or ""
     if not JWT_SECRET:
         raise ValueError("CRITICAL: JWT_SECRET environment variable is missing.")
 
     JWT_ALGORITHM: str = "HS256"
 
-    DATABASE_URL: str = os.getenv("DATABASE_URL")
+    DATABASE_URL: str = os.getenv("DATABASE_URL") or ""
     if not DATABASE_URL:
         raise ValueError("CRITICAL: DATABASE_URL environment variable is missing.")
 
