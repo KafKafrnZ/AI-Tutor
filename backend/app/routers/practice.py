@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import json
 from typing import Any
 
 from fastapi import APIRouter, Depends, Request
@@ -19,18 +18,7 @@ router = APIRouter(tags=["practice"])
 async def practice_ai(request: Request, data: PracticeRequest, current_user: Any = Depends(get_current_user)):
     topic = guard_input(data.topic, max_length=500)
     try:
-        raw_result = await generate_questions(topic)
+        questions = await generate_questions(topic)
     except LLMServiceError as exc:
         raise api_error(503, "SERVICE_UNAVAILABLE", str(exc)) from exc
-    try:
-        return {"questions": json.loads(raw_result)}
-    except Exception:
-        return {
-            "questions": [{
-                "difficulty": "Hard",
-                "question": "Parse Error",
-                "options": ["A", "B", "C", "D"],
-                "correct_answer": "A",
-                "explanation": "Failed to safely parse output string topology map to valid JSON elements.",
-            }]
-        }
+    return {"questions": [q.model_dump() for q in questions]}

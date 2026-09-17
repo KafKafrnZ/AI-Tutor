@@ -1,9 +1,9 @@
 import pandas as pd
-import json
 import logging
 from sqlalchemy.orm import Session
 from app.models.database import MockTest, ErrorLog
-from modules.tutor import run_cloud_model
+from app.core.structured_llm import structured_complete
+from app.schemas.api import RevisionPlanResponse
 
 logger = logging.getLogger(__name__)
 
@@ -90,29 +90,14 @@ Student's Recent Mistakes:
 
 Your task is to identify the precise micro-topics they are failing at. Do not just say "Reasoning" or "Quant". Be specific (e.g., "Syllogism - Possibility Cases", "Time & Work - Efficiency Concepts", "Indian Polity - Fundamental Rights exceptions", "Computer Networks - OSI Layer functions").
 
-Output MUST be a pure JSON object. Do not include markdown formatting like ```json.
-Exact schema:
-{{
-  "primary_weakness": "string (The #1 main area dragging their score down)",
-  "critical_concepts": ["concept 1", "concept 2", "concept 3"],
-  "actionable_checklist": [
-    "Actionable step 1...",
-    "Actionable step 2...",
-    "Actionable step 3..."
-  ]
-}}
-"""
+primary_weakness is the #1 main area dragging their score down. critical_concepts and actionable_checklist should each have 3 items."""
     try:
-        raw_response = await run_cloud_model(system_prompt, temperature=0.2, max_tokens=1500)
-        
-        # Bulletproof JSON extraction
-        cleaned = raw_response.strip()
-        if "```" in cleaned:
-            parts = cleaned.split("```")
-            cleaned = parts[1] if len(parts) > 1 else cleaned
-        if cleaned.lower().startswith("json"):
-            cleaned = cleaned[4:].strip()
-            
-        return json.loads(cleaned)
+        plan = await structured_complete(
+            [{"role": "user", "content": system_prompt}],
+            response_model=RevisionPlanResponse,
+            temperature=0.2,
+            max_tokens=1500,
+        )
+        return plan.model_dump()
     except Exception as e:
         return {"error": f"Failed to generate AI analysis: {str(e)}"}

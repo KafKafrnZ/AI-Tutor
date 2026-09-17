@@ -736,8 +736,18 @@ class TestPracticeEndpoint:
         assert r.status_code == 200
 
     def test_practice_returns_questions_array(self, client, monkeypatch):
-        async def fake_generate(topic: str) -> str:
-            return '[{"difficulty":"Easy","question":"What is 2+2?","options":["3","4","5","6"],"correct_answer":"B","explanation":"Basic arithmetic."}]'
+        from app.schemas.quiz import Difficulty, QuizQuestion
+
+        async def fake_generate(topic: str) -> list[QuizQuestion]:
+            return [
+                QuizQuestion(
+                    difficulty=Difficulty.EASY,
+                    question="What is 2+2?",
+                    options=["3", "4", "5", "6"],
+                    correct_answer="4",
+                    explanation="Basic arithmetic.",
+                )
+            ]
 
         monkeypatch.setattr("app.routers.practice.generate_questions", fake_generate)
 

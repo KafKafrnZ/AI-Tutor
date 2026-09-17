@@ -67,6 +67,13 @@ class RevisionPlanResponse(BaseModel):
     critical_concepts: List[str]
     actionable_checklist: List[str]
 
+    @field_validator("critical_concepts", "actionable_checklist")
+    @classmethod
+    def not_empty(cls, v: List[str]) -> List[str]:
+        if not v:
+            raise ValueError("must contain at least one item")
+        return v
+
 
 class RecentTestResponse(BaseModel):
     date: Optional[str] = None

@@ -6,6 +6,8 @@ from typing import AsyncGenerator
 from app.core.context_budget import trim_to_budget
 from app.core.llm_adapter import chat_complete, chat_stream
 from app.core.rag import retrieve
+from app.core.structured_llm import structured_complete
+from app.schemas.quiz import QuizQuestion
 
 logger = logging.getLogger(__name__)
 
@@ -70,11 +72,7 @@ Generate exactly 30 multiple-choice questions for the requested topic.
 Rules:
 - Mix the difficulties: 10 Easy, 10 Medium, 10 Hard.
 - Exactly 4 options per question.
-- Output MUST be a pure JSON array of objects. Do not include markdown fences.
-- Each object MUST match this schema:
-  {"difficulty": "Easy", "question": "...", "options": ["...", "...", "...", "..."], "correct_answer": "...", "explanation": "..."}
-
-Output only the raw JSON array."""
+- correct_answer must be the exact text of one of the 4 options."""
 
 
 def build_tutor_messages(
@@ -210,26 +208,19 @@ async def evaluate_answer(question: str, student_answer: str, context: str = "")
     return await _chat_complete_or_error(messages, temperature=0.2)
 
 
-async def generate_questions(topic: str) -> str:
+async def generate_questions(topic: str) -> list[QuizQuestion]:
     messages = [
         {"role": "system", "content": QUESTION_GENERATOR_SYSTEM_PROMPT},
         {"role": "user", "content": f"Topic: {topic}"},
     ]
     messages = trim_to_budget(messages, max_tokens=TUTOR_CONTEXT_MAX_TOKENS, pinned_count=1)
-    result = await _chat_complete_or_error(messages, temperature=0.2, max_tokens=6000)
-
-    cleaned = result.strip()
-    if "```" in cleaned:
-        cleaned = cleaned.split("```")[-2] if len(cleaned.split("```")) > 1 else cleaned
-    if cleaned.lower().startswith("json"):
-        cleaned = cleaned[4:].strip()
-
-    start = cleaned.find("[")
-    end = cleaned.rfind("]") + 1
-    if start != -1 and end > start:
-        cleaned = cleaned[start:end]
-
-    return cleaned
+    try:
+        return await structured_complete(
+            messages, response_model=list[QuizQuestion], temperature=0.2, max_tokens=6000
+        )
+    except Exception as exc:
+        logger.warning("Question generation failed: %s", exc, exc_info=True)
+        raise LLMServiceError("AI model service is unavailable. Please try again shortly.") from exc
 
 
 async def run_cloud_model(prompt: str, temperature: float = 0.25, max_tokens: int = 2048) -> str:

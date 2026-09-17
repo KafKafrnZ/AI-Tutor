@@ -1,7 +1,5 @@
 import os
-import json
 import time
-import re
 import asyncio
 from sqlalchemy.orm import Session
 
@@ -31,16 +29,6 @@ TEST_TOPICS = {
 }
 
 
-def clean_llm_json(raw_str: str) -> str:
-    if "```json" in raw_str:
-        raw_str = raw_str.split("```json")[1].split("```")[0]
-    elif "```" in raw_str:
-        raw_str = raw_str.split("```")[1].split("```")[0]
-    raw_str = re.sub(r',\s*]', ']', raw_str)
-    raw_str = re.sub(r',\s*}', '}', raw_str)
-    return raw_str.strip()
-
-
 def seed_test(db: Session, test_id: int, topics: list[dict]) -> int:
     existing = db.query(MasterQuestion).filter(MasterQuestion.test_id == test_id).count()
     if existing > 0:
@@ -50,31 +38,27 @@ def seed_test(db: Session, test_id: int, topics: list[dict]) -> int:
     total = 0
     for i, t in enumerate(topics):
         print(f"  🧠 [{i+1}/{len(topics)}] Generating: {t['section']} — {t['topic'][:60]}…")
-        raw_json = asyncio.run(generate_questions(t["topic"]))
 
         try:
-            questions = json.loads(clean_llm_json(raw_json))
+            questions = asyncio.run(generate_questions(t["topic"]))
             for q in questions:
-                opts = q.get("options", ["", "", "", ""])
-                while len(opts) < 4:
-                    opts.append("N/A")
                 db.add(MasterQuestion(
                     test_id=test_id,
                     section=t["section"],
                     topic=t["topic"],
-                    question_text=q.get("question", "Question missing"),
-                    option_a=opts[0],
-                    option_b=opts[1],
-                    option_c=opts[2],
-                    option_d=opts[3],
-                    correct_answer=q.get("correct_answer", ""),
-                    explanation=q.get("explanation", "No explanation provided."),
+                    question_text=q.question,
+                    option_a=q.options[0],
+                    option_b=q.options[1],
+                    option_c=q.options[2],
+                    option_d=q.options[3],
+                    correct_answer=q.correct_answer,
+                    explanation=q.explanation,
                 ))
                 total += 1
             db.commit()
             print(f"  ✅ Inserted {len(questions)} questions.")
         except Exception as e:
-            print(f"  ❌ Parse/insert error: {e}")
+            print(f"  ❌ Generation/insert error: {e}")
             db.rollback()
 
         # Respect Groq rate limits between topic batches
