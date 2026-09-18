@@ -97,7 +97,7 @@ def login(request: Request, data: LoginRequest, db: Session = Depends(get_db)):
         secure=cookie_security_options()["secure"],
         samesite=cookie_security_options()["samesite"],
         max_age=settings.REFRESH_TOKEN_EXPIRE_DAYS * 86400,
-        path="/auth",
+        path="/",
     )
     return response
 
@@ -167,7 +167,7 @@ def logout(current_user: Any = Depends(get_current_user), db: Session = Depends(
     db.commit()
     response = JSONResponse(content={"message": "Logged out successfully"})
     response.delete_cookie(key="access_token", httponly=True, **cookie_security_options())
-    response.delete_cookie(key="refresh_token", path="/auth")
+    response.delete_cookie(key="refresh_token", path="/")
     return response
 
 
@@ -206,7 +206,7 @@ async def refresh_access_token(
         secure=cookie_security_options()["secure"],
         samesite=cookie_security_options()["samesite"],
         max_age=settings.REFRESH_TOKEN_EXPIRE_DAYS * 86400,
-        path="/auth",
+        path="/",
     )
     return resp
 
@@ -220,7 +220,7 @@ def auth_logout(current_user: Any = Depends(get_current_user), db: Session = Dep
     db.commit()
     resp = JSONResponse({"message": "Logged out"})
     resp.delete_cookie(key="access_token", httponly=True, **cookie_security_options())
-    resp.delete_cookie(key="refresh_token", path="/auth")
+    resp.delete_cookie(key="refresh_token", path="/")
     return resp
 
 

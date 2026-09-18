@@ -228,7 +228,11 @@ async def _stream_once(provider: str, client: httpx.AsyncClient, messages: list[
                     error = chunk.get("error") or {}
                     raise RuntimeError(error.get("message") or "Anthropic stream error")
                 continue
-            choice = chunk.get("choices", [{}])[0]
+            # OpenAI/Groq end the stream with a usage-only chunk whose choices is []
+            choices = chunk.get("choices") or []
+            if not choices:
+                continue
+            choice = choices[0]
             if choice.get("finish_reason"):
                 logger.info("LLM stream finish_reason=%s", choice["finish_reason"])
             delta = choice.get("delta") or {}

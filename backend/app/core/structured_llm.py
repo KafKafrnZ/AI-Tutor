@@ -11,7 +11,7 @@ as production actually runs (LLM_BASE_URL defaults to Groq). The Anthropic
 branch in llm_adapter.detect_provider() isn't wired up here yet.
 """
 
-from typing import TypeVar
+from typing import Any, TypeVar, cast
 
 import instructor
 from openai import AsyncOpenAI
@@ -52,7 +52,8 @@ async def structured_complete(
     client = _get_client()
     return await client.chat.completions.create(
         model=settings.LLM_MODEL,
-        messages=messages,
+        # plain dicts at runtime; openai-python types this as its TypedDict union
+        messages=cast(Any, messages),
         response_model=response_model,
         temperature=temperature,
         max_tokens=max_tokens,

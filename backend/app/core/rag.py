@@ -375,6 +375,7 @@ def _get_fusion_retriever(fetch_k: int):
     from llama_index.core import VectorStoreIndex
     from llama_index.core.llms import MockLLM
     from llama_index.core.retrievers import QueryFusionRetriever
+    from llama_index.core.retrievers.fusion_retriever import FUSION_MODES
     from llama_index.retrievers.bm25 import BM25Retriever
     from llama_index.vector_stores.chroma import ChromaVectorStore
 
@@ -394,7 +395,7 @@ def _get_fusion_retriever(fetch_k: int):
         [vector_retriever, bm25_retriever],
         similarity_top_k=fetch_k,
         num_queries=1,  # straight fusion of the two retrievers, no LLM-based query expansion
-        mode="reciprocal_rerank",
+        mode=FUSION_MODES.RECIPROCAL_RANK,
         use_async=False,
         # QueryFusionRetriever resolves an LLM unconditionally at construction time even
         # when num_queries=1 means it's never actually called - MockLLM avoids pulling in

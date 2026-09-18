@@ -36,9 +36,13 @@ export function parseSseLine(line: string): ParsedSseLine {
       if ("data" in parsed && typeof (parsed as { data?: unknown }).data === "string") {
         return { token: (parsed as { data: string }).data };
       }
+
+      return {};
     }
 
-    return {};
+    // Bare JSON literal: the model streamed a number, "true" or "null" as a token
+    // ("42" parses to 42, which is neither string nor object). Keep the raw text.
+    return { token: payload };
   } catch {
     // Backend sent a raw (non-JSON) string token — treat the entire payload as the token.
     // This handles FastAPI/sse-starlette streams that yield plain strings without JSON wrapping.

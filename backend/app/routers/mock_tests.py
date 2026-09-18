@@ -144,10 +144,12 @@ def submit_mock_test(
     attempted_count = 0
     mistakes = []
 
+    graded: set[int] = set()
     for ans in body.answers:
         q = q_map.get(ans.question_id)
-        if not q:
-            continue
+        if not q or ans.question_id in graded:
+            continue  # one answer per question — repeats would multiply the score
+        graded.add(ans.question_id)
         is_correct = False
         selected = (ans.selected or "").strip().upper() or None
         if selected is None:

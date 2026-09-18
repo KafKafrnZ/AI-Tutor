@@ -7,6 +7,8 @@ from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
+EMAIL_TIMEOUT_SECONDS = 10
+
 # To retrieve the token in dev: SELECT token FROM auth_tokens WHERE user_id = <id>;
 
 
@@ -20,7 +22,9 @@ def _send(to: str, subject: str, html: str) -> None:
     msg["From"] = f"Ascend AI <{settings.EMAIL_FROM}>"
     msg["To"] = to
     msg.attach(MIMEText(html, "html"))
-    with smtplib.SMTP(settings.EMAIL_HOST, settings.EMAIL_PORT) as smtp:
+    # timeout is load-bearing: without it a wedged SMTP host pins the request's
+    # threadpool worker forever and ~15 signups take the whole API down.
+    with smtplib.SMTP(settings.EMAIL_HOST, settings.EMAIL_PORT, timeout=EMAIL_TIMEOUT_SECONDS) as smtp:
         smtp.ehlo()
         smtp.starttls()
         smtp.login(settings.EMAIL_USER, settings.EMAIL_PASSWORD)

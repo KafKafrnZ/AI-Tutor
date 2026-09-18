@@ -31,8 +31,12 @@ def _safe_int(value: str | None, default: int) -> int:
 
 
 def get_cors_origins() -> list[str]:
-    """Production: only env-specified origins. Dev: localhost fallback."""
-    env_val = os.getenv("BACKEND_CORS_ORIGINS", "")
+    """Production: only env-specified origins. Dev: localhost fallback.
+
+    Reads BACKEND_CORS_ORIGINS, falling back to the legacy ALLOWED_ORIGINS name so
+    a deployment that only sets one of them still gets both CORS and CSRF right.
+    """
+    env_val = os.getenv("BACKEND_CORS_ORIGINS", "") or os.getenv("ALLOWED_ORIGINS", "")
     if env_val.strip():
         try:
             origins = _json.loads(env_val)
@@ -90,9 +94,6 @@ class Settings:
     REFRESH_TOKEN_EXPIRE_DAYS: int = int(os.getenv("REFRESH_TOKEN_EXPIRE_DAYS", "30"))
     WEB_CONCURRENCY: int = _safe_int(os.getenv("WEB_CONCURRENCY"), 1)
 
-    ALLOWED_ORIGINS: list = _json.loads(
-        os.getenv("ALLOWED_ORIGINS", '["http://localhost:3000", "http://localhost:3001"]')
-    )
     ENVIRONMENT: str = os.getenv(
         "ENVIRONMENT",
         "production" if os.getenv("RAILWAY_ENVIRONMENT") else "development",
@@ -102,6 +103,8 @@ class Settings:
     )
 
     BACKEND_CORS_ORIGINS: list = get_cors_origins()
+    # CORS (main.py) and CSRF (middleware.py) must never disagree — same list, one env var.
+    ALLOWED_ORIGINS: list = BACKEND_CORS_ORIGINS
 
     EMAIL_HOST: str = _get_email_var("EMAIL_HOST", "SMTP_HOST", "")
     EMAIL_PORT: int = _safe_int(_get_email_var("EMAIL_PORT", "SMTP_PORT", "587"), 587)
