@@ -23,18 +23,24 @@ function messageFromValue(value: unknown): string | null {
   return null;
 }
 
+export function messageFromApiBody(data: unknown, fallback: string): string {
+  if (!data || typeof data !== "object") return fallback;
+  const body = data as ApiErrorBody;
+  return (
+    messageFromValue(body.error) ||
+    messageFromValue(body.detail) ||
+    messageFromValue(body.message) ||
+    fallback
+  );
+}
+
 export async function readApiError(response: Response, fallback: string): Promise<string> {
   try {
     const contentType = response.headers.get("content-type") || "";
 
     if (contentType.includes("application/json")) {
       const data = (await response.json()) as ApiErrorBody;
-      return (
-        messageFromValue(data.error) ||
-        messageFromValue(data.detail) ||
-        messageFromValue(data.message) ||
-        fallback
-      );
+      return messageFromApiBody(data, fallback);
     }
 
     const text = await response.text();
@@ -44,18 +50,33 @@ export async function readApiError(response: Response, fallback: string): Promis
   }
 }
 
+// ponytail: one in-flight refresh per tab. Concurrent 401s (layout /me + page
+// fetch) would otherwise rotate the refresh cookie twice and log the user out.
+let refreshInFlight: Promise<boolean> | null = null;
+
+function refreshSession(): Promise<boolean> {
+  if (!refreshInFlight) {
+    refreshInFlight = fetch(`${API_URL}/auth/refresh`, { method: "POST", credentials: "include" })
+      .then((res) => res.ok)
+      .finally(() => {
+        refreshInFlight = null;
+      });
+  }
+  return refreshInFlight;
+}
+
 export async function fetchWithRefresh(url: string, options: RequestInit): Promise<Response> {
-  let res = await fetch(url, { ...options, credentials: "include" })
+  let res = await fetch(url, { ...options, credentials: "include" });
   if (res.status === 401) {
-    const refresh = await fetch(`${API_URL}/auth/refresh`, { method: "POST", credentials: "include" })
-    if (refresh.ok) {
-      res = await fetch(url, { ...options, credentials: "include" })
+    const ok = await refreshSession();
+    if (ok) {
+      res = await fetch(url, { ...options, credentials: "include" });
     } else {
-      window.location.href = "/login"
-      throw new Error("SESSION_EXPIRED")
+      window.location.href = "/login";
+      throw new Error("SESSION_EXPIRED");
     }
   }
-  return res
+  return res;
 }
 
 export function apiConnectionErrorMessage(): string {

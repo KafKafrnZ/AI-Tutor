@@ -4,14 +4,45 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from slowapi.errors import RateLimitExceeded
 from sqlalchemy.exc import SQLAlchemyError
-from slowapi.errors import RateLimitExceeded
 import structlog
 
 logger = structlog.get_logger(__name__)
 
+_VALUE_ERROR_PREFIX = "value error, "
+_LOC_SKIP = {"body", "query", "path"}
+
 
 def _error_body(code: str, message: str) -> dict:
     return {"error": {"code": code, "message": message}}
+
+
+def _field_label(loc) -> str:
+    if not isinstance(loc, (list, tuple)):
+        return ""
+    parts = [p for p in loc if isinstance(p, str) and p not in _LOC_SKIP]
+    if not parts:
+        return ""
+    return parts[-1].replace("_", " ").capitalize()
+
+
+def human_validation_message(errors: list) -> str:
+    """First Pydantic error, without the 'Value error, ' prefix."""
+    if not errors:
+        return "One or more fields are invalid."
+    first = errors[0] if isinstance(errors[0], dict) else {}
+    label = _field_label(first.get("loc"))
+    if str(first.get("type") or "") == "missing" and label:
+        return f"{label} is required."
+    msg = str(first.get("msg") or "").strip()
+    if msg.lower().startswith(_VALUE_ERROR_PREFIX):
+        msg = msg[len(_VALUE_ERROR_PREFIX) :].strip()
+    if not msg:
+        return "One or more fields are invalid."
+    if msg[0].islower():
+        msg = msg[0].upper() + msg[1:]
+    if msg[-1] not in ".!?":
+        msg += "."
+    return msg
 
 
 def api_error(status: int, code: str, message: str) -> HTTPException:
@@ -24,7 +55,7 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
     logger.warning("validation_error", errors=str(errors))
     return JSONResponse(
         status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-        content=_error_body("VALIDATION_ERROR", "One or more fields are invalid."),
+        content=_error_body("VALIDATION_ERROR", human_validation_message(errors)),
     )
 
 

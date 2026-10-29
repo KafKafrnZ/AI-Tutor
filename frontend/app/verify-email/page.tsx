@@ -4,7 +4,7 @@ import { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Bot, CheckCircle2, XCircle, Loader2 } from "lucide-react";
-import { API_URL } from "@/lib/api";
+import { API_URL, messageFromApiBody } from "@/lib/api";
 
 function VerifyEmailContent() {
   const searchParams = useSearchParams();
@@ -31,7 +31,7 @@ function VerifyEmailContent() {
           setMessage(data.message || "Your email has been verified successfully.");
         } else {
           setStatus("error");
-          setMessage(data.detail || "This link is invalid or has expired. Please sign up again or request a new link.");
+          setMessage(messageFromApiBody(data, "This link is invalid or has expired. Please sign up again or request a new link."));
         }
       } catch {
         setStatus("error");

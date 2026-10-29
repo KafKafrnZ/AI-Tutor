@@ -86,4 +86,57 @@ describe("fetchWithRefresh", () => {
     expect(result.status).toBe(500);
     expect(fetch).toHaveBeenCalledTimes(1); // no retry on 500
   });
+
+  it("coalesces concurrent 401s into a single refresh call", async () => {
+    const seen = new Set<string>();
+    vi.mocked(fetch).mockImplementation(async (input) => {
+      const url = String(input);
+      if (url.includes("/auth/refresh")) return new Response(null, { status: 200 });
+      if (seen.has(url)) return new Response(JSON.stringify({ ok: true }), { status: 200 });
+      seen.add(url);
+      return new Response(null, { status: 401 });
+    });
+
+    const { fetchWithRefresh } = await import("../lib/api");
+    const [stats, me] = await Promise.all([
+      fetchWithRefresh(`${API_URL}/stats`, { method: "GET" }),
+      fetchWithRefresh(`${API_URL}/me`, { method: "GET" }),
+    ]);
+
+    expect(stats.status).toBe(200);
+    expect(me.status).toBe(200);
+    const refreshCalls = vi.mocked(fetch).mock.calls.filter((c) => String(c[0]).includes("/auth/refresh"));
+    expect(refreshCalls).toHaveLength(1);
+  });
+});
+
+describe("messageFromApiBody", () => {
+  it("reads the API envelope error.message", async () => {
+    const { messageFromApiBody } = await import("../lib/api");
+    expect(
+      messageFromApiBody(
+        { error: { code: "VALIDATION_ERROR", message: "Password must be at least 8 characters." } },
+        "One or more fields are invalid."
+      )
+    ).toBe("Password must be at least 8 characters.");
+  });
+
+  it("falls back to detail, then the given fallback", async () => {
+    const { messageFromApiBody } = await import("../lib/api");
+    expect(messageFromApiBody({ detail: "Reset token expired." }, "Reset failed.")).toBe(
+      "Reset token expired."
+    );
+    expect(messageFromApiBody({}, "Reset failed.")).toBe("Reset failed.");
+  });
+});
+
+describe("readApiError", () => {
+  it("surfaces JSON envelope messages from a 422", async () => {
+    const { readApiError } = await import("../lib/api");
+    const res = new Response(
+      JSON.stringify({ error: { code: "VALIDATION_ERROR", message: "Name cannot be empty." } }),
+      { status: 422, headers: { "content-type": "application/json" } }
+    );
+    expect(await readApiError(res, "Signup failed.")).toBe("Name cannot be empty.");
+  });
 });

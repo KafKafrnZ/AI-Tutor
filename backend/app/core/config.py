@@ -23,6 +23,16 @@ def parse_require_email_verification(raw: str | None, environment: str) -> bool:
     return environment.lower() == "production"
 
 
+def default_llm_fallback_model(base_url: str) -> str:
+    """Explicit LLM_FALLBACK_MODEL wins, including empty (disabled). Groq gets 8B instant."""
+    raw = os.getenv("LLM_FALLBACK_MODEL")
+    if raw is not None:
+        return raw.strip()
+    if "groq.com" in (base_url or "").lower():
+        return "llama-3.1-8b-instant"
+    return ""
+
+
 def _safe_int(value: str | None, default: int) -> int:
     try:
         return int(value) if value is not None else default
@@ -117,6 +127,7 @@ class Settings:
 
     LLM_BASE_URL: str = os.getenv("LLM_BASE_URL", "https://api.groq.com/openai/v1")
     LLM_MODEL: str = os.getenv("LLM_MODEL", "llama-3.3-70b-versatile")
+    LLM_FALLBACK_MODEL: str = default_llm_fallback_model(LLM_BASE_URL)
     LLM_TIMEOUT_SECONDS: float = float(os.getenv("LLM_TIMEOUT_SECONDS", "120"))
     LLM_ANTHROPIC_VERSION: str = os.getenv("LLM_ANTHROPIC_VERSION", "2023-06-01")
 
@@ -133,8 +144,17 @@ class Settings:
     )
     RAG_COLLECTION_NAME: str = os.getenv("RAG_COLLECTION_NAME", "ascend_rag")
     RAG_EMBEDDING_MODEL: str = os.getenv("RAG_EMBEDDING_MODEL", "BAAI/bge-small-en-v1.5")
+    RAG_QUERY_TIMEOUT_SECONDS: float = float(os.getenv("RAG_QUERY_TIMEOUT_SECONDS", "8"))
 
     ALLOW_FALLBACK_QUESTIONS: bool = os.getenv("ALLOW_FALLBACK_QUESTIONS", "false").lower() == "true"
+
+    RAZORPAY_KEY_ID: str = os.getenv("RAZORPAY_KEY_ID", "")
+    RAZORPAY_KEY_SECRET: str = os.getenv("RAZORPAY_KEY_SECRET", "")
+    RAZORPAY_WEBHOOK_SECRET: str = os.getenv("RAZORPAY_WEBHOOK_SECRET", "")
+    RAZORPAY_PLAN_PLUS: str = os.getenv("RAZORPAY_PLAN_PLUS", "")
+    RAZORPAY_PLAN_PRO: str = os.getenv("RAZORPAY_PLAN_PRO", "")
+    RAZORPAY_PLUS_PRICE_INR: int = _safe_int(os.getenv("RAZORPAY_PLUS_PRICE_INR"), 299)
+    RAZORPAY_PRO_PRICE_INR: int = _safe_int(os.getenv("RAZORPAY_PRO_PRICE_INR"), 799)
 
 
 settings = Settings()

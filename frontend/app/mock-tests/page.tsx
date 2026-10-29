@@ -8,6 +8,7 @@ import { fallbackMockTests } from "@/lib/mockFallback";
 import { PageShell } from "@/components/layout/PageShell";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { GlassCard } from "@/components/layout/GlassCard";
+import { GameLinkButton, InWorldState } from "@/components/game/GamePrimitives";
 
 interface MockTest {
   id: number;
@@ -96,7 +97,12 @@ export default function MockTestsPage() {
         {loading ? (
           <div className="flex items-center gap-2 text-zinc-400"><Loader2 className="animate-spin" /> Kindling available trials...</div>
         ) : tests.length === 0 ? (
-          <div className="text-zinc-400">No trials available yet. Seed the question realm or add questions via DB.</div>
+          <InWorldState
+            universe="souls"
+            title="No trial is prepared"
+            body="The bonfire list is empty. Seed the question realm, then return to kindle a fog gate."
+            action={<GameLinkButton href="/practice" universe="souls">Warm up in the Arena</GameLinkButton>}
+          />
         ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {tests.map((test) => {

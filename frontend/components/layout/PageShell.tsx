@@ -1,4 +1,6 @@
-import { motion } from "framer-motion";
+"use client";
+
+import { motion, useReducedMotion } from "framer-motion";
 import { ReactNode } from "react";
 import { GameAtmosphere } from "@/components/game/GamePrimitives";
 import { type GameUniverse } from "@/components/game/universes";
@@ -11,13 +13,14 @@ interface PageShellProps {
 }
 
 export function PageShell({ children, className = "", maxWidth = "max-w-5xl", universe = "neuro" }: PageShellProps) {
+  const reduceMotion = useReducedMotion();
   return (
     <div className={`min-h-screen bg-bg text-fg p-4 md:p-8 relative z-10 w-full overflow-hidden ${className}`}>
       <GameAtmosphere universe={universe} intensity="quiet" />
       <motion.div 
-        initial={{ opacity: 0, y: 15 }} 
+        initial={reduceMotion ? false : { opacity: 0, y: 15 }} 
         animate={{ opacity: 1, y: 0 }} 
-        transition={{ duration: 0.4, ease: [0.23, 1, 0.32, 1] }}
+        transition={{ duration: reduceMotion ? 0 : 0.4, ease: [0.23, 1, 0.32, 1] }}
         className={`${maxWidth} relative z-10 mx-auto w-full`}
       >
         {children}

@@ -6,6 +6,7 @@ from typing import Any
 
 from sqlalchemy.orm import Session
 
+from app.core.config import settings
 from app.models.database import MasterQuestion, get_questions_for_test
 from data.fallback_questions import FALLBACK_MOCK_QUESTION_BANK, OPTION_LETTERS
 
@@ -111,7 +112,13 @@ def get_grading_catalog(db: Session, test_id: int) -> tuple[list[dict[str, Any]]
     if db_questions:
         return [_grading_record_from_db(q) for q in db_questions], False
 
-    templates = FALLBACK_MOCK_QUESTION_BANK.get(test_id) or FALLBACK_MOCK_QUESTION_BANK[1]
+    if not settings.ALLOW_FALLBACK_QUESTIONS:
+        return [], False
+
+    templates = FALLBACK_MOCK_QUESTION_BANK.get(test_id)
+    if not templates:
+        return [], False
+
     records = [
         _grading_record_from_fallback(test_id, index, item)
         for index, item in enumerate(templates, start=1)
@@ -136,23 +143,5 @@ def build_exam_questions(catalog: list[dict[str, Any]]) -> list[dict[str, Any]]:
     ]
 
 
-def build_fallback_mock_questions(test_id: int) -> list[dict[str, Any]]:
-    templates = FALLBACK_MOCK_QUESTION_BANK.get(test_id) or FALLBACK_MOCK_QUESTION_BANK[1]
-    return [
-        format_question_payload(
-            question_id=(test_id * 10000) + index,
-            section=item.get("section"),
-            topic=item.get("topic"),
-            question=str(item["question"]),
-            options=list(item["options"]),
-            correct_answer=str(item.get("correct_answer", "")),
-            explanation=item.get("explanation"),
-            source="generated_fallback",
-            mode="exam",
-        )
-        for index, item in enumerate(templates, start=1)
-    ]
-
-
 def fallback_question_count(test_id: int) -> int:
-    return len(FALLBACK_MOCK_QUESTION_BANK.get(test_id) or FALLBACK_MOCK_QUESTION_BANK[1])
+    return len(FALLBACK_MOCK_QUESTION_BANK.get(test_id) or [])

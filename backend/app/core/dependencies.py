@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from fastapi import Cookie, Depends, HTTPException
+from fastapi import Cookie, Depends
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 from sqlalchemy.orm import Session
@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session
 from app.core.auth import verify_token
 from app.core.config import settings
 from app.core.error_handler import api_error
+from app.core.quota import consume_daily_quota
 from app.models.database import get_db, get_user_by_email
 
 
@@ -38,3 +39,8 @@ def get_current_user(access_token: str = Cookie(None), db: Session = Depends(get
     if settings.REQUIRE_EMAIL_VERIFICATION and not user.is_verified:
         raise api_error(403, "EMAIL_NOT_VERIFIED", "Email not verified. Please check your inbox.")
     return user
+
+
+def require_quota(current_user: Any = Depends(get_current_user)):
+    consume_daily_quota(current_user.id, current_user.plan)
+    return current_user

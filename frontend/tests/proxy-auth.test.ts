@@ -12,10 +12,16 @@ vi.mock("next/server", () => ({
 // A real JWT-shaped token with exp=9999999999 (year 2286) so isTokenExpired() returns false
 const VALID_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ0ZXN0IiwiZXhwIjo5OTk5OTk5OTk5fQ.fakesig";
 
-function request(pathname: string, token?: string) {
+function request(pathname: string, access?: string, refresh?: string) {
+  const jar: Record<string, string> = {};
+  if (access) jar.access_token = access;
+  if (refresh) jar.refresh_token = refresh;
   return {
     cookies: {
-      get: vi.fn(() => (token ? { value: token } : undefined)),
+      get: vi.fn((name: string) => {
+        const value = jar[name];
+        return value ? { value } : undefined;
+      }),
     },
     nextUrl: { pathname },
     url: `https://example.test${pathname}`,

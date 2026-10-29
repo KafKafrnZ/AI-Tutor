@@ -58,7 +58,7 @@ export default function ForgotPasswordPage() {
               If that access ID exists, a reset shard has been sent.
             </p>
             <p className="text-zinc-500 text-sm">
-              During development, check the backend server logs for the recovery token.
+              If a message arrives, the reset link expires in one hour.
             </p>
             <Link
               href="/login"

@@ -11,6 +11,7 @@ from app.core.config import settings
 CACHE_TTL = 300
 
 _cache: dict[str, dict[str, Any]] = {}
+_counters: dict[str, dict[str, Any]] = {}
 _redis_client = None
 
 try:
@@ -45,6 +46,39 @@ def set_cached(key: str, data: Any) -> None:
         except Exception:
             pass
     _cache[key] = {"data": data, "ts": time.time()}
+
+
+def incr(key: str, ttl_seconds: int) -> int:
+    """Atomic daily counter. Redis when configured, per-process memory otherwise."""
+    ttl_seconds = max(int(ttl_seconds), 1)
+    if _redis_client:
+        try:
+            n = int(_redis_client.incr(key))
+            if n == 1:
+                _redis_client.expire(key, ttl_seconds)
+            return n
+        except Exception:
+            pass
+    now = time.time()
+    entry = _counters.get(key)
+    if not entry or now >= entry["exp"]:
+        _counters[key] = {"n": 1, "exp": now + ttl_seconds}
+        return 1
+    entry["n"] += 1
+    return int(entry["n"])
+
+
+def get_counter(key: str) -> int:
+    if _redis_client:
+        try:
+            raw = _redis_client.get(key)
+            return int(raw) if raw is not None else 0
+        except Exception:
+            pass
+    entry = _counters.get(key)
+    if not entry or time.time() >= entry["exp"]:
+        return 0
+    return int(entry["n"])
 
 
 def invalidate_user_cache(user_id: int) -> None:

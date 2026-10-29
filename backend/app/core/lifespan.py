@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import os
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from pathlib import Path as _Path
@@ -12,10 +13,32 @@ from fastapi import FastAPI
 from sqlalchemy import delete as _delete
 
 from app.core.config import settings
+from app.core.email import email_is_configured
 from app.core.rag import validate_chroma_persistence_config
 from app.models.database import MockTestSession, SessionLocal
 
 logger = structlog.get_logger("ascend_ai")
+
+
+def assert_production_redis_ready(*, environment: str, redis_url: str) -> None:
+    if environment.lower() == "production" and not (redis_url or "").strip():
+        raise RuntimeError(
+            "FATAL: REDIS_URL must be set in production so daily quotas are shared across workers."
+        )
+
+
+def assert_production_email_ready(
+    *,
+    environment: str,
+    require_verification: bool,
+    email_configured: bool,
+) -> None:
+    if environment.lower() == "production" and require_verification and not email_configured:
+        raise RuntimeError(
+            "FATAL: EMAIL_HOST, EMAIL_USER, and EMAIL_PASSWORD must be set when "
+            "REQUIRE_EMAIL_VERIFICATION is enabled in production. "
+            "Signup would create accounts that cannot log in."
+        )
 
 
 def _check_migration_drift() -> None:
@@ -79,6 +102,10 @@ def _warmup_embeddings() -> None:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    assert_production_redis_ready(
+        environment=settings.ENVIRONMENT,
+        redis_url=settings.REDIS_URL,
+    )
     if settings.WEB_CONCURRENCY > 1 and not settings.REDIS_URL:
         raise RuntimeError(
             "FATAL: REDIS_URL must be set when WEB_CONCURRENCY > 1. "
@@ -92,19 +119,18 @@ async def lifespan(app: FastAPI):
             note="Redis not configured — using in-memory cache. Single worker only.",
         )
 
-    if (
-        settings.ENVIRONMENT.lower() == "production"
-        and settings.REQUIRE_EMAIL_VERIFICATION
-        and not (settings.EMAIL_HOST and settings.EMAIL_USER and settings.EMAIL_PASSWORD)
-    ):
-        logger.error(
-            "email_unconfigured_in_production",
-            note="verification tokens will be created but emails will not send",
-        )
+    assert_production_email_ready(
+        environment=settings.ENVIRONMENT,
+        require_verification=settings.REQUIRE_EMAIL_VERIFICATION,
+        email_configured=email_is_configured(),
+    )
 
     chroma_path = validate_chroma_persistence_config()
     logger.info("app_starting", chroma_path=str(chroma_path))
     _check_migration_drift()
     _cleanup_expired_sessions()
-    _warmup_embeddings()
+    if os.getenv("SKIP_EMBEDDING_WARMUP", "").lower() in {"1", "true", "yes"}:
+        logger.info("embedding_warmup_skipped")
+    else:
+        _warmup_embeddings()
     yield

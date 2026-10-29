@@ -13,11 +13,19 @@ vi.mock("next/server", () => ({
 
 // A real JWT-shaped token with exp=9999999999 (year 2286) so isTokenExpired() returns false
 const VALID_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ0ZXN0IiwiZXhwIjo5OTk5OTk5OTk5fQ.fakesig";
+const EXPIRED_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ0ZXN0IiwiZXhwIjoxfQ.fakesig";
+const REFRESH = "refresh-cookie";
 
-function request(pathname: string, token?: string) {
+function request(pathname: string, access?: string, refresh?: string) {
+  const jar: Record<string, string> = {};
+  if (access) jar.access_token = access;
+  if (refresh) jar.refresh_token = refresh;
   return {
     cookies: {
-      get: vi.fn(() => (token ? { value: token } : undefined)),
+      get: vi.fn((name: string) => {
+        const value = jar[name];
+        return value ? { value } : undefined;
+      }),
     },
     nextUrl: { pathname },
     url: `https://example.test${pathname}`,
@@ -77,6 +85,28 @@ describe("proxy auth guard — protected routes", () => {
     expect(responseMocks.next).toHaveBeenCalled();
     expect(responseMocks.redirect).not.toHaveBeenCalled();
   });
+
+  it("lets an expired access token through when a refresh cookie is present", async () => {
+    const { proxy } = await import("../proxy");
+    proxy(request("/dashboard", EXPIRED_TOKEN, REFRESH) as never);
+    expect(responseMocks.next).toHaveBeenCalled();
+    expect(responseMocks.redirect).not.toHaveBeenCalled();
+  });
+
+  it("lets a missing access token through when a refresh cookie is present", async () => {
+    const { proxy } = await import("../proxy");
+    proxy(request("/dashboard", undefined, REFRESH) as never);
+    expect(responseMocks.next).toHaveBeenCalled();
+    expect(responseMocks.redirect).not.toHaveBeenCalled();
+  });
+
+  it("redirects expired access with no refresh cookie to /login", async () => {
+    const { proxy } = await import("../proxy");
+    proxy(request("/dashboard", EXPIRED_TOKEN) as never);
+    expect(responseMocks.redirect).toHaveBeenCalledWith(
+      new URL("/login", "https://example.test/dashboard")
+    );
+  });
 });
 
 describe("proxy auth guard — auth route redirects", () => {
@@ -106,6 +136,14 @@ describe("proxy auth guard — auth route redirects", () => {
     proxy(request("/login") as never);
     expect(responseMocks.next).toHaveBeenCalled();
     expect(responseMocks.redirect).not.toHaveBeenCalled();
+  });
+
+  it("redirects /login to /dashboard when only a refresh cookie remains", async () => {
+    const { proxy } = await import("../proxy");
+    proxy(request("/login", undefined, REFRESH) as never);
+    expect(responseMocks.redirect).toHaveBeenCalledWith(
+      new URL("/dashboard", "https://example.test/login")
+    );
   });
 });
 

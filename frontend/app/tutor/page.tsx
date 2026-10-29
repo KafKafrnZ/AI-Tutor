@@ -1,22 +1,51 @@
 "use client";
 
 import { useState, useEffect, useRef, Suspense } from "react";
-import { motion } from "framer-motion";
-import { Send, User, ArrowLeft, Sparkles, CheckCircle2, CircleDashed } from "lucide-react";
+import { motion, useReducedMotion } from "framer-motion";
+import { Send, User, ArrowLeft, Sparkles, CheckCircle2, CircleDashed, Bot } from "lucide-react";
 import ReactMarkdown, { type Components } from "react-markdown";
 import rehypeSanitize from "rehype-sanitize";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { useAppStore } from "@/store/useAppStore";
 import VideoBackground from "@/components/VideoBackground";
 import { API_URL, fetchWithRefresh } from "@/lib/api";
-import { parseSseLine } from "@/lib/sse";
+import { createSseParser } from "@/lib/sse";
 import VoiceInput from "@/components/VoiceInput";
+import { GameAtmosphere, GameCard } from "@/components/game/GamePrimitives";
+import { cn } from "@/lib/utils";
 import TutorLoading from "./loading";
 
 const MIN_AGENT_DISPLAY_MS = 1800;
 const REVEAL_TICK_MS = 22;
 const REVEAL_CHARS_PER_TICK = 9;
+
+const CHAMBER_PROMPTS = [
+  {
+    id: "01",
+    title: "Monetary policy",
+    detail: "RBI tools, inflation, transmission",
+    prompt: "Explain monetary policy with PYQ context for IBPS and UPSC.",
+  },
+  {
+    id: "02",
+    title: "NEFT vs RTGS",
+    detail: "Settlement rails and limits",
+    prompt: "Compare NEFT and RTGS for bank exam MCQs and interviews.",
+  },
+  {
+    id: "03",
+    title: "Constitution Part III",
+    detail: "Fundamental rights and tests",
+    prompt: "Explain Constitution Part III Fundamental Rights with landmark cases useful for UPSC.",
+  },
+  {
+    id: "04",
+    title: "Basel III",
+    detail: "Capital, liquidity, buffers",
+    prompt: "Explain Basel III norms for IBPS SO IT and banking exams.",
+  },
+] as const;
 
 const markdownComponents: Components = {
   code({ className, children }) {
@@ -79,7 +108,6 @@ const MarkdownMessage = ({ content }: { content: string }) => {
 function TutorPageInner() {
   const tutorMessages = useAppStore((state) => state.tutorMessages);
   const setTutorMessages = useAppStore((state) => state.setTutorMessages);
-  const router = useRouter();
   const searchParams = useSearchParams();
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -99,9 +127,10 @@ function TutorPageInner() {
   const streamAbortRef = useRef<AbortController | null>(null);
   const streamFinalizedRef = useRef(false);
   const agentTimersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
-  const retryCount = useRef(0);
   const lastQuestion = useRef("");
+  const lastEventIdRef = useRef("");
   const [agentStep, setAgentStep] = useState(0);
+  const reduceMotion = useReducedMotion();
 
   const isChatStarted = tutorMessages.length > 0 || streamingContent.length > 0;
   const agentRows = [
@@ -144,7 +173,9 @@ function TutorPageInner() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  useEffect(() => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }), [tutorMessages, streamingContent]);
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth" });
+  }, [tutorMessages, streamingContent, reduceMotion]);
 
   const clearAgentTimers = () => {
     for (const timer of agentTimersRef.current) {
@@ -227,8 +258,13 @@ function TutorPageInner() {
     lastQuestion.current = userQuestion;
     
     const currentMessages = useAppStore.getState().tutorMessages;
-    const history = currentMessages.slice(-10);
-    setTutorMessages([...currentMessages, { role: "user", content: userQuestion }]);
+    const last = currentMessages[currentMessages.length - 1];
+    const alreadyPosted = last?.role === "user" && last.content === userQuestion;
+    const prior = alreadyPosted ? currentMessages.slice(0, -1) : currentMessages;
+    const history = prior.slice(-10);
+    if (!alreadyPosted) {
+      setTutorMessages([...currentMessages, { role: "user", content: userQuestion }]);
+    }
     setIsLoading(true);
     setStreamingContent("");
     streamingFullRef.current = "";
@@ -245,96 +281,112 @@ function TutorPageInner() {
     streamAbortRef.current = abortController;
 
     const streamPayload = JSON.stringify({ question: userQuestion, context: "", history });
+    lastEventIdRef.current = "";
     try {
-      let response = await fetch(`${API_URL}/ask/stream`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        signal: abortController.signal,
-        body: streamPayload,
-      });
+      let sseError = "";
+      for (let attempt = 0; attempt < 3; attempt++) {
+        if (abortController.signal.aborted) return;
+        const headers: Record<string, string> = { "Content-Type": "application/json" };
+        if (lastEventIdRef.current) headers["Last-Event-ID"] = lastEventIdRef.current;
 
-      // If 401, attempt one silent token refresh then retry the stream
-      if (response.status === 401) {
-        const refreshRes = await fetch(`${API_URL}/auth/refresh`, { method: "POST", credentials: "include" });
-        if (refreshRes.ok) {
-          response = await fetch(`${API_URL}/ask/stream`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            credentials: "include",
-            signal: abortController.signal,
-            body: streamPayload,
-          });
-        } else {
-          router.replace("/login");
-          throw new Error("SESSION_EXPIRED");
-        }
-      }
+        const response = await fetchWithRefresh(`${API_URL}/ask/stream`, {
+          method: "POST",
+          headers,
+          signal: abortController.signal,
+          body: streamPayload,
+        });
 
-      if (!response.ok || !response.body) {
-        if (response.status === 401) throw new Error("SESSION_EXPIRED");
-        if (response.status === 429) throw new Error("RATE_LIMITED");
-        throw new Error(`HTTP_${response.status}`);
-      }
-
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      // Buffer incomplete SSE lines that span across chunk boundaries
-      let sseLineBuffer = "";
-      const processSseLine = (line: string) => {
-        const parsed = parseSseLine(line);
-        if (parsed.done || parsed.error) return;
-
-        const token = (parsed.token ?? "").replace(/\\n/g, "\n");
-
-        if (token.length > 0) {
-          streamingFullRef.current += token;
-          displayQueueRef.current += token;
-        }
-      };
-
-      try {
-        while (true) {
-          const { value, done: doneReading } = await reader.read();
-          if (doneReading) break;
-          if (!value) continue;
-
-          // Accumulate into buffer so split-across-chunk lines are reassembled
-          sseLineBuffer += decoder.decode(value, { stream: true });
-          const lines = sseLineBuffer.split("\n");
-          // Keep the last (potentially incomplete) line in the buffer
-          sseLineBuffer = lines.pop() ?? "";
-
-          for (const line of lines) {
-            processSseLine(line);
+        if (!response.ok || !response.body) {
+          if (response.status === 401) throw new Error("SESSION_EXPIRED");
+          if (response.status === 429) {
+            const body = await response.json().catch(() => ({}));
+            throw new Error(
+              (body as { error?: { code?: string } })?.error?.code === "QUOTA_EXCEEDED"
+                ? "QUOTA_EXCEEDED"
+                : "RATE_LIMITED"
+            );
           }
+          throw new Error(`HTTP_${response.status}`);
         }
-        sseLineBuffer += decoder.decode();
-        if (sseLineBuffer.length > 0) {
-          for (const line of sseLineBuffer.split("\n")) {
-            processSseLine(line);
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        const parseSse = createSseParser();
+        let sseLineBuffer = "";
+        sseError = "";
+        const processSseLine = (line: string) => {
+          const parsed = parseSse(line);
+          if (parsed.id) {
+            const prev = lastEventIdRef.current;
+            lastEventIdRef.current = parsed.id;
+            if (prev && parsed.id.split(":")[0] !== prev.split(":")[0]) {
+              streamingFullRef.current = "";
+              displayQueueRef.current = "";
+            }
           }
-          sseLineBuffer = "";
+          if (parsed.done) return;
+          if (parsed.error) {
+            sseError = parsed.error;
+            return;
+          }
+          const token = (parsed.token ?? "").replace(/\\n/g, "\n");
+          if (token.length > 0) {
+            streamingFullRef.current += token;
+            displayQueueRef.current += token;
+          }
+        };
+
+        let dropped = false;
+        try {
+          while (true) {
+            const { value, done: doneReading } = await reader.read();
+            if (doneReading) break;
+            if (!value) continue;
+            sseLineBuffer += decoder.decode(value, { stream: true });
+            const lines = sseLineBuffer.split("\n");
+            sseLineBuffer = lines.pop() ?? "";
+            for (const line of lines) processSseLine(line);
+          }
+          sseLineBuffer += decoder.decode();
+          if (sseLineBuffer.length > 0) {
+            for (const line of sseLineBuffer.split("\n")) processSseLine(line);
+          }
+        } catch {
+          dropped = true;
         }
-      } catch {
-        if (streamingFullRef.current.length === 0) {
+
+        if (dropped && !abortController.signal.aborted && attempt < 2) {
+          continue;
+        }
+        if (dropped && streamingFullRef.current.length === 0) {
           throw new Error("STREAM_DROPPED");
         }
-        const interruptedNote = "\n\n*(Connection interrupted - response may be incomplete.)*";
-        streamingFullRef.current += interruptedNote;
-        displayQueueRef.current += interruptedNote;
+        if (dropped) {
+          const interruptedNote = "\n\n*(Connection interrupted - response may be incomplete.)*";
+          streamingFullRef.current += interruptedNote;
+          displayQueueRef.current += interruptedNote;
+          setInterruptedQuestion(userQuestion);
+        }
+        break;
+      }
+      if (sseError && streamingFullRef.current.length === 0) {
+        setStreamError(sseError);
+        setInterruptedQuestion(userQuestion);
+        streamClosedRef.current = true;
+        return;
+      }
+      if (sseError) {
+        setStreamError(sseError);
         setInterruptedQuestion(userQuestion);
       }
       streamClosedRef.current = true;
       await waitForDisplayDrain();
 
-      // Finalize the streamed answer into history
       if (!streamFinalizedRef.current) {
         streamFinalizedRef.current = true;
         const finalAnswer = streamingFullRef.current || "No response received.";
         const updatedMessages = useAppStore.getState().tutorMessages;
         setTutorMessages([...updatedMessages, { role: "assistant", content: finalAnswer }]);
-        // Persist exchange to DB — fire and forget, never block the UI
         fetch(`${API_URL}/conversations/save`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -346,15 +398,7 @@ function TutorPageInner() {
       if (abortController.signal.aborted || streamFinalizedRef.current) return;
       const updatedMessages = useAppStore.getState().tutorMessages;
       const msg = error instanceof Error ? error.message : "";
-      if (msg === "STREAM_DROPPED" && streamingFullRef.current.length === 0) {
-        if (retryCount.current < 2) {
-          retryCount.current += 1;
-          setTimeout(() => {
-            void handleAskQuestion(lastQuestion.current);
-          }, 1500);
-          return;
-        }
-
+      if (msg === "STREAM_DROPPED") {
         setStreamError("Connection failed after 2 attempts. Please try again.");
         return;
       }
@@ -362,6 +406,8 @@ function TutorPageInner() {
       let errorContent = "Connection error. Please check your network and try again.";
       if (msg === "SESSION_EXPIRED") {
         errorContent = "Your session has expired. Please [log in again](/login).";
+      } else if (msg === "QUOTA_EXCEEDED") {
+        errorContent = "Daily plan limit reached. Try again tomorrow, or upgrade your plan.";
       } else if (msg === "RATE_LIMITED") {
         errorContent = "You've sent too many messages. Please wait a minute and try again.";
       } else if (msg === "HTTP_502") {
@@ -386,90 +432,180 @@ function TutorPageInner() {
     }
   };
 
-  return (
-    <div className="h-dvh flex flex-col bg-transparent relative overflow-hidden pb-[env(safe-area-inset-bottom,0px)]">
-      
-      <VideoBackground posterSrc="/media/tutor-ambient-poster.jpg" />
-      
-      {/* Top Header - Now a transparent gradient fade instead of a solid line */}
-      <div className="h-24 flex items-start pt-6 px-6 shrink-0 bg-gradient-to-b from-black/80 to-transparent absolute top-0 w-full z-10 pointer-events-none">
-        <Link href="/dashboard" className="flex items-center gap-2 text-zinc-300 hover:text-white transition-colors group pointer-events-auto h-11 px-2">
-          <div className="w-11 h-11 flex items-center justify-center rounded-full bg-black/20 backdrop-blur-md border border-white/10 group-hover:bg-white/10 transition-colors"><ArrowLeft className="w-5 h-5" /></div>
-          <span className="font-medium text-sm drop-shadow-md">War Room</span>
-        </Link>
+  const commandRail = (
+    <motion.div
+      layout={!reduceMotion}
+      className={cn(
+        "relative flex items-center overflow-hidden rounded-[28px] border bg-black/40 shadow-2xl backdrop-blur-2xl transition-all duration-300",
+        isFocused
+          ? "border-accent-portal/50 shadow-[0_0_40px_rgba(139,92,246,0.2)] ring-4 ring-accent-portal/20"
+          : "border-white/10 hover:border-accent-portal/30"
+      )}
+    >
+      <label htmlFor="chamber-input" className="sr-only">Ask the chamber core</label>
+      <textarea
+        id="chamber-input"
+        value={input}
+        onFocus={() => setIsFocused(true)}
+        onBlur={() => setIsFocused(false)}
+        onChange={(e) => setInput(e.target.value)}
+        onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); void handleAskQuestion(); } }}
+        placeholder="Ask the chamber core a concept..."
+        className="w-full max-h-32 min-h-[60px] resize-none bg-transparent py-4 pl-6 pr-28 text-[15px] font-medium text-white placeholder:text-zinc-400 focus:outline-none"
+        rows={1}
+      />
+      <div className="absolute bottom-2 right-2 flex items-center gap-2">
+        <VoiceInput
+          onTranscript={(text) => setInput((prev) => (prev ? prev + " " + text : text))}
+          isProcessing={isLoading}
+        />
+        <button
+          type="button"
+          onClick={() => void handleAskQuestion()}
+          disabled={isLoading || !input.trim()}
+          aria-label="Send question"
+          className="flex h-11 w-11 items-center justify-center rounded-full bg-white/90 text-black shadow-lg transition-all hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-portal/50 disabled:bg-white/20 disabled:text-white disabled:opacity-30"
+        >
+          <Send className="ml-0.5 h-5 w-5" />
+        </button>
       </div>
+    </motion.div>
+  );
 
-      {/* Dynamic Chat Area */}
-      {isChatStarted && (
-        <div className="flex-1 min-h-0 overflow-y-auto w-full scrollbar-thin scrollbar-thumb-white/10 pt-24 pb-40 relative z-10">
-          <div className="max-w-3xl mx-auto px-6 flex flex-col gap-10">
+  return (
+    <div className="relative flex h-dvh flex-col overflow-hidden bg-transparent pb-[env(safe-area-inset-bottom,0px)]">
+      <VideoBackground posterSrc="/media/tutor-ambient-poster.jpg" />
+      <GameAtmosphere universe="portal" intensity="quiet" />
+
+      <header className="pointer-events-none absolute inset-x-0 top-0 z-20 flex items-start justify-between bg-gradient-to-b from-black/80 to-transparent px-4 pb-10 pt-5 sm:px-6">
+        <Link
+          href="/dashboard"
+          className="pointer-events-auto flex h-11 items-center gap-2 px-2 text-zinc-300 transition-colors hover:text-white"
+        >
+          <span className="flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-black/20 backdrop-blur-md">
+            <ArrowLeft className="h-5 w-5" />
+          </span>
+          <span className="text-sm font-medium drop-shadow-md">War Room</span>
+        </Link>
+        <div className="pointer-events-none hidden pr-2 pt-1 text-right sm:block">
+          <p className="text-[10px] font-black uppercase tracking-[0.24em] text-accent-portal">Cognitive Calibration</p>
+          <p className="text-sm font-semibold text-white">
+            {isChatStarted ? "Chamber live" : "Chamber 00 — idle"}
+          </p>
+        </div>
+      </header>
+
+      {isChatStarted ? (
+        <div className="relative z-10 min-h-0 flex-1 overflow-y-auto pb-40 pt-24 scrollbar-thin scrollbar-thumb-white/10">
+          <div className="mx-auto flex max-w-3xl flex-col gap-8 px-6">
             {tutorMessages.map((msg, idx) => {
               const isUser = msg.role === "user";
               return (
-                <motion.div key={idx} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex gap-5">
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 mt-0.5 shadow-lg backdrop-blur-md border ${isUser ? "bg-black/40 border-white/10" : "bg-accent/20 border-accent/30"}`}>
-                    {isUser ? <User className="w-4 h-4 text-zinc-300" /> : <Sparkles className="w-4 h-4 text-accent" />}
+                <motion.div
+                  key={idx}
+                  initial={reduceMotion ? false : { opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="flex gap-4"
+                >
+                  <div
+                    className={cn(
+                      "mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full border shadow-lg backdrop-blur-md",
+                      isUser ? "border-white/10 bg-black/40" : "border-accent-portal/30 bg-accent-portal/20"
+                    )}
+                  >
+                    {isUser ? <User className="h-4 w-4 text-zinc-300" /> : <Bot className="h-4 w-4 text-accent-portal" />}
                   </div>
-                  <div className="flex-1 min-w-0 flex flex-col text-[15px] leading-7 text-zinc-200">
-                    <span className="font-bold text-[12px] text-zinc-400 mb-2 uppercase tracking-widest drop-shadow-md">{isUser ? "Test Subject" : "Aperture Tutor Core"}</span>
-                    {/* Highly transparent user message bubble */}
-                    {isUser ? <div className="whitespace-pre-wrap bg-black/20 backdrop-blur-md p-4 rounded-2xl border border-white/10 shadow-xl">{msg.content}</div> : <MarkdownMessage content={msg.content} />}
+                  <div className="min-w-0 flex-1 text-[15px] leading-7 text-zinc-200">
+                    <span className="mb-2 block text-[11px] font-bold uppercase tracking-[0.2em] text-zinc-400">
+                      {isUser ? "Test subject" : "Aperture tutor core"}
+                    </span>
+                    {isUser ? (
+                      <div className="whitespace-pre-wrap rounded-2xl border border-white/10 bg-black/25 p-4 backdrop-blur-md">
+                        {msg.content}
+                      </div>
+                    ) : (
+                      <div className="rounded-2xl border border-accent-portal/15 bg-white/5 p-4 backdrop-blur-md">
+                        <MarkdownMessage content={msg.content} />
+                      </div>
+                    )}
                   </div>
                 </motion.div>
               );
             })}
 
-            {/* Agent thinking indicator — shown while waiting for the first streaming token */}
             {isLoading && !streamingContent && (
-              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex gap-5">
-                <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 mt-0.5 shadow-lg backdrop-blur-md border bg-accent/20 border-accent/30">
-                  <Sparkles className="w-4 h-4 text-accent animate-pulse" />
+              <motion.div
+                initial={reduceMotion ? false : { opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="flex gap-4"
+                aria-live="polite"
+                aria-busy="true"
+              >
+                <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-accent-portal/30 bg-accent-portal/20">
+                  <Sparkles className={cn("h-4 w-4 text-accent-portal", !reduceMotion && "animate-pulse")} />
                 </div>
-                <div className="flex-1 min-w-0 flex flex-col">
-                  <span className="font-bold text-[12px] text-zinc-400 mb-3 uppercase tracking-widest drop-shadow-md">Aperture Tutor Core</span>
-                  <div className="flex flex-col gap-2.5 rounded-2xl border border-white/10 bg-black/20 p-4 backdrop-blur-md">
+                <GameCard universe="portal" className="min-w-0 flex-1 p-4">
+                  <p className="mb-3 text-[11px] font-bold uppercase tracking-[0.2em] text-zinc-400">Core stages</p>
+                  <div className="grid gap-2 sm:grid-cols-3">
                     {agentRows.map(({ icon: Icon, label, detail, done, active }, i) => (
-                      <motion.div
-                        key={i}
-                        initial={{ opacity: 0, x: -6 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: i * 0.15, duration: 0.35 }}
-                        className="flex items-center gap-3 text-[13px]"
+                      <div
+                        key={label}
+                        className={cn(
+                          "rounded-xl border px-3 py-2.5 text-[13px]",
+                          done
+                            ? "border-accent-progress/30 bg-accent-progress/10"
+                            : active
+                            ? "border-accent-portal/40 bg-accent-portal/10"
+                            : "border-white/10 bg-black/20"
+                        )}
                       >
-                        <Icon
-                          className={`w-4 h-4 shrink-0 ${done ? "text-accent-progress" : active ? "text-accent animate-spin" : "text-zinc-600"}`}
-                          style={!done ? { animationDuration: "2.5s" } : {}}
-                        />
-                        <div className="min-w-0">
-                          <div className={done ? "text-zinc-200" : active ? "text-zinc-300" : "text-zinc-500"}>{label}</div>
-                          <div className="text-[12px] text-zinc-500">{detail}</div>
+                        <div className="flex items-center gap-2">
+                          <Icon
+                            className={cn(
+                              "h-4 w-4 shrink-0",
+                              done ? "text-accent-progress" : active ? "text-accent-portal" : "text-zinc-600",
+                              active && !done && !reduceMotion && "animate-spin"
+                            )}
+                            style={active && !done && !reduceMotion ? { animationDuration: "2.5s" } : undefined}
+                          />
+                          <span className={done ? "text-zinc-200" : active ? "text-zinc-100" : "text-zinc-500"}>
+                            {label}
+                          </span>
                         </div>
-                      </motion.div>
+                        <p className="mt-1 text-[11px] text-zinc-500">{detail}</p>
+                        <span className="sr-only">{`Stage ${i + 1}`}</span>
+                      </div>
                     ))}
                   </div>
-                </div>
+                </GameCard>
               </motion.div>
             )}
 
-            {/* Live streaming assistant reply (plain token accumulation from backend) - instant for live tokens */}
             {streamingContent && (
-              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex gap-5">
-                <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 mt-0.5 shadow-lg backdrop-blur-md border bg-accent/20 border-accent/30">
-                  <Sparkles className="w-4 h-4 text-accent" />
+              <motion.div
+                initial={reduceMotion ? false : { opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="flex gap-4"
+              >
+                <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-accent-portal/30 bg-accent-portal/20">
+                  <Bot className="h-4 w-4 text-accent-portal" />
                 </div>
-                <div className="flex-1 min-w-0 flex flex-col text-[15px] leading-7 text-zinc-200">
-                  <span className="font-bold text-[12px] text-zinc-400 mb-2 uppercase tracking-widest drop-shadow-md">Aperture Tutor Core</span>
-                  <div className="relative">
+                <div className="relative min-w-0 flex-1 text-[15px] leading-7 text-zinc-200">
+                  <span className="mb-2 block text-[11px] font-bold uppercase tracking-[0.2em] text-zinc-400">
+                    Aperture tutor core
+                  </span>
+                  <div className="rounded-2xl border border-accent-portal/20 bg-white/5 p-4 backdrop-blur-md">
                     <MarkdownMessage content={streamingContent} />
                     <button
+                      type="button"
                       onClick={() => {
                         displayQueueRef.current = "";
                         setStreamingContent(streamingFullRef.current || streamingContent);
                         resolveDrainIfReady();
                       }}
-                      className="absolute -top-2 -right-2 text-[10px] px-3 py-2 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full bg-white/10 border border-white/20 hover:bg-white/20 text-zinc-300"
+                      className="absolute -right-1 -top-1 flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full border border-white/20 bg-white/10 px-3 text-[10px] font-semibold text-zinc-300 hover:bg-white/20"
                     >
-                      Override
+                      Show full answer
                     </button>
                   </div>
                 </div>
@@ -477,12 +613,11 @@ function TutorPageInner() {
             )}
 
             {(streamError || interruptedQuestion) && (
-              <div className="md:ml-[52px] rounded-2xl border border-accent-practice/25 bg-accent-practice/10 p-4 text-sm text-accent-practice">
+              <div className="rounded-2xl border border-accent-practice/25 bg-accent-practice/10 p-4 text-sm text-accent-practice md:ml-[52px]">
                 {streamError || "Connection interrupted. You can retry the same question."}
                 <button
                   type="button"
                   onClick={() => {
-                    retryCount.current = 0;
                     const question = interruptedQuestion || lastQuestion.current;
                     setStreamError("");
                     setInterruptedQuestion("");
@@ -490,7 +625,7 @@ function TutorPageInner() {
                   }}
                   className="ml-3 rounded-lg border border-accent-practice/30 px-3 py-1.5 font-semibold text-accent-practice transition-colors hover:bg-accent-practice/10"
                 >
-                  Retry
+                  Recalibrate chamber
                 </button>
               </div>
             )}
@@ -498,66 +633,45 @@ function TutorPageInner() {
             <div ref={messagesEndRef} className="h-4" />
           </div>
         </div>
+      ) : (
+        <div className="relative z-10 flex min-h-0 flex-1 flex-col items-center justify-center overflow-y-auto px-6 pb-10 pt-24">
+          <div className="mb-8 text-center">
+            <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full border-2 border-accent-portal/40 shadow-[0_0_40px_rgba(139,92,246,0.2)]">
+              <div className="flex h-14 w-14 items-center justify-center rounded-full border border-white/15 bg-accent-portal/15">
+                <Sparkles className="h-7 w-7 text-accent-portal" />
+              </div>
+            </div>
+            <p className="mb-2 text-xs font-black uppercase tracking-[0.24em] text-accent-portal">Aperture Study Chamber</p>
+            <h1 className="mb-3 text-3xl font-bold text-white drop-shadow-lg md:text-4xl">What chamber are we testing?</h1>
+            <p className="mx-auto max-w-xl text-zinc-300">
+              Ask a concept. The cores will retrieve PYQ context and answer as if this was always the test.
+            </p>
+          </div>
+
+          <div className="mb-8 grid w-full max-w-3xl grid-cols-1 gap-3 sm:grid-cols-2">
+            {CHAMBER_PROMPTS.map((chamber) => (
+              <button
+                key={chamber.id}
+                type="button"
+                onClick={() => void handleAskQuestion(chamber.prompt)}
+                className="rounded-[var(--radius-token)] border border-accent-portal/20 bg-black/30 p-4 text-left backdrop-blur-xl transition-colors hover:border-accent-portal/50 hover:bg-accent-portal/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-portal/50"
+              >
+                <p className="text-[10px] font-black uppercase tracking-[0.22em] text-accent-portal">Chamber {chamber.id}</p>
+                <p className="mt-1 text-base font-bold text-white">{chamber.title}</p>
+                <p className="mt-1 text-sm text-zinc-400">{chamber.detail}</p>
+              </button>
+            ))}
+          </div>
+
+          <div className="w-full max-w-2xl">{commandRail}</div>
+        </div>
       )}
 
-      {/* Floating Command Bar Wrapper */}
-      <div className={`absolute w-full px-6 transition-all duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] z-20 ${isChatStarted ? 'bottom-6 md:bottom-8 left-1/2 -translate-x-1/2 max-w-3xl pb-[env(safe-area-inset-bottom)]' : 'top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 max-w-2xl'}`}>
-        {!isChatStarted && (
-          <div className="text-center mb-8 relative z-20">
-            <div className="w-16 h-16 bg-black/20 backdrop-blur-xl rounded-2xl flex items-center justify-center mx-auto mb-6 border border-white/10 shadow-[0_0_30px_rgba(139,92,246,0.15)]">
-              <Sparkles className="w-8 h-8 text-accent" />
-            </div>
-            <p className="mb-2 text-xs font-black uppercase tracking-[0.24em] text-accent">Aperture Study Chamber</p>
-            <h1 className="text-4xl font-bold text-white mb-3 drop-shadow-lg">What chamber are we testing?</h1>
-            <p className="text-zinc-300 font-medium drop-shadow-md mb-8">Ask complex concepts. The tutor core will pretend this was your idea.</p>
-            
-            <div className="flex flex-wrap justify-center gap-3 max-w-2xl mx-auto">
-              {[
-                "Test Chamber: monetary policy",
-                "Portal link: NEFT vs RTGS",
-                "Core scan: Constitution Part III",
-                "Calibration: Basel III norms"
-              ].map((prompt) => (
-                <button
-                  key={prompt}
-                  onClick={() => handleAskQuestion(prompt)}
-                  className="px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-full text-sm text-zinc-300 transition-colors backdrop-blur-sm"
-                >
-                  {prompt}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* The Input Pill - Now ultra-glassy */}
-        <motion.div layout className={`relative bg-black/30 backdrop-blur-2xl border transition-all duration-300 shadow-2xl rounded-[28px] overflow-hidden flex items-center ${isFocused ? 'border-accent/50 shadow-[0_0_40px_rgba(139,92,246,0.2)] ring-4 ring-accent/20' : 'border-white/10 hover:border-white/20'}`}>
-          <textarea
-            value={input}
-            onFocus={() => setIsFocused(true)}
-            onBlur={() => setIsFocused(false)}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleAskQuestion(); } }}
-            placeholder="Speak to the chamber core..."
-            className="w-full bg-transparent max-h-32 min-h-[60px] py-4 pl-6 pr-14 text-white text-[15px] focus:outline-none resize-none placeholder:text-zinc-400 font-medium"
-            rows={1}
-          />
-            <div className="absolute right-2 bottom-2 flex items-center gap-2">
-              <VoiceInput
-                onTranscript={(text) => setInput((prev) => (prev ? prev + " " + text : text))}
-                isProcessing={isLoading}
-              />
-              <button
-                onClick={handleAskQuestion}
-                disabled={isLoading || !input.trim()}
-                className="w-11 h-11 flex items-center justify-center bg-white/90 text-black rounded-full hover:bg-white transition-all shadow-lg disabled:opacity-30 disabled:bg-white/20 disabled:text-white"
-              >
-                <Send className="w-5 h-5 ml-0.5" />
-              </button>
-            </div>
-        </motion.div>
-      </div>
-
+      {isChatStarted && (
+        <div className="absolute bottom-6 left-1/2 z-20 w-full max-w-3xl -translate-x-1/2 px-6 pb-[env(safe-area-inset-bottom)] md:bottom-8">
+          {commandRail}
+        </div>
+      )}
     </div>
   );
 }

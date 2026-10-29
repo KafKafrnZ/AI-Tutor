@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { backendUnreachableBody, copyResponseHeaders, HOP_BY_HOP_HEADERS } from "@/lib/bff-proxy";
+import { backendUnreachableBody, copyResponseHeaders, HOP_BY_HOP_HEADERS, proxyAbortSignal } from "@/lib/bff-proxy";
 
 describe("API Proxy Helpers", () => {
   it("backendUnreachableBody should return BACKEND_UNREACHABLE code without detail", () => {
@@ -31,5 +31,12 @@ describe("API Proxy Helpers", () => {
     
     // Ensure set-cookie isn't accidentally in HOP_BY_HOP_HEADERS
     expect(HOP_BY_HOP_HEADERS.has("set-cookie")).toBe(false);
+  });
+
+  it("omits abort timeout for SSE stream paths and keeps one for JSON", () => {
+    expect(proxyAbortSignal(["ask", "stream"])).toBeUndefined();
+    const jsonSignal = proxyAbortSignal(["ask"]);
+    expect(jsonSignal).toBeInstanceOf(AbortSignal);
+    expect(jsonSignal?.aborted).toBe(false);
   });
 });

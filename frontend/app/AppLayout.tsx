@@ -9,11 +9,19 @@ import MobileTabBar from "@/components/layout/MobileTabBar";
 import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
 import { GameAtmosphere, HudBar } from "@/components/game/GamePrimitives";
 import { universeForPath } from "@/components/game/universes";
-import { API_URL } from "@/lib/api";
+import { API_URL, fetchWithRefresh, messageFromApiBody } from "@/lib/api";
 import { isPreviewAuthAllowed } from "@/lib/preview-auth";
 import { useAppStore } from "@/store/useAppStore";
 
-const PUBLIC_ROUTES = ["/", "/login", "/signup", "/forgot-password", "/reset-password", "/verify-email"];
+export const PUBLIC_ROUTES = ["/", "/login", "/signup", "/forgot-password", "/reset-password", "/verify-email"];
+
+export function usesAppChrome(pathname: string): boolean {
+  if (PUBLIC_ROUTES.includes(pathname)) return false;
+  if (pathname === "/tutor" || pathname.startsWith("/tutor/")) return false;
+  if (pathname === "/practice" || pathname.startsWith("/practice/")) return false;
+  if (pathname === "/explore" || pathname.startsWith("/explore/")) return false;
+  return !/^\/mock-tests\/[^/]+/.test(pathname);
+}
 const PREVIEW_USER = {
   id: 0,
   name: "Preview Operator",
@@ -25,6 +33,7 @@ export default function AppLayout({ children, previewAuthEnabled = false }: { ch
   const pathname = usePathname();
   const router = useRouter();
   const isPublic = PUBLIC_ROUTES.includes(pathname);
+  const chrome = usesAppChrome(pathname);
   const isPreviewAuth =
     typeof window !== "undefined" &&
     isPreviewAuthAllowed({
@@ -37,6 +46,8 @@ export default function AppLayout({ children, previewAuthEnabled = false }: { ch
   const [userName, setUserName] = useState(() => (isPreviewAuth ? PREVIEW_USER.name : "Student"));
   const [userEmail, setUserEmail] = useState(() => (isPreviewAuth ? PREVIEW_USER.email : storeUser?.email || ""));
   const [userPlan, setUserPlan] = useState(() => (isPreviewAuth ? PREVIEW_USER.plan : storeUser?.plan || "free"));
+  const [dailyRemaining, setDailyRemaining] = useState<number | null>(null);
+  const [dailyLimit, setDailyLimit] = useState<number | null>(null);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [profileName, setProfileName] = useState("");
   const [profileError, setProfileError] = useState("");
@@ -65,12 +76,7 @@ export default function AppLayout({ children, previewAuthEnabled = false }: { ch
 
     const fetchProfile = async () => {
       try {
-        const response = await fetch("/api/me", { credentials: "include" });
-
-        if (response.status === 401) {
-          router.replace("/login");
-          return;
-        }
+        const response = await fetchWithRefresh(`${API_URL}/me`, { method: "GET" });
 
         if (!response.ok) {
           setAuthError("Failed to load your profile. Please refresh the page.");
@@ -82,6 +88,8 @@ export default function AppLayout({ children, previewAuthEnabled = false }: { ch
         setUserName(name);
         setUserEmail(profile.email || "");
         setUserPlan(profile.plan || "free");
+        setDailyLimit(typeof profile.daily_limit === "number" ? profile.daily_limit : 0);
+        setDailyRemaining(typeof profile.daily_remaining === "number" ? profile.daily_remaining : null);
         localStorage.setItem("userName", name);
 
         setUser({
@@ -92,19 +100,20 @@ export default function AppLayout({ children, previewAuthEnabled = false }: { ch
         });
         setAuthError("");
       } catch (error) {
+        if (error instanceof Error && error.message === "SESSION_EXPIRED") return;
         console.error("Failed to load profile", error);
         setAuthError("Failed to load your profile. Please refresh the page.");
       }
     };
 
     void fetchProfile();
-  }, [isPreviewAuth, isPublic, router, setUser]);
+  }, [isPreviewAuth, isPublic, setUser]);
 
   useEffect(() => {
     queueMicrotask(() => setIsMobileMenuOpen(false));
   }, [pathname]);
 
-  if (isPublic) {
+  if (!chrome) {
     return <>{children}</>;
   }
 
@@ -129,19 +138,18 @@ export default function AppLayout({ children, previewAuthEnabled = false }: { ch
     setProfileError("");
 
     try {
-      const response = await fetch(`${API_URL}/me`, {
+      const response = await fetchWithRefresh(`${API_URL}/me`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
         },
-        credentials: "include",
         body: JSON.stringify({ name: nextName }),
       });
 
       const data = await response.json();
 
       if (!response.ok) {
-        setProfileError(data.detail || "Could not update profile.");
+        setProfileError(messageFromApiBody(data, "Could not update profile."));
         return;
       }
 
@@ -157,6 +165,7 @@ export default function AppLayout({ children, previewAuthEnabled = false }: { ch
 
       setIsProfileOpen(false);
     } catch (error) {
+      if (error instanceof Error && error.message === "SESSION_EXPIRED") return;
       console.error("Profile update failed", error);
       setProfileError("Cannot connect to the backend right now.");
     } finally {
@@ -173,7 +182,7 @@ export default function AppLayout({ children, previewAuthEnabled = false }: { ch
     setUser(null);
 
     try {
-      await fetch(`${API_URL}/logout`, { method: "POST", credentials: "include" });
+      await fetchWithRefresh(`${API_URL}/logout`, { method: "POST" });
     } catch (error) {
       console.error("Logout failed", error);
     }
@@ -199,7 +208,7 @@ export default function AppLayout({ children, previewAuthEnabled = false }: { ch
         <div className="pointer-events-none absolute inset-0 z-0 bg-noise opacity-50" />
 
         <div className="relative z-10 flex-1 overflow-auto scrollbar-thin scrollbar-thumb-zinc-800 pb-16 md:pb-0">
-          <HudBar userName={userName} plan={userPlan} universe={universe} />
+          <HudBar userName={userName} plan={userPlan} universe={universe} dailyRemaining={dailyRemaining} dailyLimit={dailyLimit} />
           {authError && (
             <div className="border-b border-accent-mock/20 bg-accent-mock/10 px-4 py-3 text-sm text-accent-mock">
               {authError}

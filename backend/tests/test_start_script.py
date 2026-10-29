@@ -19,6 +19,17 @@ def test_start_script_exists_and_is_safe():
     assert "RAILWAY_VOLUME_MOUNT_PATH" in text
 
 
+def test_docker_healthcheck_outlasts_health_probes():
+    """urllib 3s vs llm_ping/chroma used to SIGKILL a live API."""
+    dockerfile = DOCKERFILE.read_text(encoding="utf-8")
+    compose = (BACKEND_ROOT / "docker-compose.yml").read_text(encoding="utf-8")
+    assert "--timeout=10s" in dockerfile
+    assert "timeout=8" in dockerfile
+    assert "--timeout=3s" not in dockerfile
+    assert "timeout=8" in compose
+    assert "timeout=3" not in compose
+
+
 def test_railway_and_dockerfile_use_the_same_start_script():
     railway = RAILWAY_TOML.read_text(encoding="utf-8")
     dockerfile = DOCKERFILE.read_text(encoding="utf-8")

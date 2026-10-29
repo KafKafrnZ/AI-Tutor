@@ -12,7 +12,7 @@ EMAIL_TIMEOUT_SECONDS = 10
 # To retrieve the token in dev: SELECT token FROM auth_tokens WHERE user_id = <id>;
 
 
-def _smtp_configured() -> bool:
+def email_is_configured() -> bool:
     return bool(settings.EMAIL_HOST and settings.EMAIL_USER and settings.EMAIL_PASSWORD)
 
 
@@ -69,7 +69,7 @@ def _base_template(title: str, body_html: str) -> str:
 
 def send_verification_email(to: str, token: str) -> None:
     url = f"{settings.FRONTEND_URL}/verify-email?token={token}"
-    if not _smtp_configured():
+    if not email_is_configured():
         logger.info(
             "dev_email_skipped recipient=%s action=verification note=SMTP not configured. Token NOT logged for security.",
             to,
@@ -97,7 +97,7 @@ def send_verification_email(to: str, token: str) -> None:
 
 def send_reset_email(to: str, token: str) -> None:
     url = f"{settings.FRONTEND_URL}/reset-password?token={token}"
-    if not _smtp_configured():
+    if not email_is_configured():
         logger.info(
             "dev_email_skipped recipient=%s action=password_reset note=SMTP not configured. Token NOT logged for security.",
             to,

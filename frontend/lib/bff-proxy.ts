@@ -24,6 +24,13 @@ export function copyResponseHeaders(response: Response): Headers {
   return headers;
 }
 
+export const JSON_PROXY_TIMEOUT_MS = 130_000;
+
+export function proxyAbortSignal(path: string[]): AbortSignal | undefined {
+  if (path.includes("stream")) return undefined;
+  return AbortSignal.timeout(JSON_PROXY_TIMEOUT_MS);
+}
+
 export function backendUnreachableBody() {
   return {
     error: {

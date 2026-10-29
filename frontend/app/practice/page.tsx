@@ -45,6 +45,10 @@ export default function PracticePage() {
         body: JSON.stringify({ topic: enhancedTopic }),
       });
 
+      if (res.status === 429) {
+        toast.error("Daily plan limit reached. Try again tomorrow.");
+        return;
+      }
       if (!res.ok) throw new Error("Backend error");
 
       const data = await res.json();
@@ -116,7 +120,7 @@ export default function PracticePage() {
       </div>
 
       {/* Main Scrollable Content */}
-      <div className="flex-1 overflow-y-auto w-full scrollbar-thin scrollbar-thumb-white/10 pt-24 pb-20 relative z-10">
+      <div className="flex-1 overflow-y-auto w-full scrollbar-thin scrollbar-thumb-white/10 pt-24 pb-[max(2rem,env(safe-area-inset-bottom))] relative z-10">
         <div className="max-w-4xl mx-auto px-6">
           
           {/* Header Area */}

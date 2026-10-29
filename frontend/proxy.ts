@@ -4,7 +4,7 @@ import { isPreviewAuthAllowed, assertPreviewAuthConfig } from './lib/preview-aut
 
 const PROTECTED_ROUTES = [
   '/dashboard', '/tutor', '/practice', '/mock-tests',
-  '/progress', '/error-log', '/explore'
+  '/progress', '/error-log', '/explore', '/billing'
 ]
 const AUTH_ROUTES = ['/login', '/signup', '/']
 
@@ -26,16 +26,19 @@ export function proxy(request: NextRequest) {
     host: request.headers?.get('host') || undefined
   })
   const token = request.cookies.get('access_token')?.value
-  const tokenValid = token && !isTokenExpired(token)
+  const tokenValid = Boolean(token && !isTokenExpired(token))
+  // Access cookie dies at 60 min; refresh cookie is the real session. Let the
+  // page load so fetchWithRefresh can rotate. Stale refresh → /me 401 → login.
+  const sessionOk = tokenValid || Boolean(request.cookies.get('refresh_token')?.value)
 
   const isProtected = PROTECTED_ROUTES.some(route => request.nextUrl.pathname.startsWith(route))
   const isAuthRoute = AUTH_ROUTES.some(route => request.nextUrl.pathname === route)
 
-  if (isProtected && !tokenValid && !previewAuth) {
+  if (isProtected && !sessionOk && !previewAuth) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
 
-  if (isAuthRoute && tokenValid && !previewAuth) {
+  if (isAuthRoute && sessionOk && !previewAuth) {
     return NextResponse.redirect(new URL('/dashboard', request.url))
   }
 
@@ -51,6 +54,7 @@ export const config = {
     '/progress/:path*', 
     '/error-log/:path*',
     '/explore/:path*',
+    '/billing/:path*',
     '/login',
     '/signup',
     '/'

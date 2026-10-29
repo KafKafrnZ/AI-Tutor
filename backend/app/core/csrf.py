@@ -35,6 +35,9 @@ def _is_localhost_origin(source: str) -> bool:
     return parsed.hostname in {"localhost", "127.0.0.1"}
 
 
+WEBHOOK_PATHS = {"/billing/webhook"}
+
+
 def csrf_should_reject(
     *,
     method: str,
@@ -42,7 +45,10 @@ def csrf_should_reject(
     referer: str,
     allowed_origins: list[str],
     environment: str,
+    path: str = "",
 ) -> bool:
+    if path.rstrip("/") in WEBHOOK_PATHS:
+        return False
     if method.upper() in SAFE_METHODS:
         return False
 

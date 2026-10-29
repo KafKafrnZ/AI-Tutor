@@ -20,9 +20,9 @@ services:
       - chroma_data:/data/chroma
     healthcheck:
       # Uses built-in python so it works in the slim image without installing curl
-      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/health', timeout=3).status==200 else 1)"]
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/health', timeout=8).status==200 else 1)"]
       interval: 15s
-      timeout: 5s
+      timeout: 10s
       retries: 5
       start_period: 20s
 

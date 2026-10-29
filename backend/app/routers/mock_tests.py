@@ -9,12 +9,12 @@ from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.core.dependencies import get_current_user, limiter
+from app.core.quota import consume_daily_quota
 from app.core.error_handler import api_error
-from app.core.guards import detect_injection, sanitize_user_input
+from app.core.guards import detect_injection
 from app.core.cache import invalidate_user_cache
 from app.mock_tests_logic import (
     build_exam_questions,
-    build_fallback_mock_questions,
     fallback_question_count,
     format_question_payload,
     get_grading_catalog,
@@ -27,7 +27,6 @@ from app.models.database import (
     save_mock_test,
 )
 from app.schemas.api import MockTestSubmission
-from app.schemas.mock_test import MockTestCreate
 from data.fallback_questions import MOCK_TEST_META
 
 router = APIRouter(tags=["mock-tests"])
@@ -69,16 +68,13 @@ def get_test_questions(test_id: int, db: Session = Depends(get_db), current_user
 
     catalog, uses_fallback = get_grading_catalog(db, test_id)
     if not catalog:
-        if not settings.ALLOW_FALLBACK_QUESTIONS:
-            raise api_error(
-                503,
-                "NO_CONTENT",
-                "No mock tests available. Please contact support or check back later.",
-            )
-        formatted = build_fallback_mock_questions(test_id)
-        uses_fallback = True
-    else:
-        formatted = build_exam_questions(catalog)
+        raise api_error(
+            503,
+            "NO_CONTENT",
+            "No mock tests available. Please contact support or check back later.",
+        )
+    consume_daily_quota(current_user.id, current_user.plan)
+    formatted = build_exam_questions(catalog)
 
     meta = MOCK_TEST_META.get(test_id, {"title": f"Mock Test Set {test_id}", "duration_minutes": 90, "difficulty": "Medium"})
 
@@ -199,7 +195,7 @@ def submit_mock_test(
         {
             "date": datetime.now(timezone.utc).date().isoformat(),
             "test_name": meta["title"],
-            "section": "Full Mock",
+            "section": _result_section(results, catalog),
             "attempted": attempted_count,
             "correct": correct_count,
             "time_taken": body.time_taken,
@@ -224,41 +220,20 @@ def submit_mock_test(
     }
 
 
-@router.post("/save-mock-test")
-@limiter.limit("10/minute")
-def save_mock_test_result(
-    request: Request,
-    data: MockTestCreate,
-    db: Session = Depends(get_db),
-    current_user: Any = Depends(get_current_user),
-):
-    mock_inputs = [data.date, data.test_name, data.section]
-    if any(detect_injection(value) for value in mock_inputs):
-        raise api_error(400, "BAD_REQUEST", "Invalid input")
-
-    data.date = sanitize_user_input(data.date)
-    data.test_name = sanitize_user_input(data.test_name)
-    data.section = sanitize_user_input(data.section)
-
-    if data.session_id:
-        session = db.query(MockTestSession).filter(
-            MockTestSession.id == data.session_id,
-            MockTestSession.user_id == current_user.id,
-        ).first()
-        if not session:
-            raise api_error(400, "INVALID_SESSION", "Test session not found. Please reload and start a new test.")
-        expires = session.expires_at
-        if expires.tzinfo is None:
-            expires = expires.replace(tzinfo=timezone.utc)
-        if datetime.now(timezone.utc) > expires:
-            db.delete(session)
-            db.commit()
-            raise api_error(400, "SESSION_EXPIRED", "Test time has expired. Results cannot be saved.")
-        db.delete(session)
-
-    saved_test = save_mock_test(db, current_user.id, data.model_dump())
-    if not saved_test:
-        raise api_error(500, "SAVE_FAILED", "Failed to save mock test")
-
-    invalidate_user_cache(current_user.id)
-    return {"message": "Mock test saved successfully", "id": saved_test.id}
+def _result_section(results: list[dict[str, Any]], catalog: list[dict[str, Any]]) -> str:
+    """Label the saved attempt with the weakest attempted section so /stats is not all 'Full Mock'."""
+    by_section: dict[str, list[float]] = {}
+    for item in results:
+        if item.get("user_selected") in (None, ""):
+            continue
+        section = str(item.get("section") or "General")
+        attempted = 1.0
+        correct = 1.0 if item.get("is_correct") else 0.0
+        by_section.setdefault(section, [0.0, 0.0])
+        by_section[section][0] += attempted
+        by_section[section][1] += correct
+    if by_section:
+        return min(by_section, key=lambda s: by_section[s][1] / by_section[s][0])
+    if catalog:
+        return str(catalog[0].get("section") or "General")
+    return "General"

@@ -7,10 +7,10 @@ import { GameAtmosphere } from "@/components/game/GamePrimitives";
 
 export default function GlobalError({
   error,
-  reset,
+  retry,
 }: {
   error: Error & { digest?: string };
-  reset: () => void;
+  retry: () => void;
 }) {
   useEffect(() => {
     if (process.env.NEXT_PUBLIC_SENTRY_DSN) {
@@ -37,7 +37,7 @@ export default function GlobalError({
               <p className="text-zinc-500 text-xs mb-6">Error reported automatically.</p>
             )}
             <button
-              onClick={() => reset()}
+              onClick={() => retry()}
               className="flex items-center gap-2 mx-auto px-6 py-2.5 bg-accent hover:bg-accent/80 text-white rounded-xl font-medium transition-colors"
             >
               <RefreshCw className="w-4 h-4" />

@@ -19,6 +19,7 @@ from app.core.config import settings
 from app.core.dependencies import cookie_security_options, get_current_user, limiter
 from app.core.email import send_reset_email, send_verification_email
 from app.core.error_handler import api_error
+from app.core.quota import quota_snapshot
 from app.models.database import AuthToken, User, create_user, get_db, get_user_by_email
 from app.schemas.api import (
     ForgotPasswordRequest,
@@ -43,7 +44,9 @@ def signup(request: Request, data: SignupRequest, db: Session = Depends(get_db))
         hash_password(data.password),
         is_verified=not settings.REQUIRE_EMAIL_VERIFICATION,
     )
-    if new_user and settings.REQUIRE_EMAIL_VERIFICATION:
+    if not new_user:
+        raise api_error(500, "SIGNUP_FAILED", "Could not create the account. Please try again.")
+    if settings.REQUIRE_EMAIL_VERIFICATION:
         token_str = secrets.token_urlsafe(32)
         db_token = AuthToken(
             user_id=new_user.id,
@@ -105,7 +108,7 @@ def login(request: Request, data: LoginRequest, db: Session = Depends(get_db)):
 @router.post("/forgot-password")
 @limiter.limit("3/minute")
 def forgot_password(request: Request, req: ForgotPasswordRequest, db: Session = Depends(get_db)):
-    user = db.query(User).filter(User.email == req.email).first()
+    user = get_user_by_email(db, req.email)
     if not user:
         return {"message": "If that email exists, a reset link has been sent."}
 
@@ -230,7 +233,8 @@ def get_profile(current_user: Any = Depends(get_current_user)):
         "id": current_user.id,
         "name": current_user.name,
         "email": current_user.email,
-        "plan": current_user.plan,
+        "plan": current_user.plan or "free",
+        **quota_snapshot(current_user.id, current_user.plan),
     }
 
 
@@ -252,5 +256,6 @@ def update_profile(
         "id": current_user.id,
         "name": current_user.name,
         "email": current_user.email,
-        "plan": current_user.plan,
+        "plan": current_user.plan or "free",
+        **quota_snapshot(current_user.id, current_user.plan),
     }

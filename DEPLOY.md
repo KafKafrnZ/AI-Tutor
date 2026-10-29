@@ -50,6 +50,8 @@ Set all of these in Railway → Project → Variables:
 | `DB_POOL_SIZE` | Default: `5` (free tier Postgres: keep at 5) |
 | `DB_MAX_OVERFLOW` | Default: `10` |
 | `ALLOW_FALLBACK_QUESTIONS` | `true` for demo mode, `false` for production |
+| `RAZORPAY_KEY_ID` / `RAZORPAY_KEY_SECRET` / `RAZORPAY_WEBHOOK_SECRET` | Razorpay keys. Webhook URL: `https://<railway-host>/billing/webhook` |
+| `RAZORPAY_PLAN_PLUS` / `RAZORPAY_PLAN_PRO` | Razorpay plan IDs for Plus and Pro |
 | `REQUIRE_EMAIL_VERIFICATION` | Defaults to `true` in production if unset; explicit `false` disables |
 | `RAG_CHROMA_PATH` | Chroma directory. Defaults to `$RAILWAY_VOLUME_MOUNT_PATH/chroma`, else `/data/chroma` |
 | `PYQS_SOURCE` | PYQ JSON path. Default: `/app/data/pyqs.json` |

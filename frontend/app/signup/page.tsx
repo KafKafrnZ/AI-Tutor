@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 
-import AuthCard, { type AuthMode } from "@/components/auth/AuthCard";
+import AuthCard, { messageFromAuthBody, type AuthMode } from "@/components/auth/AuthCard";
 import VideoBackground from "@/components/VideoBackground";
 
 function readUserName(data: unknown): string {
@@ -28,7 +28,9 @@ export default function SignupPage() {
       return;
     }
 
-    toast.success("Account created. You can sign in now.");
+    toast.success(
+      messageFromAuthBody(data, "Account created. Check your email to verify your account.")
+    );
     router.push("/login");
   };
 
@@ -38,7 +40,7 @@ export default function SignupPage() {
 
       <Link href="/" className="absolute left-5 top-5 z-20 flex items-center gap-2 rounded-full border border-white/10 bg-black/25 px-4 py-2 text-sm font-medium text-zinc-300 backdrop-blur-xl transition-colors hover:text-white sm:left-8 sm:top-8">
         <ArrowLeft className="size-4" />
-        Back to Home
+        Back to Night City
       </Link>
 
       <div className="relative z-10 mx-auto flex w-full max-w-6xl items-center justify-center pt-14">

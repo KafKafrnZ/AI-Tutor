@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { copyResponseHeaders, backendUnreachableBody, HOP_BY_HOP_HEADERS } from "@/lib/bff-proxy";
+import { copyResponseHeaders, backendUnreachableBody, HOP_BY_HOP_HEADERS, proxyAbortSignal } from "@/lib/bff-proxy";
 
 export const dynamic = "force-dynamic";
-export const maxDuration = 60;
+// 300s on Pro; Hobby still caps at 60s. Stream fetches omit AbortSignal so the
+// body can run until this function limit (JSON uses 130s ≥ LLM 120s).
+export const maxDuration = 300;
 export const runtime = "nodejs";
 export const preferredRegion = "auto";
 
@@ -52,9 +54,10 @@ async function proxyRequest(request: NextRequest, context: RouteContext): Promis
       init.body = await request.arrayBuffer();
     }
 
+    const abort = proxyAbortSignal(path);
     const upstream = await fetch(targetUrl, {
       ...init,
-      signal: AbortSignal.timeout(55000),
+      ...(abort ? { signal: abort } : {}),
     });
     if (upstream.headers.get("content-type")?.includes("text/event-stream")) {
       const headers = copyResponseHeaders(upstream);

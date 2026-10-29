@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.core.cache import get_cached, invalidate_user_cache, set_cached
 from app.core.dependencies import get_current_user, limiter
+from app.core.quota import consume_daily_quota
 from app.core.guards import guard_input
 from app.models.database import ErrorLog, get_db, save_error_log
 from app.schemas.api import ErrorLogResponse, ErrorPayload, RevisionPlanResponse, StatsResponse
@@ -80,6 +81,7 @@ async def revision_plan(request: Request, db: Session = Depends(get_db), current
     if cached_plan:
         return cached_plan
 
+    consume_daily_quota(current_user.id, current_user.plan)
     plan = await get_ai_revision_plan(db, current_user.id)
     set_cached(cache_key, plan)
     return plan

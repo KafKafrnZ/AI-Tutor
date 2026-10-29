@@ -62,6 +62,7 @@ async def csrf_protection(request: Request, call_next):
         referer=request.headers.get("referer", ""),
         allowed_origins=settings.ALLOWED_ORIGINS,
         environment=settings.ENVIRONMENT,
+        path=request.url.path,
     ):
         return JSONResponse(
             status_code=403,

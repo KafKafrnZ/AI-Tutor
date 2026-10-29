@@ -8,6 +8,7 @@ import {
   ChevronRight,
   ClipboardCheck,
   Compass,
+  CreditCard,
   LayoutDashboard,
   LogOut,
   Menu,
@@ -31,13 +32,14 @@ import {
 import { cn } from "@/lib/utils";
 
 const NAV_ITEMS = [
-  { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { label: "AI Tutor", href: "/tutor", icon: Bot },
-  { label: "Practice", href: "/practice", icon: Target },
-  { label: "Tests", href: "/mock-tests", icon: ClipboardCheck },
-  { label: "Explore", href: "/explore", icon: Compass },
-  { label: "Progress", href: "/progress", icon: TrendingUp },
-  { label: "Mistakes", href: "/error-log", icon: AlertTriangle },
+  { label: "War Room", href: "/dashboard", icon: LayoutDashboard },
+  { label: "Chamber", href: "/tutor", icon: Bot },
+  { label: "Arena", href: "/practice", icon: Target },
+  { label: "Trials", href: "/mock-tests", icon: ClipboardCheck },
+  { label: "Realm", href: "/explore", icon: Compass },
+  { label: "Command", href: "/progress", icon: TrendingUp },
+  { label: "Ledger", href: "/error-log", icon: AlertTriangle },
+  { label: "License", href: "/billing", icon: CreditCard },
 ] as const;
 
 type SidebarProps = {

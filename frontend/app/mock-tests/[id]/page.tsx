@@ -2,10 +2,20 @@
 
 import { useState, useEffect, useRef, useCallback } from "react"
 import { useParams, useRouter } from "next/navigation"
-import { Clock, ChevronLeft, ChevronRight, Send, AlertTriangle, X, Target, CheckCircle2, XCircle } from "lucide-react"
-import { AnimatePresence, motion } from "framer-motion"
+import { Clock, ChevronLeft, ChevronRight, Send, AlertTriangle, X, Target, CheckCircle2, XCircle, Flame } from "lucide-react"
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion"
 import { toast } from "sonner"
-import { API_URL } from "@/lib/api"
+import { API_URL, fetchWithRefresh } from "@/lib/api"
+import { cn } from "@/lib/utils"
+import {
+  GameAtmosphere,
+  GameButton,
+  GameCard,
+  GameLinkButton,
+  GameStat,
+  InWorldState,
+  RouteLoading,
+} from "@/components/game/GamePrimitives"
 
 interface ExamQuestion {
   id: number
@@ -72,6 +82,7 @@ const OPTION_KEYS = ["A", "B", "C", "D"] as const
 export default function MockTestEnginePage() {
   const { id } = useParams<{ id: string }>()
   const router = useRouter()
+  const reduceMotion = useReducedMotion()
 
   const [test, setTest] = useState<TestDetails | null>(null)
   const [loading, setLoading] = useState(true)
@@ -94,9 +105,14 @@ export default function MockTestEnginePage() {
     async function fetchTest() {
       const numericId = Number(id) || 1
       try {
-        const res = await fetch(`${API_URL}/mock-tests/${id}/questions`, {
-          credentials: "include",
+        const res = await fetchWithRefresh(`${API_URL}/mock-tests/${id}/questions`, {
+          method: "GET",
         })
+        if (res.status === 429) {
+          toast.error("Daily plan limit reached. Try again tomorrow.")
+          setTest(null)
+          return
+        }
         if (!res.ok) throw new Error(`Failed to fetch test data: ${res.status}`)
         const data = (await res.json()) as MockTestPayload
 
@@ -135,6 +151,7 @@ export default function MockTestEnginePage() {
         })
         setTimeLeft(durMin * 60)
       } catch (err) {
+        if (err instanceof Error && err.message === "SESSION_EXPIRED") return
         console.error(err)
         toast.error("Could not load mock test. Please try again from the mock tests list.")
         setTest(null)
@@ -160,10 +177,9 @@ export default function MockTestEnginePage() {
       }))
 
       try {
-        const res = await fetch(`/api/mock-tests/${test.id}/submit`, {
+        const res = await fetchWithRefresh(`/api/mock-tests/${test.id}/submit`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          credentials: "include",
           body: JSON.stringify({
             session_id: sessionId,
             answers: collectedAnswers,
@@ -197,6 +213,7 @@ export default function MockTestEnginePage() {
           toast.success(`Trial complete - score ${data.score}/${data.total} (${data.percentage}%)`)
         }
       } catch (err) {
+        if (err instanceof Error && err.message === "SESSION_EXPIRED") return
         console.error("Failed to submit test results:", err)
         toast.error("Network error. Please check your connection and try again.")
       } finally {
@@ -247,23 +264,21 @@ export default function MockTestEnginePage() {
   }
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-bg flex items-center justify-center text-zinc-400 font-medium">
-        Kindling bonfire resources...
-      </div>
-    )
+    return <RouteLoading universe="souls" title="Kindling the bonfire..." />
   }
 
   if (!test || test.questions.length === 0) {
     return (
-      <div className="min-h-screen bg-bg flex flex-col items-center justify-center gap-4 px-6 text-center font-medium">
-        <p className="text-accent-mock">This trial was lost in the fog or contains no questions.</p>
-        <button
-          onClick={() => router.push("/mock-tests")}
-          className="rounded-xl border border-white/10 bg-zinc-900 px-4 py-2 text-sm text-zinc-200 transition-colors hover:bg-white hover:text-black"
-        >
-          Return to Bonfires
-        </button>
+      <div className="relative min-h-screen overflow-hidden bg-bg p-6">
+        <GameAtmosphere universe="souls" />
+        <div className="relative z-10 mx-auto max-w-lg pt-16">
+          <InWorldState
+            universe="souls"
+            title="This trial was lost in the fog"
+            body="The bonfire has no questions, or the session could not be kindled. Return to the list and choose another gate."
+            action={<GameLinkButton href="/mock-tests" universe="souls">Return to Bonfires</GameLinkButton>}
+          />
+        </div>
       </div>
     )
   }
@@ -271,23 +286,36 @@ export default function MockTestEnginePage() {
   if (submitResults) {
     const wrongCount = Math.max(0, submitResults.attempted - submitResults.correct)
     const skippedCount = Math.max(0, submitResults.total - submitResults.attempted)
+    const hollowed = submitResults.negative_marks_applied
 
     return (
-      <div className="min-h-screen bg-bg text-white p-6 md:p-12 relative overflow-hidden">
-        <div className="max-w-4xl mx-auto flex flex-col gap-6">
-          <div className="bg-zinc-900/60 border border-white/5 rounded-2xl p-6">
-            <p className="text-xs font-black uppercase tracking-[0.24em] text-accent-mock">Post-Mortem of Cinders</p>
-            <h1 className="text-2xl font-bold">{test.title} - Trial Results</h1>
-            <p className="text-zinc-400 mt-2">
-              Correct: <span className="text-accent-progress">{submitResults.correct}</span> | Wrong:{" "}
-              <span className="text-accent-mock">{wrongCount}</span> | Skipped:{" "}
-              <span className="text-zinc-400">{skippedCount}</span>
+      <div className="relative min-h-screen overflow-hidden bg-bg p-4 text-white md:p-10">
+        <GameAtmosphere universe="souls" intensity="normal" />
+        <div className="relative z-10 mx-auto flex max-w-4xl flex-col gap-6">
+          <GameCard universe="souls" className="p-6 md:p-8">
+            <p className="text-xs font-black uppercase tracking-[0.24em] text-accent-souls">Post-Mortem of Cinders</p>
+            <h1 className="mt-2 text-2xl font-black md:text-3xl">{test.title}</h1>
+            <p className="mt-2 text-sm text-zinc-400">
+              Trial closed. Read the cause of death, then take the souls that remain.
             </p>
-            <p className="text-zinc-400 mt-2">
-              Score: <span className="text-accent-mock font-mono">{submitResults.score}</span> / {submitResults.total} ({submitResults.percentage}%)
-            </p>
-            <p className="text-xs text-accent-practice mt-1">Hollowing applied: -0.25 per wrong answer</p>
-          </div>
+
+            <div className="mt-6 grid grid-cols-2 gap-3 md:grid-cols-4">
+              <GameStat universe="souls" label="Souls" value={`${submitResults.score} / ${submitResults.total}`} />
+              <GameStat universe="command" label="Cleared" value={submitResults.correct} />
+              <GameStat universe="hades" label="Hollowed" value={wrongCount} />
+              <GameStat universe="neuro" label="Skipped" value={skippedCount} />
+            </div>
+
+            <div className="mt-5 flex flex-wrap items-center gap-3 text-sm">
+              <span className="font-mono text-accent-souls">{submitResults.percentage}%</span>
+              <span className="text-zinc-500">posture remaining</span>
+              {hollowed && (
+                <span className="rounded-full border border-accent-practice/30 bg-accent-practice/10 px-3 py-1 text-xs font-semibold text-accent-practice">
+                  Hollowing applied: −0.25 per wrong answer
+                </span>
+              )}
+            </div>
+          </GameCard>
 
           <div className="flex flex-col gap-4">
             {submitResults.results.map((item, idx) => {
@@ -304,129 +332,181 @@ export default function MockTestEnginePage() {
               const selectedClass = item.is_correct ? "text-accent-progress" : item.user_selected ? "text-accent-mock" : "text-zinc-400"
 
               return (
-                <div
+                <GameCard
                   key={item.id}
-                  className={`rounded-2xl border p-5 ${
+                  universe="souls"
+                  className={cn(
+                    "p-5",
                     item.is_correct
-                      ? "border-accent-progress/30 bg-accent-progress/5"
+                      ? "border-accent-progress/30"
                       : item.user_selected
-                      ? "border-accent-mock/30 bg-accent-mock/5"
-                      : "border-white/10 bg-zinc-900/40"
-                  }`}
+                      ? "border-accent-mock/30"
+                      : "border-white/10"
+                  )}
                 >
                   <div className="flex items-start gap-3">
                     {item.is_correct ? (
-                      <CheckCircle2 className="w-5 h-5 text-accent-progress shrink-0 mt-0.5" />
+                      <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-accent-progress" />
                     ) : item.user_selected ? (
-                      <XCircle className="w-5 h-5 text-accent-mock shrink-0 mt-0.5" />
+                      <XCircle className="mt-0.5 h-5 w-5 shrink-0 text-accent-mock" />
                     ) : (
-                      <AlertTriangle className="w-5 h-5 text-zinc-500 shrink-0 mt-0.5" />
+                      <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-zinc-500" />
                     )}
-                    <div className="flex-1">
-                      <p className="text-sm text-zinc-500 mb-1">Q{idx + 1}</p>
+                    <div className="min-w-0 flex-1">
+                      <p className="mb-1 text-sm text-zinc-500">Fog gate {idx + 1}</p>
                       <p className="font-medium">{questionText}</p>
-                      <p className={`text-sm mt-2 ${selectedClass}`}>Chosen stance: {selectedText}</p>
-                      <p className="text-sm text-accent-progress mt-1">
+                      <p className={`mt-2 text-sm ${selectedClass}`}>Chosen stance: {selectedText}</p>
+                      <p className="mt-1 text-sm text-accent-progress">
                         True stance: {item.correct_answer}. {item.correct_answer_text}
                       </p>
-                      <p className={`text-sm font-semibold mt-1 ${marksClass}`}>
+                      <p className={`mt-1 text-sm font-semibold ${marksClass}`}>
                         Souls awarded: {item.marks_awarded > 0 ? "+" : ""}{item.marks_awarded}
                       </p>
-                      <p className="text-sm text-zinc-500 mt-1">{item.explanation}</p>
+                      <p className="mt-1 text-sm text-zinc-500">{item.explanation}</p>
                     </div>
                   </div>
-                </div>
+                </GameCard>
               )
             })}
           </div>
 
-          <button
-            type="button"
-            onClick={() => router.push("/progress")}
-            className="self-center px-6 py-3 rounded-xl bg-accent-mock hover:bg-accent-mock font-semibold transition-colors"
-          >
-            Open Command Center
-          </button>
+          <div className="flex flex-wrap justify-center gap-3 pb-8">
+            <GameLinkButton href="/mock-tests" universe="souls">
+              Return to Bonfires
+            </GameLinkButton>
+            <GameButton type="button" universe="souls" onClick={() => router.push("/progress")}>
+              Open Command Center
+            </GameButton>
+          </div>
         </div>
       </div>
     )
   }
 
-
   const currentQuestion = test.questions[currentIdx]
+  const answeredCount = Object.keys(answers).length
+  const totalDuration = Math.max(1, test.duration_minutes * 60)
+  const timeRatio = Math.max(0, Math.min(1, timeLeft / totalDuration))
+  const critical = timeLeft <= 300 && timeLeft > 0
+  const slide = reduceMotion ? { opacity: 0 } : { opacity: 0, x: 12 }
 
   return (
-    <div className="min-h-screen bg-bg text-white p-6 md:p-12 relative">
+    <div className="relative min-h-screen overflow-hidden bg-bg p-4 pb-[max(1rem,env(safe-area-inset-bottom))] text-white md:p-8">
+      <GameAtmosphere universe="souls" intensity="quiet" />
+
       <AnimatePresence>
         {showSubmitModal && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md"
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-md"
+            role="presentation"
+            onClick={() => setShowSubmitModal(false)}
           >
             <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="fog-gate-title"
+              initial={reduceMotion ? { opacity: 0 } : { scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-zinc-900 border border-white/10 rounded-3xl p-8 max-w-md w-full shadow-2xl relative"
+              exit={reduceMotion ? { opacity: 0 } : { scale: 0.95, opacity: 0 }}
+              className="relative w-full max-w-md rounded-3xl border border-accent-souls/30 bg-surface/95 p-8 shadow-2xl"
+              onClick={(event) => event.stopPropagation()}
             >
-              <button onClick={() => setShowSubmitModal(false)} className="absolute top-4 right-4 text-zinc-400 hover:text-white">
-                <X className="w-5 h-5" />
+              <button
+                type="button"
+                onClick={() => setShowSubmitModal(false)}
+                className="absolute right-4 top-4 rounded-lg p-2 text-zinc-400 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-souls/50"
+                aria-label="Close fog gate dialog"
+              >
+                <X className="h-5 w-5" />
               </button>
-              <h2 className="text-2xl font-bold mb-4">Enter the Fog?</h2>
-              <p className="text-zinc-400 mb-8">
-                You have answered {Object.keys(answers).length} out of {test.questions.length} questions.
+              <p className="text-xs font-black uppercase tracking-[0.24em] text-accent-souls">Fog Gate</p>
+              <h2 id="fog-gate-title" className="mt-2 text-2xl font-bold">Enter the Fog?</h2>
+              <p className="mt-3 mb-8 text-zinc-400">
+                You have answered {answeredCount} out of {test.questions.length} questions.
                 Once you enter the fog, this trial becomes a post-mortem.
               </p>
-              <div className="flex gap-4 justify-end">
-                <button onClick={() => setShowSubmitModal(false)} className="px-5 py-2.5 rounded-xl text-zinc-300 hover:bg-white/5 transition-colors font-medium">
+              <div className="flex flex-wrap justify-end gap-3">
+                <GameButton type="button" variant="ghost" universe="souls" onClick={() => setShowSubmitModal(false)}>
                   Return to Bonfire
-                </button>
-                <button
+                </GameButton>
+                <GameButton
+                  type="button"
+                  variant="danger"
+                  universe="souls"
                   onClick={() => void executeSubmit(false)}
                   disabled={isSubmitting}
-                  className="px-5 py-2.5 rounded-xl bg-accent-mock hover:bg-accent-mock text-white font-bold transition-all shadow-lg flex items-center gap-2"
                 >
                   {isSubmitting ? "Crossing..." : "Submit Trial"}
-                </button>
+                </GameButton>
               </div>
             </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      <div className="max-w-5xl mx-auto flex flex-col gap-6 relative z-10">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-zinc-900/60 border border-white/5 rounded-2xl p-6 gap-4">
-          <div>
-            <h1 className="text-xl font-bold tracking-tight">{test.title}</h1>
-            <p className="text-sm text-zinc-400 mt-1">
-              Fog gate {currentIdx + 1} of {test.questions.length}
-            </p>
-          </div>
+      <div className="relative z-10 mx-auto flex max-w-6xl flex-col gap-5">
+        <GameCard universe="souls" className="p-5 md:p-6">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="min-w-0">
+              <p className="text-xs font-black uppercase tracking-[0.24em] text-accent-souls">Bonfire Simulation</p>
+              <h1 className="mt-1 truncate text-xl font-black tracking-tight">{test.title}</h1>
+              <p className="mt-1 text-sm text-zinc-400">
+                Fog gate {currentIdx + 1} of {test.questions.length} · {answeredCount} stances locked
+              </p>
+            </div>
 
-          <div className="flex flex-col gap-3 self-stretch sm:self-auto sm:items-end">
-            {timeLeft <= 300 && timeLeft > 0 && (
-              <div aria-live="polite" className="bg-accent-mock/20 border border-accent-mock/40 text-accent-mock text-sm font-semibold px-4 py-2 rounded-xl animate-pulse text-center">
-                <AlertTriangle className="mr-2 inline h-4 w-4 align-[-2px]" />
-                {Math.ceil(timeLeft / 60)} min remaining - submit soon!
+            <div className="flex flex-col gap-3 self-stretch sm:items-end">
+              {critical && (
+                <div
+                  aria-live="polite"
+                  className={cn(
+                    "rounded-xl border border-accent-mock/40 bg-accent-mock/20 px-4 py-2 text-center text-sm font-semibold text-accent-mock",
+                    !reduceMotion && "animate-pulse"
+                  )}
+                >
+                  <AlertTriangle className="mr-2 inline h-4 w-4 align-[-2px]" />
+                  {Math.ceil(timeLeft / 60)} min remaining — finish the trial
+                </div>
+              )}
+              <div className="flex items-center justify-between gap-3 sm:justify-end">
+                <div
+                  className={cn(
+                    "flex items-center gap-2 rounded-xl border bg-black/40 px-4 py-2 font-mono text-lg",
+                    critical ? "border-accent-mock/40 text-accent-mock" : "border-white/10 text-accent-souls"
+                  )}
+                >
+                  <Clock className="h-5 w-5" />
+                  <span aria-label={`Time remaining ${formatTime(timeLeft)}`}>{formatTime(timeLeft)}</span>
+                </div>
+                <GameButton
+                  type="button"
+                  variant="danger"
+                  universe="souls"
+                  onClick={() => handleFinalSubmit(false)}
+                  disabled={isSubmitting}
+                >
+                  <Send className="h-4 w-4" /> Finish Trial
+                </GameButton>
               </div>
-            )}
-            <div className="flex items-center gap-6 justify-between sm:justify-end">
-              <div className="flex items-center gap-2 px-4 py-2 bg-zinc-950 border border-white/5 rounded-xl font-mono text-lg text-accent-mock">
-                <Clock className="w-5 h-5 text-accent-mock" />
-                {formatTime(timeLeft)}
-              </div>
-              <button
-                onClick={() => handleFinalSubmit(false)}
-                disabled={isSubmitting}
-                className="flex items-center gap-2 px-5 py-2.5 bg-accent-mock hover:bg-accent-mock disabled:bg-zinc-800 rounded-xl text-sm font-semibold transition-all shadow-lg shadow-accent-mock/20"
-              >
-                <Send className="w-4 h-4" /> Finish Trial
-              </button>
             </div>
           </div>
-        </div>
+
+          <div className="mt-4">
+            <div className="mb-1.5 flex items-center justify-between text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-500">
+              <span className="flex items-center gap-1"><Flame className="h-3 w-3 text-accent-souls" /> Ember posture</span>
+              <span>{Math.round(timeRatio * 100)}%</span>
+            </div>
+            <div className="h-1.5 overflow-hidden rounded-full bg-white/10" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(timeRatio * 100)} aria-label="Time remaining">
+              <div
+                className={cn("h-full rounded-full transition-[width] duration-1000", critical ? "bg-accent-mock" : "bg-accent-souls")}
+                style={{ width: `${timeRatio * 100}%` }}
+              />
+            </div>
+          </div>
+        </GameCard>
 
         {loadNotice && (
           <div className="flex items-start gap-3 rounded-2xl border border-accent-practice/20 bg-accent-practice/10 px-4 py-3 text-sm text-accent-practice">
@@ -435,27 +515,27 @@ export default function MockTestEnginePage() {
           </div>
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
-          <div className="lg:col-span-3 bg-zinc-900/30 border border-white/5 rounded-3xl p-6 md:p-8 min-h-[400px] flex flex-col justify-between">
+        <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-4">
+          <GameCard universe="souls" className="flex min-h-[400px] flex-col justify-between p-6 md:p-8 lg:col-span-3">
             <AnimatePresence mode="wait">
               <motion.div
                 key={currentIdx}
-                initial={{ opacity: 0, x: 10 }}
+                initial={slide}
                 animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -10 }}
-                transition={{ duration: 0.15 }}
+                exit={reduceMotion ? { opacity: 0 } : { opacity: 0, x: -12 }}
+                transition={{ duration: reduceMotion ? 0 : 0.15 }}
                 className="flex flex-col gap-6"
               >
                 <div>
-                  <span className="text-xs uppercase font-bold tracking-wider px-2.5 py-1 bg-zinc-800 border border-white/5 rounded-md text-zinc-400">
+                  <span className="rounded-md border border-white/10 bg-black/30 px-2.5 py-1 text-xs font-bold uppercase tracking-wider text-zinc-400">
                     {currentQuestion.subject}
                   </span>
-                  <h2 className="text-lg md:text-xl font-medium mt-4 leading-relaxed">
+                  <h2 className="mt-4 text-lg font-medium leading-relaxed md:text-xl">
                     {currentQuestion.question_text}
                   </h2>
                 </div>
 
-                <div className="flex flex-col gap-3">
+                <div className="flex flex-col gap-3" role="group" aria-label="Answer stances">
                   {(currentQuestion.options || []).map((val, idx) => {
                     const key = OPTION_KEYS[idx] || String.fromCharCode(65 + idx)
                     const isSelected = answers[currentQuestion.id] === key
@@ -465,17 +545,19 @@ export default function MockTestEnginePage() {
                         type="button"
                         onClick={() => handleSelectOption(currentQuestion.id, key)}
                         aria-pressed={isSelected}
-                        className={`w-full text-left px-5 py-4 rounded-xl border text-sm transition-all flex items-center justify-between group ${
+                        className={cn(
+                          "group flex w-full items-center justify-between rounded-xl border px-5 py-4 text-left text-sm transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-souls/50",
                           isSelected
-                            ? "bg-accent-mock/10 border-accent-mock text-accent-mock font-medium"
-                            : "bg-zinc-950/50 border-white/5 text-zinc-300 hover:bg-zinc-900 hover:border-zinc-700"
-                        }`}
+                            ? "border-accent-souls bg-accent-souls/10 font-medium text-accent-souls"
+                            : "border-white/5 bg-black/30 text-zinc-300 hover:border-accent-souls/30 hover:bg-accent-souls/5"
+                        )}
                       >
-                        <span className="flex gap-4 items-center">
+                        <span className="flex items-center gap-4">
                           <span
-                            className={`w-6 h-6 rounded-md flex items-center justify-center text-xs border font-bold ${
-                              isSelected ? "bg-accent-mock border-transparent text-white" : "bg-zinc-900 border-white/10 text-zinc-400"
-                            }`}
+                            className={cn(
+                              "flex h-6 w-6 items-center justify-center rounded-md border text-xs font-bold",
+                              isSelected ? "border-transparent bg-accent-souls text-white" : "border-white/10 bg-zinc-900 text-zinc-400"
+                            )}
                           >
                             {key}
                           </span>
@@ -488,15 +570,17 @@ export default function MockTestEnginePage() {
               </motion.div>
             </AnimatePresence>
 
-            <div className="flex justify-between items-center mt-8 pt-6 border-t border-white/5">
+            <div className="mt-8 flex items-center justify-between border-t border-white/5 pt-6">
               <button
+                type="button"
                 onClick={() => setCurrentIdx((prev) => Math.max(0, prev - 1))}
                 disabled={currentIdx === 0}
-                className="flex items-center gap-2 px-4 py-2 bg-zinc-950 border border-white/5 rounded-xl text-sm font-semibold text-zinc-400 hover:text-white disabled:opacity-30 transition-colors"
+                className="flex min-h-11 items-center gap-2 rounded-xl border border-white/5 bg-black/30 px-4 py-2 text-sm font-semibold text-zinc-400 transition-colors hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-souls/50 disabled:opacity-30"
               >
-                <ChevronLeft className="w-4 h-4" /> Previous
+                <ChevronLeft className="h-4 w-4" /> Previous gate
               </button>
               <button
+                type="button"
                 onClick={() =>
                   setAnswers((prev) => {
                     const updated = { ...prev }
@@ -504,19 +588,20 @@ export default function MockTestEnginePage() {
                     return updated
                   })
                 }
-                className="text-xs text-zinc-500 hover:text-accent-mock transition-colors underline underline-offset-4"
+                className="text-xs text-zinc-500 underline underline-offset-4 transition-colors hover:text-accent-souls"
               >
-                Clear Stance
+                Clear stance
               </button>
               <button
+                type="button"
                 onClick={() => setCurrentIdx((prev) => Math.min(test.questions.length - 1, prev + 1))}
                 disabled={currentIdx === test.questions.length - 1}
-                className="flex items-center gap-2 px-4 py-2 bg-zinc-950 border border-white/5 rounded-xl text-sm font-semibold text-zinc-400 hover:text-white disabled:opacity-30 transition-colors"
+                className="flex min-h-11 items-center gap-2 rounded-xl border border-white/5 bg-black/30 px-4 py-2 text-sm font-semibold text-zinc-400 transition-colors hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-souls/50 disabled:opacity-30"
               >
-                Next <ChevronRight className="w-4 h-4" />
+                Next gate <ChevronRight className="h-4 w-4" />
               </button>
             </div>
-          </div>
+          </GameCard>
 
           <AnimatePresence>
             {isGridOpen && (
@@ -526,53 +611,70 @@ export default function MockTestEnginePage() {
                 exit={{ opacity: 0 }}
                 onClick={() => setIsGridOpen(false)}
                 className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm lg:hidden"
+                aria-hidden="true"
               />
             )}
           </AnimatePresence>
 
-          <motion.div
-            className={`
-              bg-zinc-900/95 border border-white/5 rounded-t-3xl lg:rounded-3xl p-6 flex flex-col gap-4 shadow-2xl
-              fixed lg:static inset-x-0 bottom-0 z-50 transition-transform duration-300
-              ${isGridOpen ? "translate-y-0" : "translate-y-full lg:translate-y-0"}
-            `}
+          <div
+            className={cn(
+              "z-50 flex flex-col gap-4 border border-accent-souls/20 bg-surface/95 p-6 shadow-2xl backdrop-blur-xl",
+              "fixed inset-x-0 bottom-0 rounded-t-3xl transition-transform duration-300 lg:static lg:bottom-auto lg:rounded-3xl lg:translate-y-0",
+              isGridOpen ? "translate-y-0" : "translate-y-full lg:translate-y-0"
+            )}
           >
-            <div className="flex justify-between items-center lg:mb-0">
-              <h3 className="text-sm font-semibold text-zinc-400 uppercase tracking-wider">Exam Overview</h3>
-              <button onClick={() => setIsGridOpen(false)} className="lg:hidden text-zinc-400 hover:text-white p-2 -mr-2">
-                <X className="w-5 h-5" />
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-semibold uppercase tracking-wider text-zinc-400">Bonfire map</h3>
+              <button
+                type="button"
+                onClick={() => setIsGridOpen(false)}
+                className="p-2 -mr-2 text-zinc-400 hover:text-white lg:hidden"
+                aria-label="Close bonfire map"
+              >
+                <X className="h-5 w-5" />
               </button>
             </div>
-            <div className="grid grid-cols-4 sm:grid-cols-5 lg:grid-cols-4 gap-2">
+            <p className="text-xs text-zinc-500">{answeredCount} kindled · {test.questions.length - answeredCount} still dark</p>
+            <div className="grid grid-cols-5 gap-2 sm:grid-cols-6 lg:grid-cols-4">
               {test.questions.map((q, idx) => {
                 const isAnswered = !!answers[q.id]
                 const isCurrent = idx === currentIdx
                 return (
                   <button
                     key={q.id}
-                    onClick={() => setCurrentIdx(idx)}
-                    className={`h-10 rounded-xl text-xs font-mono font-bold border transition-all flex items-center justify-center ${
+                    type="button"
+                    onClick={() => {
+                      setCurrentIdx(idx)
+                      setIsGridOpen(false)
+                    }}
+                    aria-current={isCurrent ? "true" : undefined}
+                    aria-label={`Question ${idx + 1}${isAnswered ? ", answered" : ", unanswered"}`}
+                    className={cn(
+                      "flex h-10 items-center justify-center rounded-xl border font-mono text-xs font-bold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-souls/50",
                       isCurrent
-                        ? "bg-white text-black border-transparent shadow-lg scale-105"
+                        ? "scale-105 border-transparent bg-white text-black shadow-lg"
                         : isAnswered
-                        ? "bg-accent-mock/20 border-accent-mock/40 text-accent-mock"
-                        : "bg-zinc-950 border-white/5 text-zinc-500 hover:border-zinc-700"
-                    }`}
+                        ? "border-accent-souls/40 bg-accent-souls/20 text-accent-souls"
+                        : "border-white/5 bg-black/40 text-zinc-500 hover:border-zinc-600"
+                    )}
                   >
                     {(idx + 1).toString().padStart(2, "0")}
                   </button>
                 )
               })}
             </div>
-          </motion.div>
+          </div>
 
           <button
+            type="button"
             onClick={() => setIsGridOpen(true)}
-            className={`lg:hidden fixed bottom-20 right-6 z-30 p-4 rounded-full shadow-2xl bg-zinc-800 text-white border border-white/10 flex items-center gap-2 ${
+            className={cn(
+              "fixed bottom-6 right-6 z-30 flex items-center gap-2 rounded-full border border-accent-souls/30 bg-surface/90 p-4 text-white shadow-2xl lg:hidden",
               isGridOpen ? "scale-0" : "scale-100"
-            }`}
+            )}
+            aria-label="Open bonfire map"
           >
-            <Target className="w-5 h-5" />
+            <Target className="h-5 w-5 text-accent-souls" />
             <span className="text-sm font-bold">
               {currentIdx + 1} / {test.questions.length}
             </span>

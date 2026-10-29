@@ -166,6 +166,14 @@ def _is_retryable(exc: BaseException) -> bool:
     return False
 
 
+def _models_to_try() -> list[str]:
+    primary = (settings.LLM_MODEL or "").strip()
+    fallback = (settings.LLM_FALLBACK_MODEL or "").strip()
+    if fallback and fallback != primary:
+        return [primary, fallback]
+    return [primary]
+
+
 @retry(
     stop=stop_after_attempt(3),
     wait=wait_exponential(multiplier=1, min=1, max=8),
@@ -182,16 +190,28 @@ async def _call_llm_with_retry(client: httpx.AsyncClient, **kwargs: Any) -> http
 async def chat_complete(messages: list[dict], **kwargs: Any) -> str:
     provider = detect_provider(settings.LLM_BASE_URL)
     client = get_http_client()
-    response = await _call_llm_with_retry(
-        client,
-        url=_completion_url(provider),
-        headers=_headers(provider),
-        json=_payload(provider, messages, stream=False, **kwargs),
-    )
-    data = response.json()
-    if provider == "anthropic":
-        return _extract_anthropic_text(data)
-    return data["choices"][0]["message"].get("content", "")
+    models = _models_to_try()
+    last_exc: Exception | None = None
+    for i, model in enumerate(models):
+        try:
+            if i > 0:
+                logger.warning("llm_fallback_model primary=%s fallback=%s", models[0], model)
+            response = await _call_llm_with_retry(
+                client,
+                url=_completion_url(provider),
+                headers=_headers(provider),
+                json=_payload(provider, messages, stream=False, **{**kwargs, "model": model}),
+            )
+            data = response.json()
+            if provider == "anthropic":
+                return _extract_anthropic_text(data)
+            return data["choices"][0]["message"].get("content", "")
+        except Exception as exc:
+            last_exc = exc
+            if i + 1 < len(models) and _is_retryable(exc):
+                continue
+            raise
+    raise last_exc or RuntimeError("LLM request failed")
 
 
 async def _stream_once(provider: str, client: httpx.AsyncClient, messages: list[dict], **kwargs: Any) -> AsyncGenerator[str, None]:
@@ -276,18 +296,35 @@ async def _connect_stream_with_retry(
 async def chat_stream(messages: list[dict], **kwargs: Any) -> AsyncGenerator[str, None]:
     provider = detect_provider(settings.LLM_BASE_URL)
     client = get_http_client()
-    async for token in _connect_stream_with_retry(provider, client, messages, **kwargs):
-        yield token
+    models = _models_to_try()
+    last_exc: Exception | None = None
+    for i, model in enumerate(models):
+        tokens = 0
+        try:
+            if i > 0:
+                logger.warning("llm_fallback_model primary=%s fallback=%s", models[0], model)
+            async for token in _connect_stream_with_retry(
+                provider, client, messages, **{**kwargs, "model": model}
+            ):
+                tokens += 1
+                yield token
+            return
+        except Exception as exc:
+            last_exc = exc
+            if tokens > 0 or i + 1 >= len(models) or not _is_retryable(exc):
+                raise
+    if last_exc:
+        raise last_exc
 
 
-def llm_ping() -> dict[str, Any]:
-    """Reachability only — never call /chat/completions. 5s, no retries."""
+def llm_ping(timeout: float = 2.0) -> dict[str, Any]:
+    """Reachability only — never call /chat/completions. Short so Docker liveness can finish."""
     provider = detect_provider(settings.LLM_BASE_URL)
     if not (settings.LLM_API_KEY or "").strip():
         return {"ok": False, "provider": provider, "error": "unconfigured"}
 
     try:
-        with httpx.Client(timeout=5.0) as client:
+        with httpx.Client(timeout=timeout) as client:
             client.get(settings.LLM_BASE_URL)
         return {"ok": True, "provider": provider, "error": None}
     except httpx.RequestError as exc:

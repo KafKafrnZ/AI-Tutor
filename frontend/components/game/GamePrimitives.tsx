@@ -66,7 +66,7 @@ export function GameButton({
       className={cn(
         "inline-flex min-h-11 items-center justify-center gap-2 rounded-[var(--radius-token)] px-5 py-2.5 text-sm font-bold transition-all focus-visible:outline-none focus-visible:ring-2 disabled:cursor-not-allowed disabled:opacity-45",
         theme.ringClass,
-        variant === "primary" && cn("border text-bg shadow-lg", theme.bgClass, theme.borderClass, theme.accentClass),
+        variant === "primary" && cn("border bg-fg text-bg shadow-lg hover:bg-zinc-200", theme.borderClass),
         variant === "ghost" && cn("border border-white/10 bg-white/5 text-zinc-200 hover:bg-white/10", theme.borderClass),
         variant === "danger" && "border border-accent-mock/30 bg-accent-mock/10 text-accent-mock hover:bg-accent-mock/15",
         className
@@ -108,7 +108,19 @@ export function GameLinkButton({
   );
 }
 
-export function HudBar({ userName = "Student", plan = "free", universe = "neuro" }: { userName?: string; plan?: string; universe?: ThemeLike }) {
+export function HudBar({
+  userName = "Student",
+  plan = "free",
+  universe = "neuro",
+  dailyRemaining = null,
+  dailyLimit = null,
+}: {
+  userName?: string;
+  plan?: string;
+  universe?: ThemeLike;
+  dailyRemaining?: number | null;
+  dailyLimit?: number | null;
+}) {
   const theme = resolveTheme(universe);
   const Icon = theme.icon;
   return (
@@ -124,17 +136,19 @@ export function HudBar({ userName = "Student", plan = "free", universe = "neuro"
           </div>
         </div>
         <div className="grid grid-cols-3 gap-2 text-xs">
+          <Link href="/billing" className="rounded-[var(--radius-token)] border border-white/10 bg-white/5 px-3 py-2 transition-colors hover:border-white/20">
+            <span className="flex items-center gap-1 text-zinc-500"><Gauge className="size-3" /> Plan</span>
+            <p className="font-bold capitalize text-white">{plan || "free"}</p>
+          </Link>
           <div className="rounded-[var(--radius-token)] border border-white/10 bg-white/5 px-3 py-2">
-            <span className="flex items-center gap-1 text-zinc-500"><Gauge className="size-3" /> Level</span>
-            <p className="font-bold text-white">07</p>
+            <span className="flex items-center gap-1 text-zinc-500"><Flame className="size-3" /> Today</span>
+            <p className="font-bold text-white">
+              {dailyLimit == null ? "—" : dailyLimit <= 0 ? "∞" : `${dailyRemaining ?? 0}/${dailyLimit}`}
+            </p>
           </div>
           <div className="rounded-[var(--radius-token)] border border-white/10 bg-white/5 px-3 py-2">
-            <span className="flex items-center gap-1 text-zinc-500"><Flame className="size-3" /> Streak</span>
-            <p className="font-bold text-white">Active</p>
-          </div>
-          <div className="rounded-[var(--radius-token)] border border-white/10 bg-white/5 px-3 py-2">
-            <span className="flex items-center gap-1 text-zinc-500"><Command className="size-3" /> Companion</span>
-            <p className={cn("font-bold", theme.accentClass)}>{userName || plan}</p>
+            <span className="flex items-center gap-1 text-zinc-500"><Command className="size-3" /> Operator</span>
+            <p className={cn("truncate font-bold", theme.accentClass)}>{userName || "Student"}</p>
           </div>
         </div>
       </div>
@@ -160,6 +174,26 @@ export function RouteLoading({ universe = "neuro", title }: { universe?: ThemeLi
           ))}
         </div>
       </GameCard>
+    </div>
+  );
+}
+
+export function GameStat({
+  label,
+  value,
+  universe = "neuro",
+  className,
+}: {
+  label: string;
+  value: ReactNode;
+  universe?: ThemeLike;
+  className?: string;
+}) {
+  const theme = resolveTheme(universe);
+  return (
+    <div className={cn("rounded-[var(--radius-token)] border bg-black/25 px-4 py-3", theme.borderClass, className)}>
+      <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">{label}</p>
+      <p className={cn("mt-1 truncate text-lg font-black", theme.accentClass)}>{value}</p>
     </div>
   );
 }

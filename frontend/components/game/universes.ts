@@ -191,6 +191,7 @@ export function universeForPath(pathname: string): UniverseTheme {
   if (pathname.startsWith("/mock-tests")) return universeThemes.souls;
   if (pathname.startsWith("/progress")) return universeThemes.command;
   if (pathname.startsWith("/mistakes") || pathname.startsWith("/error-log")) return universeThemes.hades;
+  if (pathname.startsWith("/billing")) return universeThemes.deus;
   return universeThemes.neuro;
 }
 

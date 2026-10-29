@@ -90,7 +90,7 @@ export default function ErrorLogPage() {
               <h2 className="text-xl font-bold text-white mb-2">The House Barred Entry</h2>
               <p className="text-zinc-500 mb-6">Your session has expired or is invalid.</p>
               <Link href="/login" className="px-6 py-2 bg-white text-black rounded-full font-medium hover:bg-zinc-200 transition-colors">
-                 Log In Again
+                 Re-enter the House
               </Link>
             </motion.div>
         ) : fetchError ? (
@@ -102,7 +102,7 @@ export default function ErrorLogPage() {
             <button
               onClick={fetchErrorLog}
               className="px-6 py-2 bg-zinc-800 text-white rounded-full font-medium hover:bg-zinc-700 transition-colors">
-              Retry
+              Summon ledger again
             </button>
           </motion.div>
         ) : errors.length === 0 ? (

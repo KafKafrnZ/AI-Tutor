@@ -89,12 +89,12 @@ export default function DashboardPage() {
                     <tool.icon className={`w-6 h-6 ${tool.color}`} />
                   </div>
                   <div>
-                    <h3 className="text-xl font-bold text-white mb-1">{tool.title}</h3>
-                    <p className="text-zinc-400 text-sm font-medium">{tool.desc}</p>
+                    <h3 className="text-xl font-bold text-foreground mb-1">{tool.title}</h3>
+                    <p className="text-muted-foreground text-sm font-medium">{tool.desc}</p>
                   </div>
                 </div>
                 <div className="flex justify-end mt-auto">
-                  <ChevronRight className="w-5 h-5 text-zinc-600 group-hover:text-white transition-colors" />
+                  <ChevronRight className="w-5 h-5 text-muted-foreground/50 group-hover:text-foreground transition-colors" />
                 </div>
               </GlassCard>
             </Link>
@@ -114,8 +114,8 @@ export default function DashboardPage() {
               <BrainCircuit className="w-6 h-6 text-accent" />
             </div>
             <div>
-              <h2 className="text-2xl font-bold text-white">Geralt&apos;s Journal</h2>
-              <p className="text-zinc-400 text-sm">Calculated from shades in your Mistake Locker</p>
+              <h2 className="text-2xl font-bold text-foreground">Medallion Journal</h2>
+              <p className="text-muted-foreground text-sm">Calculated from shades in your Mistake Locker</p>
             </div>
           </div>
 
@@ -137,20 +137,20 @@ export default function DashboardPage() {
               {/* Left Column: Weakness & Concepts */}
               <div className="space-y-6">
                 <div>
-                  <h4 className="text-xs uppercase tracking-wider text-zinc-500 font-bold mb-2">Highest Bounty</h4>
+                  <h4 className="text-xs uppercase tracking-wider text-muted-foreground/80 font-bold mb-2">Highest Bounty</h4>
                   <div className="inline-block px-4 py-2 bg-accent-mock/10 border border-accent-mock/20 rounded-lg text-accent-mock font-semibold">
                     {plan.primary_weakness}
                   </div>
                 </div>
                 
                 <div>
-                  <h4 className="text-xs uppercase tracking-wider text-zinc-500 font-bold mb-3">Signs to Prepare</h4>
+                  <h4 className="text-xs uppercase tracking-wider text-muted-foreground/80 font-bold mb-3">Signs to Prepare</h4>
                   <div className="flex flex-wrap gap-2">
                     {plan.critical_concepts.map((concept, idx) => (
                       <button 
                         key={idx} 
                         onClick={() => router.push(`/tutor?q=${encodeURIComponent(`Explain ${concept}`)}`)}
-                        className="px-3 py-1.5 bg-white/5 hover:bg-accent/20 border border-white/10 hover:border-accent/30 rounded-md text-zinc-300 hover:text-accent text-sm transition-colors cursor-pointer"
+                        className="px-3 py-1.5 bg-white/5 hover:bg-accent/20 border border-white/10 hover:border-accent/30 rounded-md text-foreground/80 hover:text-accent text-sm transition-colors cursor-pointer"
                       >
                         {concept}
                       </button>
@@ -161,7 +161,7 @@ export default function DashboardPage() {
 
               {/* Right Column: Checklist */}
               <div className="bg-black/20 rounded-2xl p-6 border border-white/5">
-                <h4 className="text-sm font-bold text-white mb-4 flex items-center gap-2">
+                <h4 className="text-sm font-bold text-foreground mb-4 flex items-center gap-2">
                   <Target className="w-4 h-4 text-accent" /> Contract Checklist
                 </h4>
                 <ul className="space-y-3">
@@ -173,9 +173,9 @@ export default function DashboardPage() {
                           type="button"
                           onClick={() => setCheckedSteps(prev => ({ ...prev, [idx]: !prev[idx] }))}
                           aria-pressed={isChecked}
-                          className={`flex w-full items-start gap-3 text-left text-sm cursor-pointer p-2 rounded-lg transition-colors border focus:outline-none focus:ring-2 focus:ring-accent/50 ${isChecked ? 'bg-accent-progress/10 border-accent-progress/20 text-zinc-400 line-through' : 'bg-transparent border-transparent text-zinc-300 hover:bg-white/5'}`}
+                          className={`flex w-full items-start gap-3 text-left text-sm cursor-pointer p-2 rounded-lg transition-colors border focus:outline-none focus:ring-2 focus:ring-accent/50 ${isChecked ? 'bg-accent-progress/10 border-accent-progress/20 text-muted-foreground line-through' : 'bg-transparent border-transparent text-foreground/80 hover:bg-white/5'}`}
                         >
-                          <CheckCircle2 className={`w-5 h-5 shrink-0 mt-0.5 transition-colors ${isChecked ? 'text-accent-progress' : 'text-zinc-600'}`} />
+                          <CheckCircle2 className={`w-5 h-5 shrink-0 mt-0.5 transition-colors ${isChecked ? 'text-accent-progress' : 'text-muted-foreground/50'}`} />
                           <span className="leading-relaxed">{step}</span>
                         </button>
                       </li>
@@ -187,11 +187,11 @@ export default function DashboardPage() {
             </div>
           ) : (
             <div className="py-12 text-center flex flex-col items-center relative z-10">
-              <div className="w-16 h-16 bg-white/5 text-zinc-400 rounded-full flex items-center justify-center mb-4 border border-white/10">
+              <div className="w-16 h-16 bg-white/5 text-muted-foreground rounded-full flex items-center justify-center mb-4 border border-white/10">
                 <BrainCircuit className="w-8 h-8 opacity-50" />
               </div>
-              <h3 className="text-xl font-bold text-white mb-2">Notice Board Awaiting Monsters</h3>
-              <p className="text-zinc-500 mb-6 max-w-sm">Complete a trial or arena run. The medallion will read your mistakes and pin a smarter contract here.</p>
+              <h3 className="text-xl font-bold text-foreground mb-2">Notice Board Awaiting Monsters</h3>
+              <p className="text-muted-foreground/80 mb-6 max-w-sm">Complete a trial or arena run. The medallion will read your mistakes and pin a smarter contract here.</p>
               <Link href="/mock-tests">
                 <button className="px-6 py-2.5 bg-accent hover:bg-accent/80 text-white rounded-xl font-medium transition-colors shadow-lg shadow-accent/20">
                   Kindle a Bonfire Trial

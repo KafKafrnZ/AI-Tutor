@@ -27,7 +27,7 @@ from app.core.middleware import (
     log_requests_and_add_headers,
     request_timeout_middleware,
 )
-from app.routers import analytics, auth, health, mock_tests, practice, tutor
+from app.routers import analytics, auth, billing, health, mock_tests, practice, tutor
 
 import os
 
@@ -92,3 +92,4 @@ app.include_router(tutor.router)
 app.include_router(practice.router)
 app.include_router(mock_tests.router)
 app.include_router(analytics.router)
+app.include_router(billing.router)

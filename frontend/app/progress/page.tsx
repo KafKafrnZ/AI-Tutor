@@ -124,7 +124,7 @@ export default function ProgressPage() {
             <h2 className="text-xl font-bold text-white mb-2">Command Link Expired</h2>
             <p className="text-zinc-500 mb-6">Please log in again to view your analytics.</p>
             <Link href="/login" className="px-6 py-2 bg-white text-black rounded-full font-medium hover:bg-zinc-200 transition-colors">
-              Log In Again
+              Reconnect command
             </Link>
           </motion.div>
         ) : fetchError ? (
@@ -135,7 +135,7 @@ export default function ProgressPage() {
             <p className="text-zinc-500 mb-6">Check your connection and sync the command table again.</p>
             <button onClick={fetchStats}
               className="px-6 py-2 bg-zinc-800 text-white rounded-full font-medium hover:bg-zinc-700 transition-colors">
-              Retry
+              Resync telemetry
             </button>
           </motion.div>
         ) : (

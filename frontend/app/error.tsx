@@ -6,10 +6,10 @@ import { GameAtmosphere } from "@/components/game/GamePrimitives";
 
 export default function Error({
   error,
-  unstable_retry,
+  retry,
 }: {
   error: Error & { digest?: string };
-  unstable_retry: () => void;
+  retry: () => void;
 }) {
   useEffect(() => {
     console.error(error);
@@ -28,7 +28,7 @@ export default function Error({
           {error.message || "An unexpected error occurred. Please try again."}
         </p>
         <button
-          onClick={unstable_retry}
+          onClick={() => retry()}
           className="flex items-center gap-2 mx-auto px-6 py-2.5 bg-accent hover:bg-accent/80 text-white rounded-xl font-medium transition-colors"
         >
           <RefreshCw className="w-4 h-4" />

@@ -76,7 +76,7 @@ class TestHealth:
     def test_health_returns_ok(self, client, monkeypatch):
         monkeypatch.setattr(
             "app.routers.health.llm_ping",
-            lambda: {"ok": True, "provider": "groq", "error": None},
+            lambda **_k: {"ok": True, "provider": "groq", "error": None},
         )
         r = client.get("/health")
         assert r.status_code == 200
@@ -108,24 +108,43 @@ class TestSignup:
             "name": "Bad", "email": "weak_up@test.com", "password": WEAK_NOUPPER
         })
         assert r.status_code == 422
+        assert "uppercase" in _error_body(r)["message"].lower()
 
     def test_signup_weak_too_short(self, client):
         r = client.post("/signup", json={
             "name": "Bad", "email": "weak_short@test.com", "password": WEAK_SHORT
         })
         assert r.status_code == 422
+        assert "8" in _error_body(r)["message"]
 
     def test_signup_empty_name_rejected(self, client):
         r = client.post("/signup", json={
             "name": "   ", "email": "blank@test.com", "password": STRONG_PASSWORD
         })
         assert r.status_code == 422
+        assert "name" in _error_body(r)["message"].lower()
 
     def test_signup_invalid_email_rejected(self, client):
         r = client.post("/signup", json={
             "name": "User", "email": "not-an-email", "password": STRONG_PASSWORD
         })
         assert r.status_code == 422
+        assert "email" in _error_body(r)["message"].lower()
+
+    def test_signup_db_failure_is_500(self, client, monkeypatch):
+        monkeypatch.setattr("app.routers.auth.create_user", lambda *args, **kwargs: None)
+        r = client.post("/signup", json={
+            "name": "X", "email": "failcreate@test.com", "password": STRONG_PASSWORD
+        })
+        assert r.status_code == 500
+        assert _error_body(r)["code"] == "SIGNUP_FAILED"
+
+    def test_signup_tells_user_to_verify_email(self, client):
+        r = client.post("/signup", json={
+            "name": "New User", "email": "signup_verify_copy@test.com", "password": STRONG_PASSWORD
+        })
+        assert r.status_code == 200
+        assert "verify" in r.json()["message"].lower()
 
 
 # ============================================================================
@@ -320,6 +339,22 @@ class TestRateLimitPresence:
     def test_forgot_password_always_returns_200(self, client):
         r = client.post("/forgot-password", json={"email": "nobody@test.com"})
         assert r.status_code == 200
+
+    def test_forgot_password_matches_stored_lowercase_email(self, client):
+        mixed = "CaseUser@Example.com"
+        assert client.post("/signup", json={
+            "name": "C", "email": mixed, "password": STRONG_PASSWORD
+        }).status_code == 200
+        assert client.post("/forgot-password", json={"email": mixed}).status_code == 200
+        db = make_db_session()
+        user = db.query(User).filter(User.email == mixed.lower()).first()
+        token = db.query(AuthToken).filter(
+            AuthToken.user_id == user.id,
+            AuthToken.token_type == "reset_password",
+        ).first()
+        db.close()
+        assert user is not None
+        assert token is not None
 
     def test_reset_password_invalid_token_returns_400(self, client):
         r = client.post("/reset-password",
@@ -721,6 +756,54 @@ class TestMockTests:
         assert result["correct_answer_text"] == "President"
         assert result["is_correct"] is True
 
+    def test_fallback_disabled_unseeded_questions_are_503(self, client, monkeypatch):
+        from app.core.config import settings
+
+        monkeypatch.setattr(settings, "ALLOW_FALLBACK_QUESTIONS", False)
+        r = client.get("/mock-tests/1/questions")
+        assert r.status_code == 503
+        assert _error_body(r)["code"] == "NO_CONTENT"
+
+    def test_unknown_test_id_does_not_reuse_set_1(self, client):
+        r = client.get("/mock-tests/99/questions")
+        assert r.status_code == 503
+        assert _error_body(r)["code"] == "NO_CONTENT"
+
+    def test_submit_records_a_real_section(self, client):
+        r = client.get("/mock-tests/1/questions")
+        payload = r.json()
+        submit = client.post(
+            "/mock-tests/1/submit",
+            json={
+                "session_id": payload["test"]["session_id"],
+                "answers": [{"question_id": q["id"], "selected": "A"} for q in payload["questions"]],
+                "time_taken": 30,
+            },
+        )
+        assert submit.status_code == 200
+        db = make_db_session()
+        user = db.query(User).filter(User.email == self.EMAIL).first()
+        row = (
+            db.query(MockTest)
+            .filter(MockTest.user_id == user.id)
+            .order_by(MockTest.id.desc())
+            .first()
+        )
+        db.close()
+        assert row is not None
+        assert row.section != "Full Mock"
+        assert row.section
+
+    def test_client_scored_save_endpoint_is_gone(self, client):
+        r = client.post("/save-mock-test", json={
+            "date": "2026-01-01",
+            "test_name": "cheat",
+            "section": "Quant",
+            "attempted": 10,
+            "correct": 10,
+        })
+        assert r.status_code == 404
+
 
 # ============================================================================
 # 13. Practice + Ask (AI endpoints) — happy paths with heavy mocking
@@ -984,6 +1067,16 @@ class TestConversations:
         assert any(m["content"] == answer for m in asst_msgs), (
             "Saved answer not found in assistant messages"
         )
+
+    def test_conversations_returns_latest_not_oldest(self, client):
+        for i in range(3):
+            res = client.post("/conversations/save", json={
+                "question": f"q{i}",
+                "answer": f"a{i}",
+            })
+            assert res.status_code == 200
+        messages = client.get("/conversations?limit=2").json()
+        assert [m["content"] for m in messages] == ["q2", "a2"]
 
     def test_conversations_requires_auth(self, client):
         """Unauthenticated GET /conversations must return 401."""

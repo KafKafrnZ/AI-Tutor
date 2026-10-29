@@ -1,3 +1,4 @@
+import concurrent.futures
 import hashlib
 import json
 import logging
@@ -25,6 +26,10 @@ _fusion_retriever = None
 _fusion_retriever_fetch_k = None
 _reranker = None
 _WORD_RE = re.compile(r"[a-z0-9]+(?:['-][a-z0-9]+)?")
+# ponytail: one worker; timeout unblocks retrieve() but a wedged native Chroma
+# call still occupies this thread until it returns. Recycle the process if the
+# pool stays stuck.
+_rag_pool = concurrent.futures.ThreadPoolExecutor(max_workers=1, thread_name_prefix="rag")
 
 
 def _tokens(text: str) -> set[str]:
@@ -238,6 +243,17 @@ def get_chroma_client():
     return _client
 
 
+def _run_with_timeout(fn, *args, timeout: float | None = None):
+    limit = settings.RAG_QUERY_TIMEOUT_SECONDS if timeout is None else timeout
+    if limit <= 0:
+        return fn(*args)
+    return _rag_pool.submit(fn, *args).result(timeout=limit)
+
+
+def chroma_heartbeat(timeout: float | None = None) -> None:
+    _run_with_timeout(lambda: get_chroma_client().heartbeat(), timeout=timeout)
+
+
 def _get_collection():
     global _client, _collection
     if _collection is not None:
@@ -413,33 +429,41 @@ def _get_reranker(top_n: int):
     return _reranker
 
 
+def _retrieve_vector(query: str, k: int) -> list[str]:
+    from llama_index.core.schema import QueryBundle
+
+    collection = _get_collection()
+    count = collection.count()
+    if count == 0:
+        logger.info("RAG collection is empty; using PYQ JSON keyword fallback")
+        return _json_keyword_fallback(query, k)
+
+    fetch_k = min(max(k * 3, k), count)
+    fusion_retriever = _get_fusion_retriever(fetch_k)
+    if fusion_retriever is None:
+        return _keyword_fallback(query, k)
+
+    retrieved = fusion_retriever.retrieve(query)
+    reranked = _get_reranker(k).postprocess_nodes(
+        retrieved, query_bundle=QueryBundle(query_str=query)
+    )
+    documents = [node.node.get_content() for node in reranked]
+    return documents or _keyword_fallback(query, k)
+
+
 def retrieve(query: str, k: int = 8) -> list[str]:
     """Hybrid search: vector similarity + BM25 (reciprocal rank fusion),
-    then cross-encoder reranked."""
+    then cross-encoder reranked. Vector path is bounded; timeout/errors
+    fall back to PYQ JSON so a wedged Chroma query cannot pin the worker."""
     query = (query or "").strip()
     if not query:
         return []
 
     try:
-        from llama_index.core.schema import QueryBundle
-
-        collection = _get_collection()
-        count = collection.count()
-        if count == 0:
-            logger.info("RAG collection is empty; using PYQ JSON keyword fallback")
-            return _json_keyword_fallback(query, k)
-
-        fetch_k = min(max(k * 3, k), count)
-        fusion_retriever = _get_fusion_retriever(fetch_k)
-        if fusion_retriever is None:
-            return _keyword_fallback(query, k)
-
-        retrieved = fusion_retriever.retrieve(query)
-        reranked = _get_reranker(k).postprocess_nodes(
-            retrieved, query_bundle=QueryBundle(query_str=query)
-        )
-        documents = [node.node.get_content() for node in reranked]
-        return documents or _keyword_fallback(query, k)
+        return _run_with_timeout(_retrieve_vector, query, k)
+    except TimeoutError:
+        logger.warning("rag_query_timeout after %ss", settings.RAG_QUERY_TIMEOUT_SECONDS)
+        return _json_keyword_fallback(query, k)
     except Exception as exc:
         logger.warning("Vector search failed (%s); falling back to keyword", exc)
-        return _keyword_fallback(query, k)
+        return _json_keyword_fallback(query, k)

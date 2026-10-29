@@ -32,6 +32,8 @@ class User(Base):
     email = Column(String, unique=True, index=True, nullable=False)
     password_hash = Column(String, nullable=False)
     plan = Column(String, default="free")
+    razorpay_customer_id = Column(String(64), nullable=True)
+    razorpay_subscription_id = Column(String(64), nullable=True, index=True)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     is_verified = Column(Boolean, default=False)      

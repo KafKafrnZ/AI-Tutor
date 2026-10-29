@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { parseSseLine } from "@/lib/sse";
+import { createSseParser, parseSseLine } from "@/lib/sse";
 
 describe("SSE parser", () => {
   it("parses valid token line", () => {
@@ -46,5 +46,26 @@ describe("SSE parser", () => {
 
   it("extracts token from nested object payload", () => {
     expect(parseSseLine('data: {"token": "Hello world"}')).toEqual({ token: "Hello world" });
+  });
+
+  it("treats event: error plus data as an error, not a token", () => {
+    const parse = createSseParser();
+    expect(parse("event: error")).toEqual({});
+    expect(parse("data: AI model stream is unavailable.")).toEqual({
+      error: "AI model stream is unavailable.",
+    });
+  });
+
+  it("does not leak error event onto the next token", () => {
+    const parse = createSseParser();
+    parse("event: error");
+    parse("data: boom");
+    expect(parse('data: {"token": "hello"}')).toEqual({ token: "hello" });
+  });
+
+  it("attaches Last-Event-ID style ids to the following data line", () => {
+    const parse = createSseParser();
+    expect(parse("id: abc:3")).toEqual({});
+    expect(parse("data: more")).toEqual({ token: "more", id: "abc:3" });
   });
 });

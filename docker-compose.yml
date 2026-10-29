@@ -6,6 +6,7 @@ services:
       POSTGRES_DB: ascend_ai
       POSTGRES_USER: ascend
       POSTGRES_PASSWORD: localdev
+    user: root
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -16,6 +17,7 @@ services:
 
   redis:
     image: redis:7-alpine
+    user: root
     volumes:
       - redisdata:/data
 
@@ -38,6 +40,7 @@ services:
       - .env.local
     ports:
       - "8000:8000"
+    user: root
     volumes:
       - chromadata:/data/chroma
 
@@ -51,6 +54,7 @@ services:
       - frontend/.env.local
     ports:
       - "3000:3000"
+    user: root
     volumes:
       - ./frontend:/app
       - /app/node_modules

@@ -2,6 +2,7 @@ export type ParsedSseLine = {
   token?: string;
   done?: boolean;
   error?: string;
+  id?: string;
 };
 
 export function readSsePayload(line: string): string | null {
@@ -16,6 +17,38 @@ export function readSsePayload(line: string): string | null {
   }
 
   return null;
+}
+
+export function createSseParser() {
+  let eventName = "";
+  let eventId = "";
+  return function parse(line: string): ParsedSseLine {
+    const normalized = line.endsWith("\r") ? line.slice(0, -1) : line;
+    if (normalized.startsWith("event:")) {
+      eventName = normalized.slice(6).trim();
+      return {};
+    }
+    if (normalized.startsWith("id:")) {
+      eventId = normalized.slice(3).trim();
+      return {};
+    }
+    if (!normalized.trim()) {
+      eventName = "";
+      return {};
+    }
+    const parsed = parseSseLine(normalized);
+    const event = eventName;
+    eventName = "";
+    if (eventId) {
+      parsed.id = eventId;
+      eventId = "";
+    }
+    if (event === "error") {
+      const message = (parsed.token ?? "").replace(/\\n/g, "\n").trim();
+      return { error: message || "The tutor stream failed.", id: parsed.id };
+    }
+    return parsed;
+  };
 }
 
 export function parseSseLine(line: string): ParsedSseLine {

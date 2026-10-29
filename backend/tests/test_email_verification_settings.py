@@ -1,4 +1,7 @@
+import pytest
+
 from app.core.config import parse_require_email_verification
+from app.core.lifespan import assert_production_email_ready
 
 def test_parse_require_email_verification():
     # a) raw=None, environment=production -> True
@@ -23,4 +26,20 @@ def test_parse_require_email_verification():
     assert parse_require_email_verification("off", "production") is False
     assert parse_require_email_verification("   ", "production") is True
     assert parse_require_email_verification(None, "Production") is True
+
+
+def test_assert_production_email_ready():
+    assert_production_email_ready(
+        environment="production", require_verification=True, email_configured=True
+    )
+    assert_production_email_ready(
+        environment="development", require_verification=True, email_configured=False
+    )
+    assert_production_email_ready(
+        environment="production", require_verification=False, email_configured=False
+    )
+    with pytest.raises(RuntimeError, match="EMAIL_HOST"):
+        assert_production_email_ready(
+            environment="production", require_verification=True, email_configured=False
+        )
 

@@ -4,7 +4,7 @@ import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Bot, Loader2, Eye, EyeOff } from "lucide-react";
-import { API_URL } from "@/lib/api";
+import { API_URL, messageFromApiBody } from "@/lib/api";
 import VideoBackground from "@/components/VideoBackground";
 
 function ResetPasswordForm() {
@@ -46,11 +46,7 @@ function ResetPasswordForm() {
       });
       const data = await res.json();
       if (!res.ok) {
-        let message = data.detail || "Reset failed. The link may have expired.";
-        if (Array.isArray(data.detail)) {
-          message = data.detail[0]?.msg || message;
-        }
-        setError(message);
+        setError(messageFromApiBody(data, "Reset failed. The link may have expired."));
         return;
       }
       setSuccess(true);
