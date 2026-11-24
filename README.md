@@ -1,66 +1,74 @@
-# Ascend AI Tutor 🚀
-An immersive, production-grade AI Tutoring application designed specifically for Indian government exams (UPSC, SSC CGL, IBPS PO/SO/Clerk, RRB NTPC, State PSC). 
+# Ascend AI Tutor
 
-## 🌟 Features
+> **Work in progress.** A personal project, not launched, with no users and no live demo. The question corpus is
+> placeholder data and answer quality has not been measured yet. This page lists what works, what does not, and
+> how I plan to deal with it.
 
-1. **3D Knowledge Universe**
-   - Built with `@react-three/fiber` and `@react-three/drei`.
-   - Explore an interactive, floating node graph of the entire syllabus. Complete with custom shaders, particle systems, and glassmorphic tooltips.
-   - Navigate to `/explore` to experience it.
+A retrieval-augmented (RAG) tutor for Indian government exams. Python and FastAPI backend, ChromaDB, PostgreSQL,
+Next.js frontend.
 
-2. **Native Voice Interface**
-   - Seamless, zero-latency Web Speech API integration.
-   - Beautiful, `framer-motion` powered microphone animations (concentric pulsing glow rings).
-   - Zero additional API costs. Talk directly to your AI Tutor.
+## What works on `main`
 
-3. **RAG-Augmented LLM Pipeline (Backend)**
-   - Features a robust RAG-augmented LLM pipeline: user question → ChromaDB retrieval → context injection → Llama 3.3 stream.
+```
+question -> input checks -> hybrid retrieval -> token-budgeted prompt -> LLM -> streamed answer (SSE)
+                                  |
+                                  +-> keyword search if the vector store fails
+```
 
-4. **Progressive Web App (PWA)**
-   - Installable on mobile devices via Chrome/Safari.
-   - `manifest.json` configured for a native-app-like experience.
+| Part | What it does | Code |
+|---|---|---|
+| Chunking | Sentence-aware, 1,000 characters with 200 overlap; duplicates skipped by SHA-256 | [`rag.py`](backend/app/core/rag.py) |
+| Retrieval | `bge-small-en-v1.5` embeddings (FastEmbed) in ChromaDB (HNSW, cosine). Over-fetches 3x, then ranks by 0.7 vector similarity + 0.3 keyword overlap | [`rag.py`](backend/app/core/rag.py) |
+| Retrieval fallback | Keyword ranking when the vector store is empty or errors | [`rag.py`](backend/app/core/rag.py) |
+| LLM client | One async client for Groq, OpenAI-compatible and Anthropic APIs, with retries, backoff and timeouts. Default: Llama 3.3 70B on Groq | [`llm_adapter.py`](backend/app/core/llm_adapter.py) |
+| Streaming | Server-Sent Events. A failure before the first token returns a 503, not a broken stream | [`tutor.py`](backend/app/routers/tutor.py) |
+| Context budget | Drops the oldest turns first; the system prompt and retrieved context stay pinned | [`context_budget.py`](backend/app/core/context_budget.py) |
+| Input checks | Length limits, HTML stripping, prompt-injection patterns. A first filter, not a defence (see below) | [`guards.py`](backend/app/core/guards.py) |
+| Auth | httpOnly JWT cookies, refresh-token rotation, CSRF origin checks, rate limits | [`auth.py`](backend/app/core/auth.py), [`csrf.py`](backend/app/core/csrf.py) |
+| CI | pytest against PostgreSQL, Alembic migration round trip, mypy, frontend checks | [`ci.yml`](.github/workflows/ci.yml) |
 
-5. **Premium UI/UX & Glassmorphism**
-   - Complete visual overhaul using brand colors: Deep Space Background (`#050810`), Neon Cyan (`#00D4FF`), and Electric Violet (`#8B5CF6`).
-   - Extensive use of Tailwind's `backdrop-blur` for heavy glassy overlays, creating incredible depth.
+Also here: mock tests, a progress page, speech **input** through the browser's Web Speech API (no speech output, and
+only in browsers that support it), and a small 3D topic demo at `/explore` with seven sample nodes, not a syllabus.
+There is a web app manifest but no service worker, so nothing works offline.
 
----
+## Known problems, and the plan for each
 
-## 🛠 Tech Stack
-- **Frontend**: Next.js 16 (App Router), React 19, Tailwind CSS v4, Zustand, Framer Motion, React Three Fiber.
-- **Backend**: FastAPI, SQLAlchemy, PostgreSQL, Alembic, ChromaDB + fastembed (RAG), Redis, structlog, slowapi, Sentry.
-- **AI Models**: Llama 3.3 via Groq API — streamed responses with SSE.
+Ordered by how much they affect whether an answer can be trusted. "On a branch" means written on
+[`wip/2026-09-21-billing-quota-ui`](https://github.com/KafKafrnZ/AI-Tutor/tree/wip/2026-09-21-billing-quota-ui), not reviewed, not merged.
 
----
+| # | Problem | Plan | Status |
+|---|---|---|---|
+| 1 | **The corpus is placeholder data.** 200 rows but 54 distinct questions: 14 questions repeated as 160 "(Variation N)" rows, 20 templated arithmetic rows, and 20 rows that only say "Data Interpretation pattern question N". The exam and year labels have no source, so these are **not** real past papers | Replace with items that each carry a source, or are marked synthetic. Fail ingestion on near-duplicates and on a missing source | Not started. Blocks every item that depends on real content |
+| 2 | **The prompt tells the model to mention past-paper trends**, and the corpus cannot support that | Remove the instruction until #1 is done; then allow a trend only with a retrieved, sourced item | Not started |
+| 3 | **No retrieval evaluation.** The 0.7 / 0.3 weights are a guess | 50 hand-labelled questions; report hit@5 and MRR, vector-only against keyword-only against hybrid; run it in CI before any index change | Not started. Needs #1 |
+| 4 | **Keyword overlap is a weak lexical ranker** | BM25 + vector with reciprocal rank fusion, then a cross-encoder reranker. Merge only if it beats the baseline in #3 | On a branch, unmeasured |
+| 5 | **No groundedness check.** "Never hallucinate" in a prompt does not prevent it | Cite retrieved chunk ids, check that cited ids exist, abstain below a retrieval threshold, and score answers on a labelled set that includes unanswerable questions | Not started |
+| 6 | **Malformed quiz JSON becomes a fake "Parse Error" question** whose correct answer is always A | Schema-validated structured output with bounded retries, and a real error instead of a fake question | Structured output is on a branch |
+| 7 | **Regex prompt-injection checks are easy to bypass** | Treat retrieved and user text as untrusted, keep secrets and tools out of the model's reach, check outputs, keep a regression set of attacks | Not started |
+| 8 | **One provider failure fails the answer** once retries run out | Fall back to a second model before the first token; never switch models mid-answer | On a branch, with tests |
+| 9 | **A hung vector query can stall a worker** | Query timeout, then keyword fallback | On a branch, with tests |
+| 10 | **A dropped stream loses the answer** | Buffer tokens and replay from the last event id | On a branch, with tests |
+| 11 | **No latency or cost numbers** | Log retrieval time, time to first token and token counts per request; report p50 and p95 | Not started |
+| 12 | **LLM spend is only rate-limited per minute** | Daily quotas enforced on the server | On a branch, with tests |
+| 13 | **Nothing is deployed** | Deploy only after 1, 2, 3 and 5 | Not started |
 
-## ⚙️ Architecture
-- **RAG Pipeline**: Retrieves factual content from a structured exam corpus (`pyqs.json` — UPSC, SSC CGL, IBPS PO/SO/Clerk, RRB NTPC, State PSC) via ChromaDB semantic search + fastembed embeddings.
-- **Response Generation**: Llama 3.3 via Groq API generates streamed responses grounded in the retrieved context.
-- **Auth**: httpOnly JWT cookies with 1-hour access tokens + 30-day refresh token rotation. CSRF protection via Origin/Referer validation.
-- **Error Handling**: Sentry integration on both frontend (`global-error.tsx`) and backend (`general_exception_handler`). Structured JSON logging with X-Request-ID correlation.
+Order of work: 1 and 2, then 3, then 4 and 5 judged by 3, then the reliability items in small pull requests split out
+of the branch. The longer engineering list is in [PRODUCTION_READINESS.md](PRODUCTION_READINESS.md).
 
----
+**Rule for this repo:** no quality number goes in this README until a script in the repo reproduces it.
 
-## 📦 License
+## Run it locally
 
-[MIT](LICENSE)
-
----
-
-## 🚀 Getting Started
-
-To spin up the entire stack locally using Docker:
+Needs Docker and an LLM API key (Groq by default).
 
 ```bash
+cp backend/.env.example .env.local          # set JWT_SECRET and LLM_API_KEY
 cp frontend/.env.example frontend/.env.local
-cp backend/.env.example backend/.env
 docker compose up --build
 ```
-This boots up the PostgreSQL database, the ChromaDB vector store, the FastAPI backend (and auto-ingests the `pyqs.json` data), and the Next.js frontend.
 
----
+This starts PostgreSQL, Redis, the FastAPI backend on port 8000 (migrates, then ingests the placeholder corpus into an
+embedded ChromaDB) and the Next.js frontend on port 3000. The first start downloads the embedding model.
 
-## 🚀 Deploy
-See [DEPLOY.md](DEPLOY.md) for Railway + Vercel.
-
-What is still required before this is a shippable, paid product: [PRODUCTION_READINESS.md](PRODUCTION_READINESS.md).
+Stack: FastAPI, SQLAlchemy, Alembic, PostgreSQL, ChromaDB, FastEmbed, Redis, structlog, slowapi, Sentry; Next.js 16,
+React 19, Tailwind 4, Zustand, React Three Fiber. Deploy notes: [DEPLOY.md](DEPLOY.md). License: [MIT](LICENSE).
