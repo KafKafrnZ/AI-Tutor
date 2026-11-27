@@ -1,0 +1,38 @@
+{
+  "_about": "SMOKE SET, synthetic. Written by Claude on 2026-11-27 against the placeholder corpus in data/pyqs.json. Queries are reworded on purpose so they do not copy the corpus text. 'target' is the corpus question (without the '(Variation N)' suffix) that answers the query; null means the corpus cannot answer it and retrieval should return nothing. Good only for before/after comparisons of retrieval code, NOT for quality claims. Replace with a hand-labelled set once the real corpus exists (README problem 3).",
+  "items": [
+    {"q": "Which constitutional article sets up the body that runs elections in India?", "target": "Which Article of the Indian Constitution deals with the Election Commission?"},
+    {"q": "Who started the Indian National Congress in 1885?", "target": "Who was the founder of the Indian National Congress?"},
+    {"q": "Which river got the nickname 'Sorrow of Bengal' because of its floods?", "target": "Which river is known as the Sorrow of Bengal?"},
+    {"q": "What is the repo rate in Indian banking?", "target": "What does the term 'Repo Rate' mean?"},
+    {"q": "In what unit is electric current measured in the SI system?", "target": "What is the SI unit of electric current?"},
+    {"q": "Letter coding: if A is 1 and B is 2, what does CAT add up to?", "target": "If A=1, B=2, what is the value of CAT?"},
+    {"q": "Give a word that means the same as abundant", "target": "What is the synonym of 'Abundant'?"},
+    {"q": "Who is the author of the book The Discovery of India?", "target": "Who wrote 'Discovery of India'?"},
+    {"q": "How much paid-up capital does a small finance bank need at minimum?", "target": "What is the minimum capital requirement for a small finance bank?"},
+    {"q": "Which TCP port does plain HTTP use by default?", "target": "What is the port number for HTTP?"},
+    {"q": "All A are B and no B is C. What can we conclude about A and C?", "target": "Syllogism: All A are B. No B is C. Conclusion? "},
+    {"q": "Why is Mars called the red planet?", "target": "Which planet is known as the Red Planet?"},
+    {"q": "Odd one out among apple, banana, carrot and mango", "target": "Find the odd one out: Apple, Banana, Carrot, Mango."},
+    {"q": "In which year did the battle of Plassey take place?", "target": "When was the Battle of Plassey fought?"},
+    {"q": "Who founded the Congress party?", "target": "Who was the founder of the Indian National Congress?"},
+    {"q": "What rate does RBI charge when it lends to commercial banks?", "target": "What does the term 'Repo Rate' mean?"},
+    {"q": "Article 324 is about what?", "target": "Which Article of the Indian Constitution deals with the Election Commission?"},
+    {"q": "Plassey 1757 battle details", "target": "When was the Battle of Plassey fought?"},
+    {"q": "Damodar river is known by what name?", "target": "Which river is known as the Sorrow of Bengal?"},
+    {"q": "Port 80 belongs to which protocol?", "target": "What is the port number for HTTP?"},
+
+    {"q": "Which Article of the Constitution deals with the impeachment of the President?", "target": null},
+    {"q": "When was the Battle of Panipat fought?", "target": null},
+    {"q": "Which river is called the Sorrow of Bihar?", "target": null},
+    {"q": "What does the reverse repo rate mean?", "target": null},
+    {"q": "What is the SI unit of luminous intensity?", "target": null},
+    {"q": "What is the port number for SSH?", "target": null},
+    {"q": "Who wrote the book Wings of Fire?", "target": null},
+    {"q": "Explain photosynthesis in C4 plants", "target": null},
+    {"q": "What is the time complexity of quicksort in the worst case?", "target": null},
+    {"q": "Explain normalization in DBMS up to BCNF", "target": null},
+    {"q": "What is the capital adequacy ratio under Basel III?", "target": null},
+    {"q": "Who was the first Governor-General of independent India?", "target": null}
+  ]
+}

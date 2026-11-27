@@ -749,6 +749,19 @@ class TestPracticeEndpoint:
         assert len(data["questions"]) >= 1
         q = data["questions"][0]
         assert "question" in q and "options" in q and "correct_answer" in q
+        # The model answered with the letter "B"; the frontend compares option text, so it must be mapped.
+        assert q["correct_answer"] == "4"
+
+    def test_practice_unparseable_output_is_an_error_not_a_fake_question(self, client, monkeypatch):
+        async def fake_generate(topic: str) -> str:
+            return "Sure! Here are your questions: 1) ..."
+
+        monkeypatch.setattr("app.routers.practice.generate_questions", fake_generate)
+
+        r = client.post("/practice", json={"topic": "Arithmetic"})
+        assert r.status_code == 502
+        assert r.json()["error"]["code"] == "BAD_MODEL_OUTPUT"
+        assert "Parse Error" not in r.text
 
 
 class TestAskWithHistory:
