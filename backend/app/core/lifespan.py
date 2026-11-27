@@ -64,11 +64,11 @@ def _cleanup_expired_sessions() -> None:
 def _warmup_embeddings() -> None:
     logger.info("embedding_warmup_start")
     try:
-        from fastembed import TextEmbedding
+        # Warm the same embedding function retrieval uses, not a throwaway instance.
+        from app.core.rag import _get_embedding_function, active_embedding_model
 
-        warmup_embed = TextEmbedding()
-        list(warmup_embed.embed(["warmup query"]))
-        logger.info("embedding_warmup_complete")
+        _get_embedding_function()(["warmup query"])
+        logger.info("embedding_warmup_complete", model=active_embedding_model())
     except Exception as exc:
         logger.warning(
             "embedding_warmup_failed",
